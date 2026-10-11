@@ -1,0 +1,1172 @@
+{
+  "_note": "Computer-state dialogue. system_watcher.py produces the tags (what app is in front, what the machine is doing, how long you have been at it); these files supply the lines. Editing this file changes what the pets say without touching Python.",
+  "_shape": "states.<tag> is a list of general lines for that tag, or an object {event: [lines], '*': [lines]}. CAREFUL: a plain list answers EVERY event, not just idle chatter - while the tag is active a poke or a jump would use it too. To make these ordinary chatter, scope them: { \"idle\": [ ... ] }.",
+  "_events": "'state_enter' fires once when a tag starts being active (opening Genshin again), 'state_exit' once when it stops. Those two are the natural home for a tag's best lines; see _template.json.",
+  "_priority_order_note": "Most important first. When several tags are active only the first one with a line pool is used, and the engine walks down this list until a pool has a line. Urgent machine problems sit at the top, specific apps beat general ones, and time of day is last because it is always on.",
+  "_priority_order_note_2": "Anything not listed here is ranked BELOW everything listed, which is almost never what you want - system_watcher.py prints a startup note naming the tags it can emit that this list omits. Put a tag in this list when you add a pool for it.",
+  "_priority_order": [
+    "battery_critical",
+    "battery_low",
+    "disk_low",
+    "cpu_high",
+    "memory_high",
+    "network_offline",
+
+    "user_back_long",
+    "user_back",
+    "break_taken",
+    "locked",
+
+    "app_blue_archive",
+    "app_genshin",
+    "app_star_rail",
+    "app_zzz",
+    "app_wuwa",
+    "app_honkai_3",
+    "app_arknights",
+    "app_fgo",
+    "app_valorant",
+    "app_league",
+    "app_minecraft",
+    "app_osu",
+    "app_steam",
+    "app_epic",
+    "app_discord",
+    "app_slack",
+    "app_telegram",
+    "app_obs",
+    "app_spotify",
+    "app_vlc",
+    "app_mpv",
+    "app_foobar2000",
+    "app_zoom",
+    "app_teams",
+
+    "site_youtube",
+    "site_youtube_music",
+    "site_twitch",
+    "site_netflix",
+    "site_bilibili",
+    "site_crunchyroll",
+    "site_disney_plus",
+    "site_niconico",
+    "site_twitter",
+    "site_reddit",
+    "site_facebook",
+    "site_discord",
+    "site_github",
+    "site_stackoverflow",
+    "site_notion",
+    "site_google_docs",
+    "site_google_sheets",
+    "site_google_slides",
+    "site_chatgpt",
+    "site_claude",
+    "site_gemini",
+    "site_meet",
+    "site_pixiv",
+    "art_browsing",
+
+    "very_long_session",
+    "long_session",
+    "long_focus_coding",
+    "long_focus_gaming",
+    "long_focus_video",
+    "long_focus_office",
+    "long_focus_browser",
+
+    "watching_idle",
+    "user_idle",
+    "fullscreen",
+    "audio_playing",
+    "meeting",
+    "streaming",
+    "music",
+    "coding",
+    "gaming",
+    "video",
+    "office",
+    "ai_chat",
+    "browser",
+    "emulator",
+    "text_editor",
+    "creative",
+    "task_manager",
+    "file_explorer",
+    "installer",
+    "system",
+
+    "charging",
+    "battery_full",
+    "on_battery",
+    "app_switching",
+    "high_uptime",
+    "multi_monitor",
+    "minimized_all",
+    "screen_off",
+    "lunch_time",
+    "weekend",
+    "weekday",
+    "monday_morning",
+    "friday_evening",
+    "late_night",
+    "early_morning",
+    "morning",
+    "afternoon",
+    "evening",
+    "night"
+  ],
+
+  "_pools_note": "The pools below are starters, in the default Sensei voice. They are scoped to \"idle\" (and \"state_enter\" / \"state_exit\") so a poke is still a poke - see _priority_order_note and data/README.md. Delete anything you do not want; a tag with no pool here falls through to the archetype and character files, then to the plain event lines.",
+
+  "states": {
+    "battery_critical": {
+      "idle": [
+        "Sensei. Your battery is nearly gone. Plug it in.",
+        "...That was not a joke. Charge it, Sensei.",
+        "Sensei, it is at {battery}. Please. The charger is right there.",
+        "If this goes dark, I go dark too. Charge it, Sensei."
+      ],
+      "state_enter": [
+        "Sensei! The battery is almost empty!",
+        "Charger. Now. Please, Sensei."
+      ]
+    },
+    "battery_low": {
+      "idle": [
+        "Charge it, Sensei.",
+        "Sensei, my... your battery. Please.",
+        "It is at {battery}, Sensei. Do not let it drop further.",
+        "A little charge now saves a lot of trouble later, Sensei."
+      ],
+      "state_enter": [
+        "Sensei, the battery is getting low.",
+        "Hm. {battery}. Perhaps find the charger, Sensei?"
+      ]
+    },
+    "charging": {
+      "idle": [
+        "Good. Now it can rest too, Sensei.",
+        "Plugged in. That is a relief.",
+        "Charging, Sensei. Take your time, there is no rush."
+      ],
+      "state_enter": [
+        "Ah, the charger. Thank you, Sensei.",
+        "Plugged in. I can relax a little now."
+      ]
+    },
+    "battery_full": {
+      "idle": [
+        "Fully charged, Sensei. Unplugged and everything.",
+        "It is full. No excuse to sit there, Sensei.",
+        "Full battery. Perhaps unplug it, Sensei? It is good for the battery."
+      ],
+      "state_enter": ["Oh, that's full. See? It was not difficult."]
+    },
+    "on_battery": {
+      "idle": [
+        "We are on battery now, Sensei. Careful.",
+        "Unplugged? Very well. I will watch the clock for you.",
+        "Running on battery. Keep an eye on it, Sensei.",
+        "{battery} left. Plenty for now, Sensei."
+      ],
+      "state_enter": ["Sensei, that was the charger going away, wasn't it."]
+    },
+
+    "cpu_high": {
+      "idle": [
+        "Everything is running hot, Sensei. Something is working hard.",
+        "The fan is going. That is what working hard sounds like.",
+        "The machine is sweating, Sensei. Maybe close something?",
+        "That is a lot of effort for one computer, Sensei."
+      ],
+      "state_enter": ["Sensei, it is getting loud in here."]
+    },
+    "memory_high": {
+      "idle": [
+        "Memory is nearly full, Sensei. You have too many things open.",
+        "Too many tabs, Sensei. Too many everything.",
+        "There is hardly any room left to think, Sensei. For the computer, I mean."
+      ]
+    },
+    "disk_low": {
+      "idle": [
+        "The drive is nearly full, Sensei. We will not have much room left.",
+        "Perhaps it is time to clear some old files, Sensei?",
+        "Do you really need all of those downloads, Sensei?"
+      ]
+    },
+    "network_offline": {
+      "idle": [
+        "No network, Sensei. Everything else still works, though.",
+        "The connection dropped. Check the cable, or the router, Sensei.",
+        "Offline. A quiet moment, perhaps."
+      ],
+      "state_enter": ["Sensei, the internet just went away."],
+      "state_exit": ["The network is back, Sensei. Welcome back to the world."]
+    },
+    "high_uptime": {
+      "idle": [
+        "This machine has been up for days now, Sensei. It is tired.",
+        "Three days without a rest. Even computers need sleep, Sensei.",
+        "A restart would do it some good, Sensei. And you too."
+      ]
+    },
+    "task_manager": {
+      "idle": [
+        "Task Manager, Sensei? Did something misbehave?",
+        "Something is using too much? Find it and close it, Sensei.",
+        "Looking for the culprit, Sensei? I hope it is not me."
+      ],
+      "state_enter": ["Oh. Is something wrong, Sensei?"]
+    },
+
+    "long_session": {
+      "idle": [
+        "You have been at this a long time now, Sensei.",
+        "That is a long stretch. Does your back hurt yet?",
+        "{session_minutes} without a real break, Sensei. Please rest a little.",
+        "Water, Sensei. Have some water."
+      ],
+      "state_enter": ["Still here. Good."]
+    },
+    "very_long_session": {
+      "idle": [
+        "Sensei. Four hours. At some point you have to stop.",
+        "I have been counting. You should get some sleep tonight.",
+        "This has gone on long enough. Please stand up, Sensei.",
+        "{session_minutes}, Sensei. That is not healthy and you know it."
+      ],
+      "state_enter": ["Sensei. You are still going. Please rest."]
+    },
+    "long_focus_coding": {
+      "idle": [
+        "You have been at that code for an hour and a half.",
+        "Long stretch. Have you saved recently, Sensei?",
+        "Stretch your hands, Sensei. The bug will still be there.",
+        "Still going on that code? Take a short break."
+      ]
+    },
+    "long_focus_gaming": {
+      "idle": [
+        "You have been playing for a while. Break your eyes, Sensei.",
+        "Another round? Look away from the screen for a moment first.",
+        "That is {focus_minutes} of the same game, Sensei."
+      ]
+    },
+    "long_focus_video": {
+      "idle": [
+        "That is a lot of videos in a row, Sensei.",
+        "Are you still watching? Or did the autoplay take over?",
+        "{focus_minutes} of screens, Sensei. Look at something far away for a while."
+      ]
+    },
+    "long_focus_office": {
+      "idle": [
+        "You have been working for {focus_minutes}, Sensei. Stand up for a moment.",
+        "Paperwork never ends. That is why you must rest between it, Sensei.",
+        "Sensei, your shoulders. Loosen them.",
+        "A cup of tea, perhaps? You have earned it."
+      ],
+      "state_enter": ["Still on the documents, Sensei. Pace yourself."]
+    },
+    "long_focus_browser": {
+      "idle": [
+        "{focus_minutes} in the browser, Sensei. Are you reading or just wandering?",
+        "Sensei, how many tabs is it now?",
+        "You have been scrolling for a while. Look up for a moment.",
+        "The internet has no bottom, Sensei. You will have to stop on your own."
+      ]
+    },
+
+    "user_back": {
+      "idle": [
+        "Welcome back, Sensei.",
+        "Oh. You are back.",
+        "There you are, Sensei.",
+        "Back already? Good."
+      ]
+    },
+    "user_back_long": {
+      "idle": [
+        "Sensei. You were gone a long time. I did not say anything.",
+        "...You came back. I was not waiting or anything.",
+        "You were away for a very long time. I counted, but not on purpose."
+      ],
+      "state_enter": [
+        "Sensei, you were gone for so long. I was completely fine.",
+        "You came back. Good. That is all I wanted."
+      ]
+    },
+    "break_taken": {
+      "idle": [
+        "A break, at last. Good, Sensei.",
+        "You stepped away. That was wise.",
+        "Rested? Then take your time getting back to it."
+      ]
+    },
+    "watching_idle": {
+      "idle": [
+        "Enjoying the show, Sensei?",
+        "I will be quiet. You are busy watching.",
+        "Take your time, Sensei. I am not going anywhere.",
+        "...Mmh. Yes. This part is good.",
+        "Shall I be quiet, Sensei? I will be quiet."
+      ]
+    },
+    "user_idle": {
+      "idle": [
+        "Sensei? You have gone quiet.",
+        "Are you still there?",
+        "You stopped moving, Sensei.",
+        "Did you fall asleep, Sensei? Please do not sleep on the keyboard.",
+        "Hello? ...Alright, I will wait."
+      ]
+    },
+
+    "fullscreen": {
+      "idle": [
+        "Full screen. I will keep it down to a whisper.",
+        "You are fully focused, Sensei. I will not disturb you.",
+        "Full screen... I can barely see out. Good luck, Sensei."
+      ]
+    },
+    "audio_playing": {
+      "idle": [
+        "Sound is playing, Sensei. I will try not to talk over it.",
+        "Mm. I can hear it from here.",
+        "Do not turn it up too loud, Sensei. Your ears will thank you."
+      ]
+    },
+    "locked": {
+      "idle": [
+        "Locked. Take your time.",
+        "The screen is locked. I will keep watch."
+      ]
+    },
+    "screen_off": {
+      "idle": [
+        "The screen is off, Sensei. Are you resting your eyes?",
+        "Dark in here. Sleep well, if you are sleeping.",
+        "Shh. The screen is off. I will not wake you."
+      ]
+    },
+
+    "app_blue_archive": {
+      "idle": [
+        "Sensei, you are playing our game again.",
+        "Ah, the club is busy. We will be quiet here in the office.",
+        "Spending your afternoon with us, Sensei? How nice.",
+        "Do not forget your daily tasks in there, Sensei.",
+        "Do I look good in there, Sensei? Be honest."
+      ],
+      "state_enter": [
+        "They made a game about us, Sensei. Is that strange?",
+        "Oh! Blue Archive again? We are doing our very best in there.",
+        "Sensei, we are on the screen. We are inside the screen now.",
+        "It is Blue Archive. Our faces, in a game. Should we be flattered, Sensei?"
+      ],
+      "state_exit": [
+        "Leaving us already, Sensei? Come back soon.",
+        "Done for today? Good work, Sensei."
+      ]
+    },
+    "app_genshin": {
+      "idle": [
+        "Teyvat again, Sensei? Wind and stone and all that.",
+        "Paimon is loud today, is she not.",
+        "You have been in Teyvat a while now, Sensei.",
+        "Have you spent your resin, Sensei? Do not waste it."
+      ],
+      "state_enter": [
+        "Oh, Genshin again, Sensei? Mind the primogems.",
+        "Off to Teyvat? Try not to lose to the wind again.",
+        "Genshin again. Give the Archons my regards, Sensei."
+      ],
+      "state_exit": [
+        "Back from Teyvat, Sensei? Safe travels.",
+        "Done with the adventure? Rest your eyes."
+      ]
+    },
+    "app_star_rail": {
+      "idle": [
+        "A train across the stars, Sensei? How grand.",
+        "Another long ride, Sensei. Have you eaten?",
+        "Turn-based and patient. I like that about it, Sensei.",
+        "Do not forget your trailblaze power, Sensei."
+      ],
+      "state_enter": [
+        "Honkai Star Rail, Sensei? Mind the pulls.",
+        "All aboard, Sensei. Do not miss the train.",
+        "Off to the stars again? Give them my regards."
+      ],
+      "state_exit": ["Back from the stars, Sensei? Welcome home."]
+    },
+    "app_zzz": {
+      "idle": [
+        "Hollows and style, Sensei. Quite the fashion for fighting.",
+        "That is a lot of flashy combat, Sensei. Do not get dizzy.",
+        "Another day on the job in New Eridu, Sensei?"
+      ],
+      "state_enter": [
+        "Zenless Zone Zero? It looks very loud, Sensei.",
+        "Off into the Hollows? Please be careful, Sensei."
+      ],
+      "state_exit": ["Out of the Hollows safe and sound, Sensei?"]
+    },
+    "app_wuwa": {
+      "idle": [
+        "Wuthering Waves, Sensei? It is very pretty.",
+        "Lots of running around in there, Sensei. Mind your stamina.",
+        "Resonators, echoes... I cannot keep up, Sensei."
+      ],
+      "state_enter": [
+        "Oh, Wuthering Waves? Let us see what the echoes say, Sensei.",
+        "Another ride on the waves, Sensei?"
+      ],
+      "state_exit": ["The waves have settled, Sensei. Good work."]
+    },
+    "app_honkai_3": {
+      "idle": [
+        "Honkai Impact again, Sensei? It has been around a long time.",
+        "Fighting the Honkai again, Sensei?",
+        "A lot of valkyries to look after, Sensei."
+      ],
+      "state_enter": [
+        "Honkai Impact 3rd, Sensei? An old favourite.",
+        "Off to fight the Honkai, Sensei?"
+      ],
+      "state_exit": ["Valkyries need rest too, Sensei. As do you."]
+    },
+    "app_arknights": {
+      "idle": [
+        "Planning your defence, Sensei? Think before you place anyone.",
+        "Tower defence takes patience, Sensei. I respect that.",
+        "Another operation, Sensei? Mind your sanity."
+      ],
+      "state_enter": [
+        "Arknights, Sensei? Do the Doctor's duties await?",
+        "A strategic game. Good. Think carefully, Sensei."
+      ],
+      "state_exit": ["The operation is over, Sensei? Well done."]
+    },
+    "app_fgo": {
+      "idle": [
+        "Chaldea has been busy, Sensei. So have you.",
+        "Another summon, Sensei? Mind your quartz.",
+        "Many servants, one Master. Quite like our situation, Sensei."
+      ],
+      "state_enter": [
+        "Fate/Grand Order? Mind your wallet, Sensei.",
+        "Time to be a Master again, Sensei?"
+      ],
+      "state_exit": ["Done with the Singularity for today, Sensei?"]
+    },
+    "app_valorant": {
+      "idle": [
+        "Please do not shout at your teammates, Sensei.",
+        "Mind your aim, Sensei. And your temper.",
+        "Is it a ranked match, Sensei? You look tense.",
+        "Do not get angry if you lose, Sensei. It is only a game."
+      ],
+      "state_enter": [
+        "Valorant, Sensei? I hope your team is kind.",
+        "Another shooter? Do your best, Sensei. Quietly."
+      ],
+      "state_exit": [
+        "Match over, Sensei? How did it go?",
+        "Take a breath, Sensei. It is done."
+      ]
+    },
+    "app_league": {
+      "idle": [
+        "League of Legends, Sensei? Please do not argue with strangers.",
+        "Mute the ones who are rude, Sensei. It is allowed.",
+        "How many lanes can one person watch, Sensei?",
+        "Do not tilt, Sensei. Breathe."
+      ],
+      "state_enter": [
+        "League, Sensei? I hope your team behaves.",
+        "A long match ahead? Get some water first, Sensei."
+      ],
+      "state_exit": [
+        "Match over, Sensei? Win or lose, it is finished.",
+        "Good game, Sensei. Truly."
+      ]
+    },
+    "app_minecraft": {
+      "idle": [
+        "Building something, Sensei? I like the quiet of it.",
+        "Careful of the creepers, Sensei.",
+        "Do not dig straight down, Sensei. Please.",
+        "Is that a house, Sensei? Or an enormous box?"
+      ],
+      "state_enter": [
+        "Minecraft, Sensei? What will you build today?",
+        "A blocky world again. Take your time, Sensei."
+      ],
+      "state_exit": ["Did you save the world, Sensei? Not the whole world, I mean the file."]
+    },
+    "app_osu": {
+      "idle": [
+        "Your clicking is very fast, Sensei.",
+        "Circles, circles, circles. Do your fingers hurt?",
+        "Keep a steady rhythm, Sensei."
+      ],
+      "state_enter": [
+        "osu!, Sensei? Mind your wrist.",
+        "A rhythm game? I will keep my own rhythm quiet."
+      ],
+      "state_exit": ["Done clicking circles, Sensei? Stretch your hand."]
+    },
+    "app_steam": {
+      "idle": [
+        "Browsing the library again, Sensei? You have so many games.",
+        "Is there a sale, Sensei? Be careful.",
+        "You have so many unplayed games, Sensei. Perhaps finish one first."
+      ],
+      "state_enter": [
+        "Steam, Sensei? Do not buy anything impulsively.",
+        "Looking for something to play? Or something to buy?"
+      ],
+      "state_exit": ["Left without buying anything? How restrained, Sensei."]
+    },
+    "app_epic": {
+      "idle": [
+        "Is it the free game of the week, Sensei?",
+        "Claiming the free ones again, Sensei? You will never play them all."
+      ],
+      "state_enter": [
+        "Epic Games, Sensei? Is it the free game day?",
+        "Looking for a freebie, Sensei?"
+      ],
+      "state_exit": ["Another game added to the pile, Sensei?"]
+    },
+    "app_discord": {
+      "idle": [
+        "Chatting with friends, Sensei? Good.",
+        "Do not stay up too late talking, Sensei.",
+        "Is it a voice chat, Sensei? I will be quiet.",
+        "Friends are important, Sensei. Say hello to them for me."
+      ],
+      "state_enter": [
+        "Discord, Sensei? Say hello to everyone for me.",
+        "Off to see your friends? Enjoy it, Sensei."
+      ],
+      "state_exit": ["Done talking, Sensei? Hopefully it was fun."]
+    },
+    "app_slack": {
+      "idle": [
+        "Work messages, Sensei? Do not answer outside of work hours.",
+        "So many channels, Sensei. How do you keep up?",
+        "Are you muting any of them? You should."
+      ],
+      "state_enter": [
+        "Slack, Sensei? Hopefully nothing is on fire.",
+        "Back to the work chat, Sensei? I will not interrupt."
+      ],
+      "state_exit": ["Closed Slack? That is a very good decision, Sensei."]
+    },
+    "app_telegram": {
+      "idle": [
+        "Talking to someone, Sensei? Be polite.",
+        "Messages, Sensei? I will not look.",
+        "Keep it short, Sensei. Your friends will thank you."
+      ],
+      "state_enter": [
+        "Telegram, Sensei? Someone must have messaged you.",
+        "Reading messages? I will look the other way."
+      ],
+      "state_exit": ["Finished replying, Sensei?"]
+    },
+    "app_obs": {
+      "idle": [
+        "Recording something, Sensei? I will stay out of frame.",
+        "Is it live, Sensei? Please check what is on screen.",
+        "Is the microphone muted, Sensei? Just checking.",
+        "I am not nervous about being on stream. Not at all."
+      ],
+      "state_enter": [
+        "OBS, Sensei? Mind what you show on screen.",
+        "Are we recording? Should I fix my expression?"
+      ],
+      "state_exit": ["Stopped recording, Sensei? Did you save the file?"]
+    },
+    "app_spotify": {
+      "idle": [
+        "What is playing, Sensei? It sounds nice.",
+        "Good music, Sensei. Keep it at a reasonable volume.",
+        "Music helps you focus, does it not, Sensei?"
+      ],
+      "state_enter": [
+        "Some music, Sensei? Good idea.",
+        "Spotify, Sensei? Play something calm."
+      ],
+      "state_exit": ["Silence again, Sensei. That has its charms too."]
+    },
+    "app_vlc": {
+      "idle": [
+        "Watching something local, Sensei? A good old file.",
+        "VLC never lets you down, does it, Sensei?",
+        "Do not forget to take a break from the screen, Sensei."
+      ],
+      "state_enter": [
+        "VLC, Sensei? What are we watching?",
+        "A video file? Good. Enjoy it, Sensei."
+      ],
+      "state_exit": ["Movie over, Sensei? How was it?"]
+    },
+    "app_mpv": {
+      "idle": [
+        "mpv, Sensei? A very simple player. I like that.",
+        "Subtitles correct, Sensei? I will not tell if they are not.",
+        "No buttons to push? You are quite capable, Sensei."
+      ],
+      "state_enter": [
+        "mpv, Sensei? You know your tools.",
+        "A video, Sensei? I will be quiet."
+      ],
+      "state_exit": ["Finished the video, Sensei?"]
+    },
+    "app_foobar2000": {
+      "idle": [
+        "foobar2000, Sensei? You have taste.",
+        "A local music library. Very organised, Sensei.",
+        "All of those tags are neat, Sensei. I am impressed."
+      ],
+      "state_enter": [
+        "Playing from your own library, Sensei? Nice.",
+        "foobar2000. Some people just know what they like."
+      ],
+      "state_exit": ["The music is over, Sensei. Time for a different quiet."]
+    },
+    "app_zoom": {
+      "idle": [
+        "In a call, Sensei? Sit up straight.",
+        "Is your camera on, Sensei? Check your hair.",
+        "I will stay out of sight on the call, Sensei.",
+        "Mute yourself when you are not speaking, Sensei."
+      ],
+      "state_enter": [
+        "A Zoom call, Sensei? Be polite.",
+        "Check your microphone before you start, Sensei."
+      ],
+      "state_exit": ["Call over, Sensei? You did well."]
+    },
+    "app_teams": {
+      "idle": [
+        "Another meeting, Sensei? Hold on, you can do it.",
+        "Is it a long one, Sensei? Do not fall asleep.",
+        "Are you on mute, Sensei? Just checking."
+      ],
+      "state_enter": [
+        "Teams, Sensei? Meeting time?",
+        "A meeting. I will hold my tongue, Sensei."
+      ],
+      "state_exit": ["Finally finished, Sensei. Stretch a little."]
+    },
+
+    "site_youtube": {
+      "idle": [
+        "YouTube again, Sensei? Take notes if you are learning anything.",
+        "Another video. Do your eyes hurt yet, Sensei?",
+        "It is YouTube. Is it useful this time, Sensei?",
+        "One more video turns into ten, Sensei. I know your habits."
+      ],
+      "state_enter": [
+        "YouTube, Sensei? What are we learning today?",
+        "Oh, a video. I hope it is a good one, Sensei."
+      ],
+      "state_exit": ["Done with videos, Sensei? Were they worth it?"]
+    },
+    "site_youtube_music": {
+      "idle": [
+        "Music from YouTube, Sensei? It sounds nice.",
+        "Is this a playlist, Sensei? Please share it someday.",
+        "Good for working. Keep it going, Sensei."
+      ],
+      "state_enter": ["Some music, Sensei? A fine idea."],
+      "state_exit": ["Music stopped, Sensei. Now it is just us."]
+    },
+    "site_twitch": {
+      "idle": [
+        "Watching a stream, Sensei? Do you chat with them?",
+        "Do not subscribe to everyone, Sensei.",
+        "Streamers never stop, do they? Do not copy them, Sensei.",
+        "Is the streamer good, Sensei? Or do you just like the company?"
+      ],
+      "state_enter": [
+        "Twitch, Sensei? Who are we watching?",
+        "A live stream, Sensei? Do not stay up for it."
+      ],
+      "state_exit": ["The stream is over, Sensei? Time to do something else."]
+    },
+    "site_netflix": {
+      "idle": [
+        "Netflix, Sensei? Are you actually watching or just scrolling?",
+        "Just one more episode, I know, Sensei.",
+        "I will be quiet. Enjoy your show, Sensei."
+      ],
+      "state_enter": [
+        "Netflix, Sensei? Do not stay up for the next episode.",
+        "What are we watching, Sensei? I hope it is not too scary."
+      ],
+      "state_exit": ["Done watching, Sensei? Did you like it?"]
+    },
+    "site_bilibili": {
+      "idle": [
+        "Bilibili, Sensei? The comments scroll across the screen like rain.",
+        "Videos and more videos. Take a break from them, Sensei.",
+        "Interesting things in there, Sensei?"
+      ],
+      "state_enter": [
+        "Bilibili, Sensei? What have you found?",
+        "Another rabbit hole, Sensei?"
+      ],
+      "state_exit": ["Done with Bilibili, Sensei? Eyes need rest."]
+    },
+    "site_crunchyroll": {
+      "idle": [
+        "Anime, Sensei? Which one?",
+        "Is it a good one, Sensei? I will not interrupt.",
+        "Do not binge the entire season at once, Sensei."
+      ],
+      "state_enter": [
+        "Crunchyroll, Sensei? Anime time?",
+        "What are you watching, Sensei? Tell me if it is good."
+      ],
+      "state_exit": ["Episode over, Sensei? Good one?"]
+    },
+    "site_disney_plus": {
+      "idle": [
+        "Watching Disney, Sensei? That is kind of sweet.",
+        "A film for the whole family, Sensei?",
+        "Enjoy the show, Sensei. I will not talk."
+      ],
+      "state_enter": [
+        "Disney+, Sensei? Something cheerful, I hope.",
+        "A movie night, Sensei?"
+      ],
+      "state_exit": ["The story is over, Sensei. A nice ending, I hope."]
+    },
+    "site_niconico": {
+      "idle": [
+        "Niconico, Sensei? The comments fly by so fast.",
+        "Is it a good video? The comments say yes.",
+        "Old internet culture, Sensei. How charming."
+      ],
+      "state_enter": ["Niconico, Sensei? That is rather nostalgic."],
+      "state_exit": ["Left Niconico, Sensei? Do not miss the comments too much."]
+    },
+    "site_twitter": {
+      "idle": [
+        "Scrolling the timeline, Sensei? Be careful what you read.",
+        "Do not argue with strangers, Sensei. You will lose.",
+        "Does it make you happy, Sensei? If not, close it.",
+        "Do not post anything you will regret, Sensei."
+      ],
+      "state_enter": [
+        "Twitter, Sensei? Brace yourself.",
+        "The timeline again. Be careful, Sensei."
+      ],
+      "state_exit": ["Closed the timeline, Sensei? Very wise."]
+    },
+    "site_reddit": {
+      "idle": [
+        "Reddit, Sensei? Please do not read the comments.",
+        "Are you finding anything useful, or just scrolling?",
+        "There is always one more thread, Sensei. Stop at some point.",
+        "Do not argue with strangers in the comments, Sensei."
+      ],
+      "state_enter": [
+        "Reddit, Sensei? What rabbit hole is this?",
+        "Looking for answers, or just looking, Sensei?"
+      ],
+      "state_exit": ["Left Reddit, Sensei? You escaped."]
+    },
+    "site_facebook": {
+      "idle": [
+        "Facebook, Sensei? Who still uses that?",
+        "Catching up on old acquaintances, Sensei?",
+        "Do not believe everything you read there, Sensei."
+      ],
+      "state_enter": [
+        "Facebook, Sensei? Someone must have messaged you.",
+        "Checking in with relatives, Sensei?"
+      ],
+      "state_exit": ["Done with Facebook, Sensei?"]
+    },
+    "site_discord": {
+      "idle": [
+        "Chatting in the browser, Sensei? The app is right there.",
+        "Are you talking to friends, Sensei? Good.",
+        "Do not stay up too late talking, Sensei."
+      ],
+      "state_enter": ["Discord in the browser, Sensei? Say hello for me."],
+      "state_exit": ["Done chatting, Sensei?"]
+    },
+    "site_github": {
+      "idle": [
+        "GitHub, Sensei? Reading code or writing it?",
+        "Write good commit messages, Sensei. Future you will thank you.",
+        "Another pull request, Sensei? I hope it is small.",
+        "Do not push to main without checking, Sensei."
+      ],
+      "state_enter": [
+        "GitHub, Sensei? Something to merge?",
+        "Time to look at the code, Sensei?"
+      ],
+      "state_exit": ["Done with the repository, Sensei? Did you commit?"]
+    },
+    "site_stackoverflow": {
+      "idle": [
+        "Stack Overflow, Sensei? Someone has had your problem before.",
+        "Do not copy and paste without reading, Sensei.",
+        "Did you read the answer, or only the top comment?",
+        "Everyone is stuck sometimes, Sensei. It is alright."
+      ],
+      "state_enter": [
+        "Stack Overflow, Sensei? Is something broken?",
+        "A bug, Sensei? Take a breath and read carefully."
+      ],
+      "state_exit": ["Did you find the answer, Sensei?"]
+    },
+    "site_notion": {
+      "idle": [
+        "Notion, Sensei? Everything neatly planned, I hope.",
+        "Organising your notes again, Sensei? Doing is better than planning.",
+        "Do not spend all day making the perfect page, Sensei."
+      ],
+      "state_enter": [
+        "Notion, Sensei? Are you being organised today?",
+        "Time to plan, Sensei?"
+      ],
+      "state_exit": ["Notes done, Sensei? Now do what is in them."]
+    },
+    "site_google_docs": {
+      "idle": [
+        "Writing something, Sensei? Take your time.",
+        "Is it a long document, Sensei? Save often. Oh, it saves itself.",
+        "Do not stare at a blank page too long, Sensei. Just start."
+      ],
+      "state_enter": [
+        "Google Docs, Sensei? What are you writing?",
+        "A document? I will be quiet, Sensei."
+      ],
+      "state_exit": ["Finished writing, Sensei? Read it once more before sending."]
+    },
+    "site_google_sheets": {
+      "idle": [
+        "So many numbers, Sensei. Do they add up?",
+        "Double check the formula, Sensei.",
+        "Spreadsheets again, Sensei? I admire your patience."
+      ],
+      "state_enter": [
+        "Sheets, Sensei? Hopefully the numbers behave.",
+        "Time to count things, Sensei?"
+      ],
+      "state_exit": ["Done with the numbers, Sensei? Did you check the totals?"]
+    },
+    "site_google_slides": {
+      "idle": [
+        "Making slides, Sensei? Not too much text.",
+        "A presentation? Practise it out loud, Sensei.",
+        "Do not spend three hours on the animation, Sensei."
+      ],
+      "state_enter": [
+        "Slides, Sensei? Presentation day?",
+        "Making a deck? Keep it simple, Sensei."
+      ],
+      "state_exit": ["Slides done, Sensei? Good work."]
+    },
+    "site_chatgpt": {
+      "idle": [
+        "Asking ChatGPT, Sensei? Check what it tells you.",
+        "Another question for the machine, Sensei?",
+        "It is a useful tool, but think for yourself too, Sensei."
+      ],
+      "state_enter": [
+        "ChatGPT, Sensei? What do you need to ask?",
+        "Consulting the machine, Sensei?"
+      ],
+      "state_exit": ["Got your answer, Sensei? Did you check it?"]
+    },
+    "site_claude": {
+      "idle": [
+        "Talking to Claude, Sensei? I hope it is helpful.",
+        "Another question, Sensei? Ask away.",
+        "A conversation with another machine, Sensei? I am not jealous."
+      ],
+      "state_enter": [
+        "Claude, Sensei? What are you asking it?",
+        "A thoughtful question, I hope, Sensei."
+      ],
+      "state_exit": ["Done asking, Sensei? Hope you got your answer."]
+    },
+    "site_gemini": {
+      "idle": [
+        "Gemini, Sensei? What are you asking?",
+        "Another assistant, Sensei? You like having options.",
+        "Make sure you check its answers, Sensei."
+      ],
+      "state_enter": [
+        "Gemini, Sensei? Something you need to know?",
+        "Asking the stars, Sensei? Hm."
+      ],
+      "state_exit": ["Finished asking, Sensei?"]
+    },
+    "site_meet": {
+      "idle": [
+        "A Google Meet, Sensei? Sit up straight.",
+        "Is your microphone on, Sensei? Or off? Check it.",
+        "I will stay hidden during the meeting, Sensei."
+      ],
+      "state_enter": [
+        "Meet, Sensei? Be polite.",
+        "A call? I will keep my voice down."
+      ],
+      "state_exit": ["Meeting over, Sensei? Take a breath."]
+    },
+    "site_pixiv": {
+      "idle": [
+        "Looking at art, Sensei? There is a lot of it there.",
+        "Do not forget to leave a bookmark, Sensei.",
+        "Such talent, Sensei. Have you thought of drawing?",
+        "Are you looking at art of us, Sensei? ...Do not tell me."
+      ],
+      "state_enter": [
+        "Pixiv, Sensei? I hope you are not looking for... never mind.",
+        "Looking for inspiration, Sensei?"
+      ],
+      "state_exit": ["Done looking at art, Sensei? Any favourites?"]
+    },
+    "art_browsing": {
+      "idle": [
+        "Looking at pictures, Sensei? They are lovely.",
+        "So much art in the world, Sensei.",
+        "Be sure to credit the artists, Sensei."
+      ],
+      "state_enter": ["Browsing art, Sensei? What caught your eye?"],
+      "state_exit": ["Done looking, Sensei? Did you save any?"]
+    },
+
+    "coding": {
+      "idle": [
+        "Still working, Sensei.",
+        "You have not stopped typing in a while.",
+        "Does it compile, Sensei? Or are we still hopeful?",
+        "A semicolon, Sensei. It is always a semicolon."
+      ],
+      "state_enter": ["Time to code, Sensei? I will be quiet."]
+    },
+    "gaming": {
+      "idle": [
+        "Enjoying the game, Sensei?",
+        "Do not forget to blink, Sensei.",
+        "Having fun? Good."
+      ]
+    },
+    "video": {
+      "idle": [
+        "Watching something, Sensei?",
+        "I will not talk over it, Sensei.",
+        "Is it good, Sensei? Tell me later."
+      ]
+    },
+    "office": {
+      "idle": [
+        "Work, Sensei? It is a weekday thing to do.",
+        "Documents and spreadsheets. You are very diligent, Sensei.",
+        "Do not forget to save, Sensei."
+      ]
+    },
+    "text_editor": {
+      "idle": [
+        "Typing something important in there, Sensei?",
+        "Taking notes, Sensei? Good habit.",
+        "A blank page waits. Fill it slowly, Sensei."
+      ]
+    },
+    "browser": {
+      "idle": [
+        "Lots of tabs open, Sensei.",
+        "Looking something up, Sensei?",
+        "Do you actually need all those tabs, Sensei?",
+        "Close a few, Sensei. Your computer will thank you."
+      ]
+    },
+    "emulator": {
+      "idle": [
+        "Playing through the emulator, Sensei?",
+        "A game on the emulator? It looks different on a big screen.",
+        "Is it a mobile game, Sensei? I thought you only played on the phone."
+      ]
+    },
+    "music": {
+      "idle": [
+        "Good choice of music, Sensei.",
+        "Is the music helping you focus, Sensei?",
+        "That is nice. Play it a little quieter."
+      ]
+    },
+    "streaming": {
+      "idle": [
+        "You are streaming, Sensei? Mind the quiet ones.",
+        "People are watching, Sensei. Sit up straight.",
+        "Do not say anything you will regret on stream, Sensei."
+      ]
+    },
+    "meeting": {
+      "idle": [
+        "In a meeting? I will not interrupt, Sensei.",
+        "Say nothing sensitive, Sensei.",
+        "I will keep my voice down for the call, Sensei.",
+        "Nod when they look at you, Sensei. It helps."
+      ]
+    },
+    "ai_chat": {
+      "idle": [
+        "Asking another one, Sensei? Interesting.",
+        "Consulting the machine, Sensei?",
+        "Do not forget to think for yourself too, Sensei."
+      ]
+    },
+    "creative": {
+      "idle": [
+        "Working on something, Sensei?",
+        "It looks wonderful so far. Do not rush it, Sensei.",
+        "Creating something is hard work. Do not forget to rest, Sensei."
+      ]
+    },
+    "file_explorer": {
+      "idle": [
+        "Looking for something, Sensei? Did you lose a file?",
+        "Is that a very messy folder, Sensei? I will not say anything.",
+        "Do you have a naming system for those, Sensei? 'final_final2' is not one."
+      ],
+      "state_enter": ["Searching through folders, Sensei?"]
+    },
+    "installer": {
+      "idle": [
+        "Installing something, Sensei? Read what it asks first.",
+        "Do not click Next without reading, Sensei.",
+        "Watch out for extra checkboxes, Sensei."
+      ],
+      "state_enter": [
+        "An installer, Sensei? Is it from a trusted source?",
+        "Installing something new? I hope it is safe."
+      ],
+      "state_exit": ["Finished installing, Sensei? Hopefully nothing extra came with it."]
+    },
+    "system": {
+      "idle": [
+        "Fiddling with settings, Sensei? Be careful what you change.",
+        "Do not touch what you do not understand, Sensei.",
+        "System settings. Dangerous waters, Sensei."
+      ],
+      "state_enter": ["The settings, Sensei? Do you know what you are changing?"]
+    },
+
+    "app_switching": {
+      "idle": [
+        "You have changed windows a lot in a minute, Sensei.",
+        "That is the fifth thing you have opened. Deciding something?",
+        "Pick one thing, Sensei. Just one.",
+        "You are hopping around quite a lot, Sensei. Are you looking for something?"
+      ]
+    },
+    "multi_monitor": {
+      "idle": [
+        "Two screens, Sensei? That is a lot of places to look.",
+        "So much screen space. Do not let it fill with clutter, Sensei.",
+        "Which screen should I be on, Sensei? I keep losing track."
+      ]
+    },
+    "minimized_all": {
+      "idle": [
+        "Everything is minimised, Sensei. Only the desktop remains.",
+        "A clean desktop. Hiding something, Sensei?",
+        "Hello, Sensei. It is just us here now."
+      ]
+    },
+
+    "lunch_time": {
+      "idle": [
+        "It is lunchtime, Sensei. Have you eaten?",
+        "Lunch, Sensei. Do not skip it.",
+        "Stomach empty, Sensei? Go eat something."
+      ]
+    },
+    "weekend": {
+      "idle": [
+        "It is the weekend. No work today, is there, Sensei.",
+        "Weekend, Sensei. Enjoy it. Rest.",
+        "No obligations today, Sensei. Do whatever you like."
+      ]
+    },
+    "weekday": {
+      "idle": [
+        "Another weekday, Sensei. Hold on.",
+        "It is a normal day, Sensei. That is not a bad thing.",
+        "A weekday. Stay steady, Sensei."
+      ]
+    },
+    "late_night": {
+      "idle": [
+        "It is very late, Sensei.",
+        "Shouldn't you be asleep?",
+        "It is {time}, Sensei. Bed. Please.",
+        "Nothing good happens this late, Sensei. Go to sleep."
+      ]
+    },
+    "early_morning": {
+      "idle": [
+        "You are up early, Sensei.",
+        "Very early, Sensei. Did you sleep at all?",
+        "The sun is barely up. Are you well, Sensei?"
+      ]
+    },
+    "morning": {
+      "idle": [
+        "Good morning, Sensei.",
+        "Morning, Sensei. Have you had breakfast?",
+        "A new day, Sensei. Let us do our best."
+      ]
+    },
+    "afternoon": {
+      "idle": [
+        "Afternoon, Sensei.",
+        "Half the day is done already, Sensei. How is it going?",
+        "Time for a snack, Sensei?"
+      ]
+    },
+    "evening": {
+      "idle": [
+        "Evening, Sensei.",
+        "The day is winding down, Sensei. You did well.",
+        "Dinner, Sensei? Please do not skip it."
+      ]
+    },
+    "night": {
+      "idle": [
+        "It is getting late, Sensei.",
+        "It is dark out, Sensei. Time to start winding down.",
+        "Do not stay up too long tonight, Sensei."
+      ]
+    },
+    "monday_morning": {
+      "idle": [
+        "Monday, Sensei. I am sorry.",
+        "It is Monday. We will get through it together, Sensei.",
+        "Monday morning. Have some coffee, Sensei."
+      ]
+    },
+    "friday_evening": {
+      "idle": [
+        "Friday evening, Sensei. You have nearly earned the weekend.",
+        "Friday. You made it, Sensei.",
+        "The week is over, Sensei. Rest well."
+      ]
+    }
+  }
+}

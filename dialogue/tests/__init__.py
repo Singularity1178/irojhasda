@@ -1,0 +1,1 @@
+"""Make the tests a package so `python -m unittest dialogue.tests` works."""

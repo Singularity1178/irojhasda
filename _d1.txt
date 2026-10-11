@@ -1,0 +1,153 @@
+﻿
+==============================================================================
+[ragdiag] ON  frames=40  self_collide=True  rest_speed=40  rest_time=3s  max_lin_v=6000
+==============================================================================
+[ragdiag] engine knobs that decide how she goes down:
+[ragdiag]   RAGP_SELF_COLLIDE = True
+[ragdiag]   RAGP_START_TILT = 0.15
+[ragdiag]   RAGP_START_SPIN = 0.5
+[ragdiag]   RAGP_KICK_VX = (60.0, 200.0)
+[ragdiag]   RAGP_KICK_VY = (0.0, 0.0)
+[ragdiag]   RAGP_KICK_W = (1.0, 3.0)
+[ragdiag]   RAGP_REST_SPEED = 40.0
+[ragdiag]   RAGP_REST_TIME = 3.0
+[ragdiag]   RAGP_LIMP_K = 0.22
+[ragdiag]   RAGP_BODY_FRICTION = 0.75
+[ragdiag]   RAGP_BODY_ELASTICITY = 0.35
+[ragdiag]   RAGP_SUBSTEP = 0.002777777777777778
+[ragdiag]   RAGP_ITERATIONS = 20
+[ragdiag]   RAGP_MAX_LIN_V = 6000.0
+ragdiag.enable -> 40
+
+[ragdiag 21:36:11] TestChar: GOING LIMP via harness standing spawn, kick=False  engine=pymunk  window=(900.0,1080.0)  scale=1  grounded=True  visible=True  dragging=False
+[ragdiag 21:36:11] TestChar: PM SKELETON IN  bodies=10  joints=27  spawn_anchor_err=0.000px  spawn_rel_err=0.0000rad  anc_pairs=26  self_mute_pairs=2  start_tilt=+0.1033rad  drop=94.89px
+[ragdiag 21:36:11] TestChar:   spawn body pelvis       pos=(  900.00,  976.11) v=(    0.0,    0.0) w= +0.26 mass=0.3304
+[ragdiag 21:36:11] TestChar:   spawn body neck         pos=(  908.64,  892.79) v=(    0.0,    0.0) w= -0.08 mass=0.2005
+[ragdiag 21:36:11] TestChar:   spawn body l upperarm   pos=(  930.99,  909.77) v=(    0.0,    0.0) w= -0.24 mass=0.03516
+[ragdiag 21:36:11] TestChar:   spawn body l forearm    pos=(  953.59,  931.31) v=(    0.0,    0.0) w= +0.01 mass=0.03345
+[ragdiag 21:36:11] TestChar:   spawn body r upperarm   pos=(  883.28,  904.82) v=(    0.0,    0.0) w= -0.10 mass=0.03516
+[ragdiag 21:36:11] TestChar:   spawn body r forearm    pos=(  856.75,  921.27) v=(    0.0,    0.0) w= +0.28 mass=0.03345
+[ragdiag 21:36:11] TestChar:   spawn body l thigh      pos=(  923.48,  978.55) v=(    0.0,    0.0) w= -0.20 mass=0.09667
+[ragdiag 21:36:11] TestChar:   spawn body l calf       pos=(  920.81, 1029.80) v=(    0.0,    0.0) w= -0.02 mass=0.06927
+[ragdiag 21:36:11] TestChar:   spawn body r thigh      pos=(  876.52,  973.68) v=(    0.0,    0.0) w= +0.08 mass=0.09667
+[ragdiag 21:36:11] TestChar:   spawn body r calf       pos=(  868.61, 1024.39) v=(    0.0,    0.0) w= +0.41 mass=0.06927
+[ragdiag 21:36:11] TestChar:   muted at spawn (overlapping): neck <-> l upperarm
+[ragdiag 21:36:11] TestChar:   muted at spawn (overlapping): neck <-> r upperarm
+[ragdiag 21:36:11] TestChar: f   0 t= 0.00s pelvis=(  900.00,  976.11) v=(     0.0,     0.0) w=  0.26 speed=    0.0 anchor= 0.000px rel=0.0000rad contacts=0 self_mutes=2
+[ragdiag 21:36:11] TestChar: f   0 speed=   34.5 (rest needs <  40.0)  contact=True   rest= 0.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:11] TestChar: f   1 t= 0.02s pelvis=(  900.03,  976.05) v=(    10.7,   -20.8) w= -0.34 speed=   34.5 anchor= 2.379px rel=0.0082rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar: f   1 speed=   42.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f   2 t= 0.03s pelvis=(  900.25,  975.80) v=(    18.2,   -11.8) w= -0.58 speed=   42.9 anchor= 1.932px rel=0.0276rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l forearm=42.9
+[ragdiag 21:36:11] TestChar: f   2 speed=   64.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f   3 t= 0.05s pelvis=(  900.59,  975.72) v=(    24.5,    -0.4) w= -0.79 speed=   64.4 anchor= 1.578px rel=0.0536rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=64.4, l forearm=56.4, neck=41.1
+[ragdiag 21:36:11] TestChar: f   4 t= 0.07s pelvis=(  901.03,  975.83) v=(    31.0,     9.8) w= -1.01 speed=   88.3 anchor= 1.315px rel=0.0902rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=88.3, l forearm=70.8, neck=53.0, r calf=52.8, r upperarm=49.5, r thigh=44.5
+[ragdiag 21:36:11] TestChar: f   4 speed=  110.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f   5 t= 0.08s pelvis=(  901.58,  976.10) v=(    37.5,    19.0) w= -1.24 speed=  110.8 anchor= 1.121px rel=0.1330rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=110.8, l forearm=85.0, r calf=71.8, neck=66.9, r upperarm=66.1, r thigh=60.1
+[ragdiag 21:36:11] TestChar: f   6 t= 0.10s pelvis=(  902.24,  976.52) v=(    44.2,    27.6) w= -1.47 speed=  131.9 anchor= 0.977px rel=0.1816rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=131.9, l forearm=98.6, r calf=91.0, r upperarm=83.4, neck=81.9, r thigh=75.8
+[ragdiag 21:36:11] TestChar: f   6 speed=  151.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f   7 t= 0.12s pelvis=(  903.01,  977.08) v=(    51.0,    35.7) w= -1.70 speed=  151.8 anchor= 0.869px rel=0.2351rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=151.8, l forearm=111.6, r calf=110.5, r upperarm=101.3, neck=97.9, r thigh=91.4
+[ragdiag 21:36:11] TestChar: f   7 speed=  120.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f   8 t= 0.13s pelvis=(  903.78,  977.16) v=(    41.3,    -4.7) w= -1.03 speed=  120.7 anchor= 0.663px rel=0.2973rad contacts=12 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=120.7, l forearm=103.5, r calf=76.1, l thigh=49.6, r thigh=46.3, neck=45.1
+[ragdiag 21:36:11] TestChar: f   9 t= 0.15s pelvis=(  904.43,  977.05) v=(    37.1,    -0.8) w= -0.72 speed=  127.0 anchor= 0.497px rel=0.3611rad contacts=12 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=127.0, l forearm=99.4, r calf=80.1, r thigh=41.2, l thigh=40.4
+[ragdiag 21:36:11] TestChar: f  10 t= 0.17s pelvis=(  905.03,  977.10) v=(    34.6,    13.6) w= -0.50 speed=  137.7 anchor= 0.461px rel=0.4234rad contacts=12 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=137.7, l forearm=100.1, r calf=89.4, r thigh=43.7
+[ragdiag 21:36:11] TestChar: f  11 t= 0.18s pelvis=(  905.59,  977.33) v=(    32.6,    24.9) w= -0.27 speed=  147.0 anchor= 0.590px rel=0.4844rad contacts=12 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=147.0, l forearm=102.5, r calf=101.7, l calf=48.1, r thigh=46.1, pelvis=41.0
+[ragdiag 21:36:11] TestChar: f  11 speed=  151.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  12 t= 0.20s pelvis=(  906.12,  977.73) v=(    37.0,    16.3) w= -0.22 speed=  151.3 anchor= 0.718px rel=0.5445rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=151.3, r calf=115.3, l forearm=97.9, r thigh=43.5, pelvis=40.4
+[ragdiag 21:36:11] TestChar: f  13 t= 0.22s pelvis=(  906.80,  978.00) v=(    47.1,    12.6) w= -0.42 speed=  152.8 anchor= 0.673px rel=0.6081rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=152.8, r calf=113.9, l forearm=94.7, r thigh=52.8, pelvis=48.8, l thigh=46.7
+[ragdiag 21:36:11] TestChar: f  14 t= 0.23s pelvis=(  907.62,  978.28) v=(    54.0,    18.4) w= -0.58 speed=  154.7 anchor= 0.716px rel=0.6730rad contacts=13 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=154.7, r calf=122.9, l forearm=93.9, r thigh=63.9, pelvis=57.1, l thigh=53.5
+[ragdiag 21:36:11] TestChar: f  15 t= 0.25s pelvis=(  908.56,  978.65) v=(    60.9,    20.5) w= -0.71 speed=  154.4 anchor= 0.666px rel=0.7378rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=154.4, r calf=127.7, l forearm=91.5, r thigh=72.3, pelvis=64.3, l thigh=59.9
+[ragdiag 21:36:11] TestChar: f  16 t= 0.27s pelvis=(  909.58,  979.07) v=(    63.5,    24.2) w= -0.81 speed=  152.2 anchor= 0.818px rel=0.7835rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=152.2, r calf=140.7, r thigh=78.4, pelvis=68.0, l thigh=62.2, r upperarm=49.1
+[ragdiag 21:36:11] TestChar: f  17 t= 0.28s pelvis=(  910.69,  979.57) v=(    70.9,    30.6) w= -0.99 speed=  150.7 anchor= 0.822px rel=0.8070rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r forearm=150.7, r calf=150.2, r thigh=91.1, pelvis=77.2, l thigh=69.1, r upperarm=61.2
+[ragdiag 21:36:11] TestChar: f  18 t= 0.30s pelvis=(  911.91,  980.15) v=(    78.1,    37.1) w= -1.16 speed=  160.3 anchor= 0.816px rel=0.8251rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r calf=160.3, r forearm=149.1, r thigh=103.8, pelvis=86.5, l thigh=75.6, r upperarm=74.2
+[ragdiag 21:36:11] TestChar: f  18 speed=  149.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  19 t= 0.32s pelvis=(  913.24,  980.82) v=(    83.5,    39.9) w= -1.27 speed=  149.3 anchor= 0.850px rel=0.8392rad contacts=17 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r calf=149.3, r forearm=144.9, r thigh=111.9, pelvis=92.6, r upperarm=82.3, l thigh=80.1
+[ragdiag 21:36:11] TestChar: f  19 speed=  177.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  20 t= 0.33s pelvis=(  914.66,  981.54) v=(    88.6,    44.4) w= -1.36 speed=  177.0 anchor= 1.098px rel=0.8507rad contacts=17 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r calf=177.0, r thigh=120.8, r forearm=111.3, pelvis=99.1, r upperarm=91.5, l thigh=84.6
+[ragdiag 21:36:11] TestChar: f  20 speed=  110.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  21 t= 0.35s pelvis=(  916.15,  982.33) v=(    95.1,    22.8) w= -1.22 speed=  110.3 anchor= 1.431px rel=0.8604rad contacts=17 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=110.3, pelvis=97.8, r forearm=91.7, l thigh=88.0, r upperarm=72.4, r calf=44.2
+[ragdiag 21:36:11] TestChar: f  21 speed=   99.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  22 t= 0.37s pelvis=(  917.70,  982.51) v=(    91.4,     9.6) w= -0.83 speed=   99.7 anchor= 1.562px rel=0.8750rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=99.7, pelvis=91.9, l thigh=88.0, r calf=75.4, r forearm=75.3, l calf=64.2
+[ragdiag 21:36:11] TestChar: f  23 t= 0.38s pelvis=(  919.23,  982.63) v=(    91.0,    16.5) w= -0.61 speed=   99.0 anchor= 1.573px rel=0.8896rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=99.0, pelvis=92.5, l thigh=88.1, l calf=84.4, r forearm=77.7, r calf=76.1
+[ragdiag 21:36:11] TestChar: f  23 speed=  100.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  24 t= 0.40s pelvis=(  920.77,  982.87) v=(    92.5,    23.3) w= -0.40 speed=  100.2 anchor= 1.593px rel=0.9034rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=100.2, l calf=100.0, pelvis=95.3, l thigh=91.5, r forearm=81.3, r upperarm=77.6
+[ragdiag 21:36:11] TestChar: f  25 t= 0.42s pelvis=(  922.35,  983.22) v=(    95.5,    29.9) w= -0.22 speed=  111.7 anchor= 1.615px rel=0.9168rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=111.7, r thigh=102.9, pelvis=100.1, l thigh=97.6, r upperarm=90.5, r forearm=86.0
+[ragdiag 21:36:11] TestChar: f  26 t= 0.43s pelvis=(  924.01,  983.62) v=(   103.4,    27.0) w= -0.17 speed=  108.9 anchor= 1.602px rel=0.9300rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=108.9, pelvis=106.8, l thigh=105.0, r upperarm=98.6, l upperarm=94.3, neck=94.3
+[ragdiag 21:36:11] TestChar: f  27 t= 0.45s pelvis=(  925.80,  984.03) v=(   111.0,    29.7) w= -0.15 speed=  116.6 anchor= 1.524px rel=0.9425rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=116.6, pelvis=114.9, l thigh=113.4, r upperarm=107.9, l upperarm=104.3, neck=104.3
+[ragdiag 21:36:11] TestChar: f  28 t= 0.47s pelvis=(  927.72,  984.50) v=(   119.1,    33.4) w= -0.15 speed=  125.5 anchor= 1.423px rel=0.9540rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=125.5, pelvis=123.7, l thigh=122.1, r upperarm=116.7, neck=112.9, l upperarm=112.9
+[ragdiag 21:36:11] TestChar: f  29 t= 0.48s pelvis=(  929.77,  985.11) v=(   132.0,    34.3) w= -0.27 speed=  139.7 anchor= 1.332px rel=0.9641rad contacts=17 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=139.7, pelvis=136.4, l thigh=133.4, r upperarm=123.9, l upperarm=117.1, neck=117.0
+[ragdiag 21:36:11] TestChar: f  30 t= 0.50s pelvis=(  932.00,  985.78) v=(   137.5,    46.4) w= -0.30 speed=  149.2 anchor= 1.348px rel=0.9734rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=149.2, pelvis=145.2, l thigh=141.5, r upperarm=132.4, neck=124.4, l upperarm=123.5
+[ragdiag 21:36:11] TestChar: f  30 speed=  163.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  31 t= 0.52s pelvis=(  934.36,  986.60) v=(   150.9,    47.5) w= -0.42 speed=  163.9 anchor= 1.237px rel=0.9817rad contacts=16 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=163.9, pelvis=158.2, l thigh=153.2, r upperarm=140.8, neck=129.4, l upperarm=128.3
+[ragdiag 21:36:11] TestChar: f  32 t= 0.53s pelvis=(  936.91,  987.47) v=(   156.5,    59.0) w= -0.46 speed=  173.7 anchor= 1.274px rel=0.9897rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=173.7, pelvis=167.2, l thigh=161.3, r upperarm=150.0, l calf=139.1, neck=137.7
+[ragdiag 21:36:11] TestChar: f  33 t= 0.55s pelvis=(  939.56,  988.55) v=(   157.8,    74.3) w= -0.41 speed=  194.2 anchor= 1.225px rel=0.9966rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=194.2, r thigh=181.0, pelvis=174.4, l thigh=168.4, r upperarm=161.0, neck=149.7
+[ragdiag 21:36:11] TestChar: f  34 t= 0.57s pelvis=(  942.26,  989.77) v=(   166.4,    81.8) w= -0.52 speed=  194.0 anchor= 1.142px rel=1.0026rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: r thigh=194.0, l calf=190.6, pelvis=185.4, l thigh=177.4, r upperarm=170.2, l forearm=156.2
+[ragdiag 21:36:11] TestChar: f  34 speed=  223.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  35 t= 0.58s pelvis=(  945.09,  991.17) v=(   175.9,    85.3) w= -0.58 speed=  223.2 anchor= 1.121px rel=1.0084rad contacts=15 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=223.2, r thigh=205.0, pelvis=195.5, l thigh=186.6, r upperarm=178.7, r forearm=163.0
+[ragdiag 21:36:11] TestChar: f  36 t= 0.60s pelvis=(  948.01,  992.79) v=(   179.3,    96.7) w= -0.57 speed=  231.8 anchor= 1.404px rel=1.0140rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=231.8, r thigh=213.4, pelvis=203.7, l thigh=194.6, r upperarm=188.9, r forearm=173.6
+[ragdiag 21:36:11] TestChar: f  37 t= 0.62s pelvis=(  951.02,  994.63) v=(   183.8,   112.2) w= -0.52 speed=  242.6 anchor= 1.356px rel=1.0196rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=242.6, r thigh=224.8, pelvis=215.4, l thigh=206.4, r upperarm=203.6, neck=189.1
+[ragdiag 21:36:11] TestChar: f  37 speed=  254.5 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  38 t= 0.63s pelvis=(  954.10,  996.72) v=(   188.7,   126.6) w= -0.49 speed=  254.5 anchor= 1.354px rel=1.0252rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=254.5, r thigh=236.4, pelvis=227.3, l thigh=218.5, r upperarm=217.8, neck=204.2
+[ragdiag 21:36:11] TestChar: f  39 t= 0.65s pelvis=(  957.23,  999.12) v=(   191.5,   141.7) w= -0.51 speed=  267.6 anchor= 1.489px rel=1.0302rad contacts=14 self_mutes=2
+[ragdiag 21:36:11] TestChar:         limbs over 40 px/s: l calf=267.6, r thigh=248.1, pelvis=238.2, r upperarm=230.3, l thigh=228.7, r forearm=216.5
+[ragdiag 21:36:11] TestChar: f  41 speed=  222.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  47 speed=  257.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  52 speed=  311.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  55 speed=  360.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  63 speed=  405.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  69 speed=  453.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  71 speed=  426.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  74 speed=  234.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  75 speed=  187.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  76 speed=  148.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:11] TestChar: f  80 speed=  164.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f  82 speed=  149.6 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f  83 speed=   96.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f  86 speed=  102.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f  87 speed=   83.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f  93 speed=  105.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f  94 speed=   76.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f 162 speed=  102.6 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:12] TestChar: f 174 speed=   62.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+
+[ragdiag 21:36:12] TestChar: VERDICT after 14.00s  final_speed=   72.9  peak_speed=  480.5  resting_now=False  rest_at=-  got_up_at=NEVER
+[ragdiag 21:36:12] TestChar:         final anchor=3.813px rel=1.1423rad  judgement=STILL MOVING
+[ragdiag 21:36:12] TestChar:         worst movers: l forearm=72.9, l thigh=25.7, l calf=17.2, r calf=16.3
+
+(name=Chinatsu seed=0 expected get-up NEVER)

@@ -1,0 +1,903 @@
+﻿
+==============================================================================
+[ragdiag] ON  frames=40  self_collide=True  rest_speed=40  rest_time=3s  max_lin_v=6000
+==============================================================================
+[ragdiag] engine knobs that decide how she goes down:
+[ragdiag]   RAGP_SELF_COLLIDE = True
+[ragdiag]   RAGP_START_TILT = 0.15
+[ragdiag]   RAGP_START_SPIN = 0.5
+[ragdiag]   RAGP_KICK_VX = (60.0, 200.0)
+[ragdiag]   RAGP_KICK_VY = (0.0, 0.0)
+[ragdiag]   RAGP_KICK_W = (1.0, 3.0)
+[ragdiag]   RAGP_REST_SPEED = 40.0
+[ragdiag]   RAGP_REST_TIME = 3.0
+[ragdiag]   RAGP_LIMP_K = 0.22
+[ragdiag]   RAGP_BODY_FRICTION = 0.75
+[ragdiag]   RAGP_BODY_ELASTICITY = 0.35
+[ragdiag]   RAGP_SUBSTEP = 0.002777777777777778
+[ragdiag]   RAGP_ITERATIONS = 20
+[ragdiag]   RAGP_MAX_LIN_V = 6000.0
+ragdiag.enable -> 40
+
+[ragdiag 21:36:16] TestChar: GOING LIMP via harness standing spawn, kick=False  engine=pymunk  window=(900.0,1080.0)  scale=1  grounded=True  visible=True  dragging=False
+[ragdiag 21:36:16] TestChar: PM SKELETON IN  bodies=10  joints=27  spawn_anchor_err=0.000px  spawn_rel_err=0.0000rad  anc_pairs=26  self_mute_pairs=7  start_tilt=+0.1033rad  drop=85.02px
+[ragdiag 21:36:16] TestChar:   spawn body pelvis       pos=(  900.00,  985.98) v=(    0.0,    0.0) w= +0.26 mass=0.2533
+[ragdiag 21:36:16] TestChar:   spawn body neck         pos=(  928.14,  957.99) v=(    0.0,    0.0) w= -0.08 mass=0.2237
+[ragdiag 21:36:16] TestChar:   spawn body l upperarm   pos=(  941.15,  958.28) v=(    0.0,    0.0) w= -0.24 mass=0.03776
+[ragdiag 21:36:16] TestChar:   spawn body l forearm    pos=(  941.53,  985.04) v=(    0.0,    0.0) w= +0.01 mass=0.03808
+[ragdiag 21:36:16] TestChar:   spawn body r upperarm   pos=(  901.03,  961.78) v=(    0.0,    0.0) w= -0.10 mass=0.03907
+[ragdiag 21:36:16] TestChar:   spawn body r forearm    pos=(  877.43,  976.92) v=(    0.0,    0.0) w= +0.28 mass=0.03831
+[ragdiag 21:36:16] TestChar:   spawn body l thigh      pos=(  918.98,  985.78) v=(    0.0,    0.0) w= -0.20 mass=0.1081
+[ragdiag 21:36:16] TestChar:   spawn body l calf       pos=(  914.54, 1032.01) v=(    0.0,    0.0) w= -0.02 mass=0.07795
+[ragdiag 21:36:16] TestChar:   spawn body r thigh      pos=(  880.81,  986.18) v=(    0.0,    0.0) w= +0.08 mass=0.1098
+[ragdiag 21:36:16] TestChar:   spawn body r calf       pos=(  883.74, 1033.54) v=(    0.0,    0.0) w= +0.41 mass=0.074
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): neck <-> l forearm
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): neck <-> l thigh
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): neck <-> l upperarm
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): neck <-> l upperarm
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): neck <-> r upperarm
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): r forearm <-> r thigh
+[ragdiag 21:36:16] TestChar:   muted at spawn (overlapping): r upperarm <-> r thigh
+[ragdiag 21:36:16] TestChar: f   0 t= 0.00s pelvis=(  900.00,  985.98) v=(     0.0,     0.0) w=  0.26 speed=    0.0 anchor= 0.000px rel=0.0000rad contacts=0 self_mutes=7
+[ragdiag 21:36:16] TestChar: f   0 speed=   25.8 (rest needs <  40.0)  contact=True   rest= 0.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f   1 t= 0.02s pelvis=(  900.01,  986.03) v=(     3.4,     2.1) w= -0.29 speed=   25.8 anchor= 0.878px rel=0.0070rad contacts=20 self_mutes=7
+[ragdiag 21:36:16] TestChar: f   1 speed=   44.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f   2 t= 0.03s pelvis=(  900.09,  986.17) v=(     7.6,    11.8) w= -0.61 speed=   44.8 anchor= 0.792px rel=0.0260rad contacts=20 self_mutes=7
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=44.8
+[ragdiag 21:36:16] TestChar: f   2 speed=   66.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f   3 t= 0.05s pelvis=(  900.23,  986.47) v=(    10.2,    21.4) w= -0.83 speed=   66.9 anchor= 0.721px rel=0.0577rad contacts=21 self_mutes=7
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=66.9, l calf=54.5
+[ragdiag 21:36:16] TestChar: f   4 t= 0.07s pelvis=(  900.40,  986.94) v=(    11.7,    32.9) w= -1.01 speed=   88.0 anchor= 0.657px rel=0.1034rad contacts=20 self_mutes=7
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=88.0, l calf=75.7, r calf=54.3, r thigh=53.7
+[ragdiag 21:36:16] TestChar: f   4 speed=  109.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f   5 t= 0.08s pelvis=(  900.60,  987.61) v=(    13.5,    47.0) w= -1.19 speed=  109.2 anchor= 0.592px rel=0.1635rad contacts=20 self_mutes=7
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=109.2, l calf=94.7, r calf=72.8, r thigh=71.4, r upperarm=49.9, pelvis=48.9
+[ragdiag 21:36:16] TestChar: f   6 t= 0.10s pelvis=(  900.70,  988.16) v=(     2.9,    38.7) w= -0.14 speed=  115.6 anchor= 0.509px rel=0.2265rad contacts=19 self_mutes=7
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=115.6, l calf=88.4, r calf=84.5, r thigh=41.6
+[ragdiag 21:36:16] TestChar: f   7 t= 0.12s pelvis=(  900.75,  988.81) v=(     1.5,    16.5) w=  0.16 speed=  118.7 anchor= 0.559px rel=0.2875rad contacts=21 self_mutes=7
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=118.7, l calf=57.0
+[ragdiag 21:36:16] TestChar: f   8 t= 0.13s pelvis=(  900.77,  988.87) v=(     4.4,    -4.7) w=  0.40 speed=  122.6 anchor= 0.554px rel=0.3049rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=122.6
+[ragdiag 21:36:16] TestChar: f   9 t= 0.15s pelvis=(  900.86,  988.83) v=(     7.0,    -3.4) w=  0.48 speed=  130.0 anchor= 0.527px rel=0.3169rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=130.0
+[ragdiag 21:36:16] TestChar: f  10 t= 0.17s pelvis=(  901.00,  988.81) v=(     9.7,    -2.2) w=  0.54 speed=  136.3 anchor= 0.511px rel=0.3827rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=136.3
+[ragdiag 21:36:16] TestChar: f  10 speed=   36.4 (rest needs <  40.0)  contact=True   rest= 0.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  11 t= 0.18s pelvis=(  901.20,  988.83) v=(    13.9,    -1.3) w=  0.54 speed=   36.4 anchor= 0.530px rel=0.4102rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar: f  11 speed=   43.5 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  12 t= 0.20s pelvis=(  901.44,  988.85) v=(    16.2,     0.2) w=  0.63 speed=   43.5 anchor= 0.516px rel=0.4247rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=43.5
+[ragdiag 21:36:16] TestChar: f  12 speed=   50.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  13 t= 0.22s pelvis=(  901.72,  988.89) v=(    18.2,     1.7) w=  0.73 speed=   50.7 anchor= 0.510px rel=0.4376rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=50.7, neck=45.1, l forearm=40.1
+[ragdiag 21:36:16] TestChar: f  14 t= 0.23s pelvis=(  902.04,  988.96) v=(    20.1,     3.4) w=  0.84 speed=   58.2 anchor= 0.511px rel=0.4493rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=58.2, neck=51.6, l forearm=46.4, r upperarm=40.9
+[ragdiag 21:36:16] TestChar: f  15 t= 0.25s pelvis=(  902.38,  989.06) v=(    21.9,     5.5) w=  0.95 speed=   66.0 anchor= 0.517px rel=0.4603rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=66.0, neck=58.3, l forearm=53.2, r upperarm=45.5
+[ragdiag 21:36:16] TestChar: f  16 t= 0.27s pelvis=(  902.76,  989.19) v=(    23.9,     8.0) w=  1.06 speed=   74.4 anchor= 0.522px rel=0.4716rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=74.4, neck=65.6, l forearm=60.7, r upperarm=50.7
+[ragdiag 21:36:16] TestChar: f  17 t= 0.28s pelvis=(  903.17,  989.38) v=(    25.9,    11.2) w=  1.19 speed=   84.0 anchor= 0.524px rel=0.5078rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=84.0, neck=74.0, l forearm=69.5, r upperarm=56.5, r calf=43.9, l calf=43.1
+[ragdiag 21:36:16] TestChar: f  18 t= 0.30s pelvis=(  903.61,  989.62) v=(    26.6,    15.6) w=  1.38 speed=   96.5 anchor= 0.513px rel=0.5496rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=96.5, neck=84.5, l forearm=81.8, r upperarm=62.9, r calf=53.0, l calf=51.5
+[ragdiag 21:36:16] TestChar: f  18 speed=  114.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  19 t= 0.32s pelvis=(  904.04,  989.95) v=(    26.8,    24.2) w=  1.62 speed=  114.2 anchor= 0.580px rel=0.5968rad contacts=20 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=114.2, l forearm=99.8, neck=99.7, r upperarm=71.8, l calf=61.4, l thigh=60.7
+[ragdiag 21:36:16] TestChar: f  20 t= 0.33s pelvis=(  904.50,  990.39) v=(    27.2,    33.4) w=  1.87 speed=  134.8 anchor= 0.603px rel=0.6488rad contacts=19 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=134.8, l forearm=120.4, neck=117.2, r upperarm=82.7, l thigh=73.4, l calf=70.1
+[ragdiag 21:36:16] TestChar: f  21 t= 0.35s pelvis=(  904.97,  990.97) v=(    30.8,    37.1) w=  1.97 speed=  145.3 anchor= 0.728px rel=0.7036rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l upperarm=145.3, l forearm=130.3, neck=126.6, r upperarm=90.8, r calf=80.2, l calf=79.1
+[ragdiag 21:36:16] TestChar: f  21 speed=   76.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  22 t= 0.37s pelvis=(  905.52,  991.59) v=(    50.3,   -33.8) w=  0.84 speed=   76.4 anchor= 0.861px rel=0.7544rad contacts=20 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=76.4, r upperarm=76.1, r thigh=73.1, neck=68.7, l upperarm=65.9, pelvis=60.6
+[ragdiag 21:36:16] TestChar: f  23 t= 0.38s pelvis=(  906.43,  991.19) v=(    56.1,     4.9) w= -0.19 speed=   56.9 anchor= 0.695px rel=0.7527rad contacts=19 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: l thigh=56.9, pelvis=56.3, r thigh=56.0, r forearm=55.9, l upperarm=52.5, neck=51.9
+[ragdiag 21:36:16] TestChar: f  24 t= 0.40s pelvis=(  907.40,  991.30) v=(    59.1,    10.4) w= -0.53 speed=   63.1 anchor= 0.616px rel=0.7524rad contacts=19 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=63.1, l thigh=60.9, r thigh=60.7, pelvis=60.0, l upperarm=50.7, l forearm=49.6
+[ragdiag 21:36:16] TestChar: f  25 t= 0.42s pelvis=(  908.39,  991.50) v=(    59.7,    13.2) w= -0.54 speed=   74.0 anchor= 0.426px rel=0.7522rad contacts=18 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=74.0, r thigh=62.4, l thigh=61.6, pelvis=61.2, l forearm=51.2, l upperarm=50.4
+[ragdiag 21:36:16] TestChar: f  26 t= 0.43s pelvis=(  909.39,  991.72) v=(    61.0,    13.5) w= -0.43 speed=   86.2 anchor= 0.258px rel=0.7520rad contacts=18 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=86.2, r thigh=63.4, l thigh=62.6, pelvis=62.4, l forearm=53.7, l upperarm=52.6
+[ragdiag 21:36:16] TestChar: f  27 t= 0.45s pelvis=(  910.42,  991.95) v=(    63.0,    13.6) w= -0.34 speed=   75.0 anchor= 0.180px rel=0.7518rad contacts=18 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=75.0, r thigh=65.1, pelvis=64.5, l thigh=64.4, l forearm=57.2, r upperarm=56.3
+[ragdiag 21:36:16] TestChar: f  28 t= 0.47s pelvis=(  911.49,  992.18) v=(    65.8,    14.3) w= -0.27 speed=   76.8 anchor= 0.139px rel=0.7516rad contacts=19 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=76.8, r thigh=67.8, pelvis=67.3, l thigh=67.2, l forearm=61.4, r upperarm=60.9
+[ragdiag 21:36:16] TestChar: f  29 t= 0.48s pelvis=(  912.61,  992.43) v=(    69.2,    15.3) w= -0.21 speed=   79.8 anchor= 0.108px rel=0.7607rad contacts=20 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=79.8, r thigh=71.3, pelvis=70.9, l thigh=70.7, l forearm=65.9, r upperarm=65.7
+[ragdiag 21:36:16] TestChar: f  30 t= 0.50s pelvis=(  913.78,  992.69) v=(    71.0,    16.7) w= -0.17 speed=   82.0 anchor= 0.087px rel=0.7941rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=82.0, r thigh=73.1, pelvis=72.9, l thigh=72.9, l forearm=70.1, r upperarm=68.9
+[ragdiag 21:36:16] TestChar: f  31 t= 0.52s pelvis=(  915.00,  993.01) v=(    75.3,    22.1) w= -0.36 speed=   84.0 anchor= 0.070px rel=0.8276rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=84.0, r thigh=79.7, pelvis=78.5, l thigh=77.8, l forearm=73.0, r upperarm=69.9
+[ragdiag 21:36:16] TestChar: f  32 t= 0.53s pelvis=(  916.28,  993.41) v=(    79.7,    27.1) w= -0.49 speed=   86.6 anchor= 0.058px rel=0.8611rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=86.6, r thigh=86.4, pelvis=84.1, l thigh=82.9, l forearm=76.3, r upperarm=72.3
+[ragdiag 21:36:16] TestChar: f  33 t= 0.55s pelvis=(  917.63,  993.82) v=(    83.6,    26.1) w= -0.28 speed=   91.7 anchor= 0.074px rel=0.8940rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=91.7, r thigh=88.7, pelvis=87.5, l thigh=86.7, l forearm=82.5, r upperarm=80.8
+[ragdiag 21:36:16] TestChar: f  34 t= 0.57s pelvis=(  919.06,  994.27) v=(    88.6,    27.0) w= -0.25 speed=   95.8 anchor= 0.080px rel=0.9261rad contacts=22 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r forearm=95.8, r thigh=93.5, pelvis=92.6, l thigh=91.9, l forearm=87.6, r upperarm=86.4
+[ragdiag 21:36:16] TestChar: f  34 speed=  100.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  35 t= 0.58s pelvis=(  920.57,  994.75) v=(    93.6,    32.0) w= -0.30 speed=  100.4 anchor= 0.101px rel=0.9581rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r thigh=100.4, r forearm=99.2, pelvis=99.0, l thigh=97.9, l forearm=92.4, r upperarm=91.7
+[ragdiag 21:36:16] TestChar: f  36 t= 0.60s pelvis=(  922.16,  995.30) v=(    98.1,    35.0) w= -0.30 speed=  105.6 anchor= 0.095px rel=0.9901rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r thigh=105.6, pelvis=104.1, l thigh=103.0, r forearm=102.6, l forearm=97.4, r upperarm=97.0
+[ragdiag 21:36:16] TestChar: f  37 t= 0.62s pelvis=(  923.83,  995.91) v=(   102.2,    38.3) w= -0.31 speed=  110.7 anchor= 0.068px rel=1.0222rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r thigh=110.7, pelvis=109.1, l thigh=107.8, r forearm=105.7, l forearm=102.1, r upperarm=101.8
+[ragdiag 21:36:16] TestChar: f  38 t= 0.63s pelvis=(  925.56,  996.57) v=(   105.9,    41.2) w= -0.28 speed=  115.2 anchor= 0.048px rel=1.0546rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r thigh=115.2, pelvis=113.6, l thigh=112.3, r forearm=108.8, l forearm=107.2, r upperarm=107.0
+[ragdiag 21:36:16] TestChar: f  39 t= 0.65s pelvis=(  927.35,  997.27) v=(   109.3,    43.5) w= -0.21 speed=  118.9 anchor= 0.032px rel=1.0871rad contacts=21 self_mutes=6
+[ragdiag 21:36:16] TestChar:         limbs over 40 px/s: r thigh=118.9, pelvis=117.7, l thigh=116.6, l forearm=112.8, r upperarm=112.6, r forearm=112.0
+[ragdiag 21:36:16] TestChar: f  41 speed=  156.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  45 speed=  214.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  48 speed=  265.5 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  50 speed=  310.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  52 speed=  357.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  54 speed=  315.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  55 speed=  293.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  56 speed=  303.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  60 speed=  359.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  63 speed=  401.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  64 speed=  375.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  65 speed=  343.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  66 speed=  140.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  68 speed=   98.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:16] TestChar: f  70 speed=   31.3 (rest needs <  40.0)  contact=True   rest= 0.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  71 speed=   29.7 (rest needs <  40.0)  contact=True   rest= 0.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  72 speed=   27.6 (rest needs <  40.0)  contact=True   rest= 0.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  73 speed=   28.3 (rest needs <  40.0)  contact=True   rest= 0.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  74 speed=   34.7 (rest needs <  40.0)  contact=True   rest= 0.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  75 speed=   31.7 (rest needs <  40.0)  contact=True   rest= 0.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  76 speed=   36.0 (rest needs <  40.0)  contact=True   rest= 0.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  77 speed=   32.0 (rest needs <  40.0)  contact=True   rest= 0.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  78 speed=   35.8 (rest needs <  40.0)  contact=True   rest= 0.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  79 speed=   31.5 (rest needs <  40.0)  contact=True   rest= 0.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  80 speed=   35.1 (rest needs <  40.0)  contact=True   rest= 0.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  81 speed=   31.4 (rest needs <  40.0)  contact=True   rest= 0.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  82 speed=   30.0 (rest needs <  40.0)  contact=True   rest= 0.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  83 speed=   28.8 (rest needs <  40.0)  contact=True   rest= 0.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  84 speed=   26.7 (rest needs <  40.0)  contact=True   rest= 0.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  85 speed=   25.5 (rest needs <  40.0)  contact=True   rest= 0.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  86 speed=   24.6 (rest needs <  40.0)  contact=True   rest= 0.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  87 speed=   23.0 (rest needs <  40.0)  contact=True   rest= 0.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  88 speed=   23.4 (rest needs <  40.0)  contact=True   rest= 0.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  89 speed=   23.1 (rest needs <  40.0)  contact=True   rest= 0.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  90 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 0.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  91 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 0.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  92 speed=   11.0 (rest needs <  40.0)  contact=True   rest= 0.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  93 speed=   15.6 (rest needs <  40.0)  contact=True   rest= 0.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  94 speed=   16.4 (rest needs <  40.0)  contact=True   rest= 0.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  95 speed=   18.9 (rest needs <  40.0)  contact=True   rest= 0.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  96 speed=   16.6 (rest needs <  40.0)  contact=True   rest= 0.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  97 speed=   18.5 (rest needs <  40.0)  contact=True   rest= 0.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  98 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 0.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f  99 speed=   19.7 (rest needs <  40.0)  contact=True   rest= 0.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 100 speed=   17.0 (rest needs <  40.0)  contact=True   rest= 0.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 101 speed=   18.0 (rest needs <  40.0)  contact=True   rest= 0.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 102 speed=   14.4 (rest needs <  40.0)  contact=True   rest= 0.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 103 speed=   16.3 (rest needs <  40.0)  contact=True   rest= 0.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 104 speed=   17.6 (rest needs <  40.0)  contact=True   rest= 0.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 105 speed=   18.5 (rest needs <  40.0)  contact=True   rest= 0.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 106 speed=   17.7 (rest needs <  40.0)  contact=True   rest= 0.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 107 speed=   18.3 (rest needs <  40.0)  contact=True   rest= 0.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 108 speed=   15.9 (rest needs <  40.0)  contact=True   rest= 0.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 109 speed=   14.0 (rest needs <  40.0)  contact=True   rest= 0.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 110 speed=   20.2 (rest needs <  40.0)  contact=True   rest= 0.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 111 speed=   16.7 (rest needs <  40.0)  contact=True   rest= 0.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 112 speed=   16.4 (rest needs <  40.0)  contact=True   rest= 0.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 113 speed=   18.0 (rest needs <  40.0)  contact=True   rest= 0.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 114 speed=   14.6 (rest needs <  40.0)  contact=True   rest= 0.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 115 speed=   17.8 (rest needs <  40.0)  contact=True   rest= 0.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 116 speed=   24.2 (rest needs <  40.0)  contact=True   rest= 0.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 117 speed=   15.5 (rest needs <  40.0)  contact=True   rest= 0.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 118 speed=   19.7 (rest needs <  40.0)  contact=True   rest= 0.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 119 speed=   19.2 (rest needs <  40.0)  contact=True   rest= 0.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 120 speed=   13.8 (rest needs <  40.0)  contact=True   rest= 0.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 121 speed=   17.1 (rest needs <  40.0)  contact=True   rest= 0.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 122 speed=   14.6 (rest needs <  40.0)  contact=True   rest= 0.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 123 speed=   16.9 (rest needs <  40.0)  contact=True   rest= 0.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 124 speed=   17.9 (rest needs <  40.0)  contact=True   rest= 0.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 125 speed=   17.7 (rest needs <  40.0)  contact=True   rest= 0.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 126 speed=   18.8 (rest needs <  40.0)  contact=True   rest= 0.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 127 speed=   16.1 (rest needs <  40.0)  contact=True   rest= 0.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 128 speed=   17.6 (rest needs <  40.0)  contact=True   rest= 0.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 129 speed=   24.4 (rest needs <  40.0)  contact=True   rest= 1.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 130 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 1.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 131 speed=   25.8 (rest needs <  40.0)  contact=True   rest= 1.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 132 speed=   20.7 (rest needs <  40.0)  contact=True   rest= 1.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 133 speed=   17.3 (rest needs <  40.0)  contact=True   rest= 1.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 134 speed=   19.2 (rest needs <  40.0)  contact=True   rest= 1.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 135 speed=   21.5 (rest needs <  40.0)  contact=True   rest= 1.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 136 speed=   19.9 (rest needs <  40.0)  contact=True   rest= 1.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 137 speed=   18.0 (rest needs <  40.0)  contact=True   rest= 1.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 138 speed=   19.1 (rest needs <  40.0)  contact=True   rest= 1.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 139 speed=   24.9 (rest needs <  40.0)  contact=True   rest= 1.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 140 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 1.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 141 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 1.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 142 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 1.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 143 speed=   22.9 (rest needs <  40.0)  contact=True   rest= 1.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 144 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 1.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 145 speed=   23.3 (rest needs <  40.0)  contact=True   rest= 1.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 146 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 1.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 147 speed=   23.2 (rest needs <  40.0)  contact=True   rest= 1.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 148 speed=   26.3 (rest needs <  40.0)  contact=True   rest= 1.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 149 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 1.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 150 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 1.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 151 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 1.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 152 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 1.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 153 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 1.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 154 speed=   23.0 (rest needs <  40.0)  contact=True   rest= 1.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 155 speed=   26.1 (rest needs <  40.0)  contact=True   rest= 1.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 156 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 1.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 157 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 1.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 158 speed=   21.7 (rest needs <  40.0)  contact=True   rest= 1.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 159 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 1.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 160 speed=   20.9 (rest needs <  40.0)  contact=True   rest= 1.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 161 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 1.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 162 speed=   25.6 (rest needs <  40.0)  contact=True   rest= 1.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 163 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 1.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 164 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 1.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 165 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 1.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 166 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 1.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 167 speed=   25.6 (rest needs <  40.0)  contact=True   rest= 1.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 168 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 1.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 169 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 1.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 170 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 1.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 171 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 1.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 172 speed=   25.7 (rest needs <  40.0)  contact=True   rest= 1.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 173 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 1.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 174 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 1.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 175 speed=   21.2 (rest needs <  40.0)  contact=True   rest= 1.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 176 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 1.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 177 speed=   25.7 (rest needs <  40.0)  contact=True   rest= 1.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 178 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 1.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 179 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 1.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 180 speed=   21.3 (rest needs <  40.0)  contact=True   rest= 1.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 181 speed=   22.6 (rest needs <  40.0)  contact=True   rest= 1.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 182 speed=   25.8 (rest needs <  40.0)  contact=True   rest= 1.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 183 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 1.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 184 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 1.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 185 speed=   21.3 (rest needs <  40.0)  contact=True   rest= 1.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 186 speed=   22.6 (rest needs <  40.0)  contact=True   rest= 1.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 187 speed=   25.8 (rest needs <  40.0)  contact=True   rest= 1.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 188 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 1.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 189 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 2.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 190 speed=   24.8 (rest needs <  40.0)  contact=True   rest= 2.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 191 speed=   21.4 (rest needs <  40.0)  contact=True   rest= 2.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 192 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 193 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 2.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 194 speed=   22.6 (rest needs <  40.0)  contact=True   rest= 2.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 195 speed=   25.7 (rest needs <  40.0)  contact=True   rest= 2.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 196 speed=   21.7 (rest needs <  40.0)  contact=True   rest= 2.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 197 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 198 speed=   20.6 (rest needs <  40.0)  contact=True   rest= 2.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 199 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 200 speed=   25.3 (rest needs <  40.0)  contact=True   rest= 2.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 201 speed=   21.7 (rest needs <  40.0)  contact=True   rest= 2.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 202 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 2.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 203 speed=   20.9 (rest needs <  40.0)  contact=True   rest= 2.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 204 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 2.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 205 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 206 speed=   21.3 (rest needs <  40.0)  contact=True   rest= 2.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 207 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 208 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 209 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 2.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 210 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 2.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 211 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 2.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 212 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 2.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 213 speed=   21.3 (rest needs <  40.0)  contact=True   rest= 2.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 214 speed=   22.6 (rest needs <  40.0)  contact=True   rest= 2.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 215 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 2.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 216 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 2.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 217 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 2.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 218 speed=   20.7 (rest needs <  40.0)  contact=True   rest= 2.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 219 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 2.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 220 speed=   25.4 (rest needs <  40.0)  contact=True   rest= 2.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 221 speed=   21.2 (rest needs <  40.0)  contact=True   rest= 2.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 222 speed=   21.7 (rest needs <  40.0)  contact=True   rest= 2.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 223 speed=   20.3 (rest needs <  40.0)  contact=True   rest= 2.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 224 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 2.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 225 speed=   25.4 (rest needs <  40.0)  contact=True   rest= 2.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 226 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 227 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 2.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:16] TestChar: f 228 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 229 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 230 speed=   20.4 (rest needs <  40.0)  contact=True   rest= 2.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 231 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 2.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 232 speed=   25.4 (rest needs <  40.0)  contact=True   rest= 2.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 233 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 234 speed=   21.5 (rest needs <  40.0)  contact=True   rest= 2.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 235 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 236 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 2.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 237 speed=   20.3 (rest needs <  40.0)  contact=True   rest= 2.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 238 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 239 speed=   25.2 (rest needs <  40.0)  contact=True   rest= 2.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 240 speed=   21.0 (rest needs <  40.0)  contact=True   rest= 2.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 241 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 2.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 242 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 243 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 2.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 244 speed=   20.4 (rest needs <  40.0)  contact=True   rest= 2.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 245 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 2.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 246 speed=   25.8 (rest needs <  40.0)  contact=True   rest= 2.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 247 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 2.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 248 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 2.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 249 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 3.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: GET UP via auto after 3.02s at rest
+[ragdiag 21:36:17] TestChar: f 250 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 3.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 251 speed=   20.6 (rest needs <  40.0)  contact=True   rest= 3.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 252 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 3.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 253 speed=   25.8 (rest needs <  40.0)  contact=True   rest= 3.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 254 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 3.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 255 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 3.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 256 speed=   21.2 (rest needs <  40.0)  contact=True   rest= 3.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 257 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 3.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 258 speed=   20.7 (rest needs <  40.0)  contact=True   rest= 3.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 259 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 3.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 260 speed=   25.9 (rest needs <  40.0)  contact=True   rest= 3.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 261 speed=   21.3 (rest needs <  40.0)  contact=True   rest= 3.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 262 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 3.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 263 speed=   21.4 (rest needs <  40.0)  contact=True   rest= 3.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 264 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 3.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 265 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 3.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 266 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 3.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 267 speed=   26.2 (rest needs <  40.0)  contact=True   rest= 3.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 268 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 3.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 269 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 3.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 270 speed=   21.0 (rest needs <  40.0)  contact=True   rest= 3.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 271 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 3.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 272 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 3.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 273 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 3.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 274 speed=   25.0 (rest needs <  40.0)  contact=True   rest= 3.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 275 speed=   24.1 (rest needs <  40.0)  contact=True   rest= 3.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 276 speed=   26.9 (rest needs <  40.0)  contact=True   rest= 3.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 277 speed=   30.4 (rest needs <  40.0)  contact=True   rest= 3.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 278 speed=   27.3 (rest needs <  40.0)  contact=True   rest= 3.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 279 speed=   29.5 (rest needs <  40.0)  contact=True   rest= 3.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 280 speed=   18.0 (rest needs <  40.0)  contact=True   rest= 3.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 281 speed=   14.9 (rest needs <  40.0)  contact=True   rest= 3.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 282 speed=   14.5 (rest needs <  40.0)  contact=True   rest= 3.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 283 speed=   15.1 (rest needs <  40.0)  contact=True   rest= 3.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 284 speed=   16.4 (rest needs <  40.0)  contact=True   rest= 3.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 285 speed=   18.2 (rest needs <  40.0)  contact=True   rest= 3.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 286 speed=   25.9 (rest needs <  40.0)  contact=True   rest= 3.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 287 speed=   18.4 (rest needs <  40.0)  contact=True   rest= 3.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 288 speed=   21.5 (rest needs <  40.0)  contact=True   rest= 3.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 289 speed=   19.0 (rest needs <  40.0)  contact=True   rest= 3.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 290 speed=   13.9 (rest needs <  40.0)  contact=True   rest= 3.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 291 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 3.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 292 speed=   23.6 (rest needs <  40.0)  contact=True   rest= 3.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 293 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 3.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 294 speed=   18.5 (rest needs <  40.0)  contact=True   rest= 3.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 295 speed=   16.3 (rest needs <  40.0)  contact=True   rest= 3.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 296 speed=   21.0 (rest needs <  40.0)  contact=True   rest= 3.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 297 speed=   20.8 (rest needs <  40.0)  contact=True   rest= 3.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 298 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 3.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 299 speed=   20.9 (rest needs <  40.0)  contact=True   rest= 3.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 300 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 3.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 301 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 3.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 302 speed=   16.3 (rest needs <  40.0)  contact=True   rest= 3.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 303 speed=   16.4 (rest needs <  40.0)  contact=True   rest= 3.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 304 speed=   20.1 (rest needs <  40.0)  contact=True   rest= 3.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 305 speed=   21.0 (rest needs <  40.0)  contact=True   rest= 3.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 306 speed=   20.9 (rest needs <  40.0)  contact=True   rest= 3.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 307 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 3.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 308 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 3.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 309 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 4.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 310 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 4.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 311 speed=   22.6 (rest needs <  40.0)  contact=True   rest= 4.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 312 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 4.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 313 speed=   25.7 (rest needs <  40.0)  contact=True   rest= 4.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 314 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 4.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 315 speed=   22.2 (rest needs <  40.0)  contact=True   rest= 4.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 316 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 4.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 317 speed=   25.5 (rest needs <  40.0)  contact=True   rest= 4.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 318 speed=   21.5 (rest needs <  40.0)  contact=True   rest= 4.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 319 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 4.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 320 speed=   21.7 (rest needs <  40.0)  contact=True   rest= 4.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 321 speed=   21.2 (rest needs <  40.0)  contact=True   rest= 4.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 322 speed=   22.5 (rest needs <  40.0)  contact=True   rest= 4.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 323 speed=   22.1 (rest needs <  40.0)  contact=True   rest= 4.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 324 speed=   21.8 (rest needs <  40.0)  contact=True   rest= 4.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 325 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 4.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 326 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 4.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 327 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 4.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 328 speed=   25.5 (rest needs <  40.0)  contact=True   rest= 4.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 329 speed=   21.6 (rest needs <  40.0)  contact=True   rest= 4.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 330 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 4.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 331 speed=   21.7 (rest needs <  40.0)  contact=True   rest= 4.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 332 speed=   21.2 (rest needs <  40.0)  contact=True   rest= 4.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 333 speed=   22.4 (rest needs <  40.0)  contact=True   rest= 4.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 334 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 4.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 335 speed=   25.5 (rest needs <  40.0)  contact=True   rest= 4.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 336 speed=   20.9 (rest needs <  40.0)  contact=True   rest= 4.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 337 speed=   21.4 (rest needs <  40.0)  contact=True   rest= 4.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 338 speed=   21.1 (rest needs <  40.0)  contact=True   rest= 4.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 339 speed=   22.3 (rest needs <  40.0)  contact=True   rest= 4.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 340 speed=   22.0 (rest needs <  40.0)  contact=True   rest= 4.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 341 speed=   25.5 (rest needs <  40.0)  contact=True   rest= 4.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 342 speed=   21.0 (rest needs <  40.0)  contact=True   rest= 4.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 343 speed=   21.5 (rest needs <  40.0)  contact=True   rest= 4.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 344 speed=   20.4 (rest needs <  40.0)  contact=True   rest= 4.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 345 speed=   21.9 (rest needs <  40.0)  contact=True   rest= 4.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 346 speed=   20.6 (rest needs <  40.0)  contact=True   rest= 4.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 347 speed= 1279.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 348 speed= 1018.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 349 speed= 1278.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 350 speed= 1183.5 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 351 speed= 1091.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 352 speed=  995.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 353 speed=  896.6 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 354 speed=  780.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 355 speed=  801.0 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 357 speed=  942.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 358 speed=  611.6 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 359 speed=  586.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 361 speed=  532.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 362 speed=  582.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 363 speed=  642.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 364 speed=  708.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 365 speed=  773.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 366 speed=  825.6 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 367 speed=  890.2 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 368 speed=  954.5 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 369 speed= 1015.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 370 speed= 1069.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 371 speed= 1118.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 372 speed=  751.9 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 374 speed=  477.4 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 375 speed=  421.7 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 376 speed=  252.8 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 378 speed=  188.3 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 389 speed=   41.1 (rest needs <  40.0)  contact=True   rest= 0.00/3s  auto=True  want_up=False  -> MOVING
+[ragdiag 21:36:17] TestChar: f 390 speed=   26.3 (rest needs <  40.0)  contact=True   rest= 0.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 391 speed=   14.3 (rest needs <  40.0)  contact=True   rest= 0.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 392 speed=   17.8 (rest needs <  40.0)  contact=True   rest= 0.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 393 speed=   21.2 (rest needs <  40.0)  contact=True   rest= 0.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 394 speed=   14.6 (rest needs <  40.0)  contact=True   rest= 0.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 395 speed=    5.2 (rest needs <  40.0)  contact=True   rest= 0.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 396 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 0.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 397 speed=    9.7 (rest needs <  40.0)  contact=True   rest= 0.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 398 speed=    7.7 (rest needs <  40.0)  contact=True   rest= 0.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 399 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 0.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 400 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 0.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 401 speed=    6.6 (rest needs <  40.0)  contact=True   rest= 0.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 402 speed=    7.4 (rest needs <  40.0)  contact=True   rest= 0.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 403 speed=    6.9 (rest needs <  40.0)  contact=True   rest= 0.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 404 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 0.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 405 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 0.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 406 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 0.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 407 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 0.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 408 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 0.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 409 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 0.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 410 speed=    6.9 (rest needs <  40.0)  contact=True   rest= 0.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 411 speed=    6.9 (rest needs <  40.0)  contact=True   rest= 0.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 412 speed=    6.9 (rest needs <  40.0)  contact=True   rest= 0.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 413 speed=    6.8 (rest needs <  40.0)  contact=True   rest= 0.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 414 speed=    6.7 (rest needs <  40.0)  contact=True   rest= 0.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 415 speed=    6.7 (rest needs <  40.0)  contact=True   rest= 0.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 416 speed=    6.6 (rest needs <  40.0)  contact=True   rest= 0.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 417 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 0.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 418 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 0.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 419 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 0.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 420 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 0.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 421 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 0.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 422 speed=    6.0 (rest needs <  40.0)  contact=True   rest= 0.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 423 speed=    5.9 (rest needs <  40.0)  contact=True   rest= 0.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 424 speed=    5.8 (rest needs <  40.0)  contact=True   rest= 0.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 425 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 0.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 426 speed=    5.6 (rest needs <  40.0)  contact=True   rest= 0.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 427 speed=    5.5 (rest needs <  40.0)  contact=True   rest= 0.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 428 speed=    5.4 (rest needs <  40.0)  contact=True   rest= 0.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 429 speed=    5.3 (rest needs <  40.0)  contact=True   rest= 0.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 430 speed=    7.2 (rest needs <  40.0)  contact=True   rest= 0.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 431 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 0.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 432 speed=    5.6 (rest needs <  40.0)  contact=True   rest= 0.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 433 speed=    5.4 (rest needs <  40.0)  contact=True   rest= 0.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 434 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 0.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 435 speed=    7.6 (rest needs <  40.0)  contact=True   rest= 0.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 436 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 0.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 437 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 0.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 438 speed=    6.0 (rest needs <  40.0)  contact=True   rest= 0.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 439 speed=    6.8 (rest needs <  40.0)  contact=True   rest= 0.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 440 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 0.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 441 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 0.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 442 speed=    6.0 (rest needs <  40.0)  contact=True   rest= 0.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 443 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 0.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 444 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 0.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 445 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 0.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 446 speed=    6.8 (rest needs <  40.0)  contact=True   rest= 0.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 447 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 0.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 448 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 0.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 449 speed=    7.8 (rest needs <  40.0)  contact=True   rest= 1.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 450 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 451 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 452 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 453 speed=    6.6 (rest needs <  40.0)  contact=True   rest= 1.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 454 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 455 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 456 speed=    7.8 (rest needs <  40.0)  contact=True   rest= 1.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 457 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 1.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 458 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 459 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 460 speed=    6.6 (rest needs <  40.0)  contact=True   rest= 1.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 461 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 462 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 463 speed=    7.8 (rest needs <  40.0)  contact=True   rest= 1.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 464 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 1.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 465 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 466 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 467 speed=    6.7 (rest needs <  40.0)  contact=True   rest= 1.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 468 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 469 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 470 speed=    7.8 (rest needs <  40.0)  contact=True   rest= 1.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 471 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 1.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 472 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 473 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 474 speed=    6.9 (rest needs <  40.0)  contact=True   rest= 1.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 475 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 476 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 477 speed=    7.8 (rest needs <  40.0)  contact=True   rest= 1.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 478 speed=    6.4 (rest needs <  40.0)  contact=True   rest= 1.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 479 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 480 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 481 speed=    6.8 (rest needs <  40.0)  contact=True   rest= 1.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 482 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 483 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 484 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 1.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 485 speed=    6.5 (rest needs <  40.0)  contact=True   rest= 1.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 486 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 487 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 1.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 488 speed=    7.6 (rest needs <  40.0)  contact=True   rest= 1.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 489 speed=    6.3 (rest needs <  40.0)  contact=True   rest= 1.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 490 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 491 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 1.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 492 speed=    6.6 (rest needs <  40.0)  contact=True   rest= 1.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 493 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 1.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 494 speed=   15.2 (rest needs <  40.0)  contact=True   rest= 1.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 495 speed=    9.5 (rest needs <  40.0)  contact=True   rest= 1.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 496 speed=    8.0 (rest needs <  40.0)  contact=True   rest= 1.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 497 speed=   12.1 (rest needs <  40.0)  contact=True   rest= 1.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 498 speed=    8.4 (rest needs <  40.0)  contact=True   rest= 1.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 499 speed=    8.5 (rest needs <  40.0)  contact=True   rest= 1.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 500 speed=   13.2 (rest needs <  40.0)  contact=True   rest= 1.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 501 speed=    8.1 (rest needs <  40.0)  contact=True   rest= 1.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 502 speed=    8.0 (rest needs <  40.0)  contact=True   rest= 1.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 503 speed=   12.0 (rest needs <  40.0)  contact=True   rest= 1.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 504 speed=    7.0 (rest needs <  40.0)  contact=True   rest= 1.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 505 speed=    6.6 (rest needs <  40.0)  contact=True   rest= 1.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 506 speed=   11.7 (rest needs <  40.0)  contact=True   rest= 1.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 507 speed=   10.6 (rest needs <  40.0)  contact=True   rest= 1.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 508 speed=    6.1 (rest needs <  40.0)  contact=True   rest= 1.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 509 speed=    5.0 (rest needs <  40.0)  contact=True   rest= 2.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 510 speed=    3.6 (rest needs <  40.0)  contact=True   rest= 2.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 511 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 2.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 512 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 2.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 513 speed=    5.0 (rest needs <  40.0)  contact=True   rest= 2.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 514 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 2.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 515 speed=    5.5 (rest needs <  40.0)  contact=True   rest= 2.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 516 speed=    3.2 (rest needs <  40.0)  contact=True   rest= 2.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 517 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 2.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 518 speed=    3.6 (rest needs <  40.0)  contact=True   rest= 2.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 519 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 2.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 520 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 2.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 521 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 2.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 522 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 2.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 523 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 2.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 524 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 525 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 526 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 2.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 527 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 2.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 528 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 2.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 529 speed=    4.1 (rest needs <  40.0)  contact=True   rest= 2.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 530 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 2.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 531 speed=    3.5 (rest needs <  40.0)  contact=True   rest= 2.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 532 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 2.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 533 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 2.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 534 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 535 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 536 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 2.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 537 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 2.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 538 speed=    5.2 (rest needs <  40.0)  contact=True   rest= 2.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 539 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 2.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 540 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 2.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 541 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 2.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 542 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 2.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 543 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 2.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 544 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 2.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 545 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 2.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 546 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 2.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 547 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 548 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 2.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 549 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 2.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 550 speed=    4.1 (rest needs <  40.0)  contact=True   rest= 2.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 551 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 2.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 552 speed=    3.3 (rest needs <  40.0)  contact=True   rest= 2.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 553 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 2.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 554 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 2.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 555 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 556 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 557 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 2.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 558 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 2.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 559 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 2.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 560 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 2.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 561 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 2.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 562 speed=    3.3 (rest needs <  40.0)  contact=True   rest= 2.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 563 speed=    5.8 (rest needs <  40.0)  contact=True   rest= 2.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 564 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 2.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 565 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 2.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 566 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 2.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 567 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 2.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 568 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 2.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 569 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 3.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 570 speed=    2.2 (rest needs <  40.0)  contact=True   rest= 3.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 571 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 3.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 572 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 3.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 573 speed=    5.8 (rest needs <  40.0)  contact=True   rest= 3.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 574 speed=    9.9 (rest needs <  40.0)  contact=True   rest= 3.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 575 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 3.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 576 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 3.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 577 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 3.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 578 speed=    4.6 (rest needs <  40.0)  contact=True   rest= 3.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 579 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 3.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 580 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 3.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 581 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 3.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 582 speed=    4.8 (rest needs <  40.0)  contact=True   rest= 3.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 583 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 3.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 584 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 3.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 585 speed=    3.8 (rest needs <  40.0)  contact=True   rest= 3.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 586 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 3.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 587 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 3.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 588 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 3.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 589 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 3.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 590 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 3.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 591 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 3.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 592 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 3.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 593 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 3.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 594 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 3.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 595 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 3.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 596 speed=    1.8 (rest needs <  40.0)  contact=True   rest= 3.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 597 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 3.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 598 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 3.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 599 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 3.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 600 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 3.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 601 speed=    4.1 (rest needs <  40.0)  contact=True   rest= 3.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 602 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 3.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 603 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 3.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 604 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 3.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 605 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 3.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 606 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 3.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 607 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 3.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 608 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 3.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 609 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 3.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 610 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 3.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 611 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 3.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 612 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 3.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 613 speed=    3.3 (rest needs <  40.0)  contact=True   rest= 3.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 614 speed=    5.8 (rest needs <  40.0)  contact=True   rest= 3.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 615 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 3.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 616 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 3.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 617 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 3.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 618 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 3.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 619 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 3.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 620 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 3.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 621 speed=    2.2 (rest needs <  40.0)  contact=True   rest= 3.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 622 speed=    5.9 (rest needs <  40.0)  contact=True   rest= 3.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 623 speed=    2.6 (rest needs <  40.0)  contact=True   rest= 3.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 624 speed=    4.1 (rest needs <  40.0)  contact=True   rest= 3.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 625 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 3.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 626 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 3.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 627 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 3.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 628 speed=    4.1 (rest needs <  40.0)  contact=True   rest= 3.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 629 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 630 speed=    4.7 (rest needs <  40.0)  contact=True   rest= 4.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 631 speed=    4.0 (rest needs <  40.0)  contact=True   rest= 4.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 632 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 4.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 633 speed=    5.6 (rest needs <  40.0)  contact=True   rest= 4.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 634 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 4.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 635 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 4.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 636 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 4.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 637 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 4.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 638 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 4.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 639 speed=    3.2 (rest needs <  40.0)  contact=True   rest= 4.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 640 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 4.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 641 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 4.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 642 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 4.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 643 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 4.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 644 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 4.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 645 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 4.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 646 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 4.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 647 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 4.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 648 speed=    9.9 (rest needs <  40.0)  contact=True   rest= 4.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 649 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 4.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 650 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 4.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 651 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 4.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 652 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 653 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 4.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 654 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 4.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 655 speed=    2.3 (rest needs <  40.0)  contact=True   rest= 4.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 656 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 4.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 657 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 658 speed=    6.2 (rest needs <  40.0)  contact=True   rest= 4.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 659 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 4.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 660 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 4.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 661 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 662 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 4.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 663 speed=    3.2 (rest needs <  40.0)  contact=True   rest= 4.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 664 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 4.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 665 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 4.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 666 speed=    1.8 (rest needs <  40.0)  contact=True   rest= 4.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 667 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 4.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 668 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 4.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 669 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 4.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 670 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 4.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 671 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 4.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 672 speed=    9.9 (rest needs <  40.0)  contact=True   rest= 4.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 673 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 4.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 674 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 4.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 675 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 4.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 676 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 677 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 4.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 678 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 4.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 679 speed=    2.3 (rest needs <  40.0)  contact=True   rest= 4.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 680 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 4.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 681 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 682 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 4.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 683 speed=    4.7 (rest needs <  40.0)  contact=True   rest= 4.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 684 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 4.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 685 speed=   10.2 (rest needs <  40.0)  contact=True   rest= 4.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 686 speed=    5.6 (rest needs <  40.0)  contact=True   rest= 4.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 687 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 4.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 688 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 4.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 689 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 5.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 690 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 5.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 691 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 5.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 692 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 5.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 693 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 5.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 694 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 5.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 695 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 5.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 696 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 5.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 697 speed=    1.8 (rest needs <  40.0)  contact=True   rest= 5.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 698 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 699 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 5.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 700 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 5.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 701 speed=    5.8 (rest needs <  40.0)  contact=True   rest= 5.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 702 speed=    3.8 (rest needs <  40.0)  contact=True   rest= 5.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 703 speed=    1.8 (rest needs <  40.0)  contact=True   rest= 5.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 704 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 705 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 5.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 706 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 5.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 707 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 5.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 708 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 709 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 710 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 5.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 711 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 5.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 712 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 5.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 713 speed=    9.4 (rest needs <  40.0)  contact=True   rest= 5.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 714 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 5.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 715 speed=    2.6 (rest needs <  40.0)  contact=True   rest= 5.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 716 speed=    3.8 (rest needs <  40.0)  contact=True   rest= 5.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 717 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 5.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 718 speed=    2.6 (rest needs <  40.0)  contact=True   rest= 5.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 719 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 5.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 720 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 5.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 721 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 5.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 722 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 5.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 723 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 5.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 724 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 5.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 725 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 5.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 726 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 5.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 727 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 5.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 728 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 5.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 729 speed=    3.3 (rest needs <  40.0)  contact=True   rest= 5.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 730 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 5.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 731 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 5.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 732 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 733 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 734 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 5.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 735 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 5.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 736 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 5.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 737 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 5.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 738 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 5.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 739 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 5.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 740 speed=    5.0 (rest needs <  40.0)  contact=True   rest= 5.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 741 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 5.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 742 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 5.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 743 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 5.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 744 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 5.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 745 speed=    9.4 (rest needs <  40.0)  contact=True   rest= 5.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 746 speed=    4.0 (rest needs <  40.0)  contact=True   rest= 5.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 747 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 5.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 748 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 5.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 749 speed=    4.4 (rest needs <  40.0)  contact=True   rest= 6.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 750 speed=    4.0 (rest needs <  40.0)  contact=True   rest= 6.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 751 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 6.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 752 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 6.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 753 speed=   10.2 (rest needs <  40.0)  contact=True   rest= 6.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 754 speed=    5.5 (rest needs <  40.0)  contact=True   rest= 6.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 755 speed=    3.2 (rest needs <  40.0)  contact=True   rest= 6.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 756 speed=    2.9 (rest needs <  40.0)  contact=True   rest= 6.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 757 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 6.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 758 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 6.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 759 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 6.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 760 speed=    3.2 (rest needs <  40.0)  contact=True   rest= 6.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 761 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 6.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 762 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 6.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 763 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 6.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 764 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 6.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 765 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 6.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 766 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 6.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 767 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 6.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 768 speed=    1.9 (rest needs <  40.0)  contact=True   rest= 6.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 769 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 6.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 770 speed=    3.3 (rest needs <  40.0)  contact=True   rest= 6.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 771 speed=    5.8 (rest needs <  40.0)  contact=True   rest= 6.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 772 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 6.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 773 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 6.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 774 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 6.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 775 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 6.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 776 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 6.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 777 speed=   10.2 (rest needs <  40.0)  contact=True   rest= 6.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 778 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 6.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 779 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 6.50/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 780 speed=    3.3 (rest needs <  40.0)  contact=True   rest= 6.52/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 781 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 6.53/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 782 speed=    9.9 (rest needs <  40.0)  contact=True   rest= 6.55/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 783 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 6.57/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 784 speed=    2.0 (rest needs <  40.0)  contact=True   rest= 6.58/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 785 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 6.60/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 786 speed=    4.6 (rest needs <  40.0)  contact=True   rest= 6.62/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 787 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 6.63/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 788 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 6.65/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 789 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 6.67/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 790 speed=    4.8 (rest needs <  40.0)  contact=True   rest= 6.68/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 791 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 6.70/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 792 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 6.72/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 793 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 6.73/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 794 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 6.75/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 795 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 6.77/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 796 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 6.78/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 797 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 6.80/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 798 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 6.82/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 799 speed=    3.9 (rest needs <  40.0)  contact=True   rest= 6.83/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 800 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 6.85/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 801 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 6.87/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 802 speed=    3.8 (rest needs <  40.0)  contact=True   rest= 6.88/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 803 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 6.90/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 804 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 6.92/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 805 speed=    2.2 (rest needs <  40.0)  contact=True   rest= 6.93/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 806 speed=    4.8 (rest needs <  40.0)  contact=True   rest= 6.95/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 807 speed=    3.0 (rest needs <  40.0)  contact=True   rest= 6.97/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 808 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 6.98/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 809 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 7.00/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 810 speed=    3.7 (rest needs <  40.0)  contact=True   rest= 7.02/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 811 speed=    9.4 (rest needs <  40.0)  contact=True   rest= 7.03/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 812 speed=    4.0 (rest needs <  40.0)  contact=True   rest= 7.05/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 813 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 7.07/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 814 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 7.08/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 815 speed=    4.5 (rest needs <  40.0)  contact=True   rest= 7.10/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 816 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 7.12/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 817 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 7.13/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 818 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 7.15/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 819 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 7.17/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 820 speed=    4.4 (rest needs <  40.0)  contact=True   rest= 7.18/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 821 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 7.20/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 822 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 7.22/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 823 speed=    2.2 (rest needs <  40.0)  contact=True   rest= 7.23/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 824 speed=    2.8 (rest needs <  40.0)  contact=True   rest= 7.25/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 825 speed=    3.1 (rest needs <  40.0)  contact=True   rest= 7.27/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 826 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 7.28/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 827 speed=    2.1 (rest needs <  40.0)  contact=True   rest= 7.30/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 828 speed=    3.2 (rest needs <  40.0)  contact=True   rest= 7.32/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 829 speed=    4.2 (rest needs <  40.0)  contact=True   rest= 7.33/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 830 speed=   10.4 (rest needs <  40.0)  contact=True   rest= 7.35/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 831 speed=    2.4 (rest needs <  40.0)  contact=True   rest= 7.37/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 832 speed=    2.7 (rest needs <  40.0)  contact=True   rest= 7.38/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 833 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 7.40/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 834 speed=    4.3 (rest needs <  40.0)  contact=True   rest= 7.42/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 835 speed=   10.3 (rest needs <  40.0)  contact=True   rest= 7.43/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 836 speed=    2.2 (rest needs <  40.0)  contact=True   rest= 7.45/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 837 speed=    4.6 (rest needs <  40.0)  contact=True   rest= 7.47/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 838 speed=    3.4 (rest needs <  40.0)  contact=True   rest= 7.48/3s  auto=True  want_up=False  -> waiting on rest timer
+[ragdiag 21:36:17] TestChar: f 839 speed=    5.7 (rest needs <  40.0)  contact=True   rest= 7.50/3s  auto=True  want_up=False  -> waiting on rest timer
+
+[ragdiag 21:36:17] TestChar: VERDICT after 14.00s  final_speed=    5.7  peak_speed= 1279.8  resting_now=True  rest_at=4.183333333333334  got_up_at=NEVER
+[ragdiag 21:36:17] TestChar:         final anchor=0.148px rel=1.5000rad  judgement=SETTLED
+
+(name=Mutsuki seed=0 expected get-up at 4.2s)

@@ -1,0 +1,64 @@
+{
+  "_note": "One character. File name = the .glb name, lowercased with everything non-alphanumeric removed, so 'Hina (Dress).glb' -> 'hinadress.json'. Loaded on first use, so you only need a file for a character you actually want to change.",
+  "_shape": "states.<tag> is a list, or {event: [lines], '*': [lines]}. Scoped to \"idle\" / \"state_enter\" so a poke is still a poke. A pool here beats the archetype's, which beats states.json.",
+  "archetype": "sleepy",
+  "pronoun": "she",
+  "reactions": {
+    "poke": ["Sensei... was it something? ...No. Never mind. Go back to what you were doing."],
+    "petting": ["...Mmh. Five more seconds, Sensei."],
+    "idle": ["...Sorry. I dozed off for a moment."]
+  },
+  "states": {
+    "site_youtube": {
+      "idle": [
+        "Mmh... is that a video? ...I'll stay awake for this one, Sensei.",
+        "YouTube again? ...Fine. But I'm falling asleep, Sensei. Don't let me.",
+        "...Mmh. Your taste in videos is strange, Sensei. I'll watch anyway."
+      ],
+      "state_enter": [
+        "A video, Sensei? ...Mmh. Put it on something quiet, please.",
+        "YouTube, is it? I'll try to stay awake. No promises, Sensei."
+      ]
+    },
+    "app_blue_archive": {
+      "idle": [
+        "You're playing our game again, Sensei... Don't let me fall asleep in the middle of it.",
+        "Blue Archive, huh... I'll watch from here. Someone has to supervise, Sensei.",
+        "...Mmh. Do I look different in the game? ...Never mind. Ignore me, Sensei."
+      ],
+      "state_enter": [
+        "Blue Archive, Sensei? We made a game about us. ...Is that strange?",
+        "Oh, it's Blue Archive. ...We really are in there, aren't we, Sensei.",
+        "Mmh, Blue Archive again? ...I'll try to keep my eyes open for the cutscenes, Sensei."
+      ]
+    },
+    "user_idle": {
+      "idle": ["Sensei...?"],
+      "state_enter": ["You stopped moving, Sensei. Are you still there?"]
+    },
+    "watching_idle": {
+      "idle": ["...Mmh. I can still watch with my eyes closed, Sensei."]
+    },
+    "battery_low": {
+      "idle": ["Sensei, my... your battery. Charge it. Please."]
+    },
+    "late_night": {
+      "idle": ["It's the middle of the night, Sensei. Why are you still awake?"]
+    }
+  },
+  "chat_topics": {
+    "naps": [
+      ["Have you tried sleeping on a title bar, {other}?", "plain"],
+      ["A nap is just a short meeting with my pillow, {other}.", "reply"],
+      ["Don't tell the others. ...Thank you, {other}.", "warm"]
+    ]
+  },
+  "pair_lines": {
+    "shiroko": {
+      "greeting": [
+        ["Oh, it is you, {other}.", "warm"],
+        ["...Hello, {other}. I was not asleep.", "plain"]
+      ]
+    }
+  }
+}

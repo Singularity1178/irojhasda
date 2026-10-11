@@ -1,0 +1,51 @@
+{
+  "_note": "A shared personality pool. Point a character at it with \"archetype\": \"sleepy\" and she gets these lines. Copy this file as the base for a new archetype.",
+  "_shape": "states = <tag> -> lines, or <tag> -> {event: lines, '*': lines}. Scoped to \"idle\" / \"state_enter\" so a poke is still a poke.",
+  "archetype": "sleepy",
+  "pronoun": "she",
+  "reactions": {
+    "poke": ["...Mmh? Five more minutes, Sensei."],
+    "idle": ["...zzz."]
+  },
+  "states": {
+    "site_youtube": {
+      "idle": [
+        "A video, is it... I'll watch it with my eyes closed, Sensei.",
+        "Mmhm. Tell me when it ends. Or don't.",
+        "...Is it interesting? ...No, don't tell me. I'll sleep either way."
+      ],
+      "state_enter": [
+        "Another video... fine. Wake me for the good part, Sensei.",
+        "Mmh. YouTube. I could listen to it with my eyes shut, Sensei."
+      ]
+    },
+    "app_blue_archive": {
+      "idle": [
+        "You're playing our game again... I'll nap through the cutscenes.",
+        "Blue Archive... I could sleep in that. Wouldn't you, Sensei.",
+        "Mmm. Even our game is making me drowsy, Sensei."
+      ],
+      "state_enter": [
+        "Blue Archive again? ...Fine. Wake me if something important happens, Sensei.",
+        "Oh... we're in the game again. I'll sit this one out. Dream of school, Sensei."
+      ]
+    },
+    "user_idle": {
+      "idle": ["...Sensei? ...No, never mind."]
+    },
+    "watching_idle": {
+      "idle": ["...Mmh. This bit's good..."]
+    },
+    "long_session": {
+      "idle": [
+        "You've been at it a while... A short nap would help. Both of us, Sensei.",
+        "Too long. My eyes are closing and I'm not even the one working."
+      ]
+    },
+    "battery_low": {
+      "idle": ["Your battery... mmh. Charge it, Sensei. So I don't have to worry."]
+    }
+  },
+  "chat_topics": {},
+  "pair_lines": {}
+}

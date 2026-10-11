@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+# Virtual environments (regenerable - recreate with `python -m venv venv`)
+.venv/
+venv/
+.env/
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# Logs / temp
+*.log
+_diag_*.tmp

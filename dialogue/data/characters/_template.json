@@ -1,0 +1,36 @@
+{
+  "_note": "Template only - the loader skips every file whose name starts with '_'. Save a copy as the character's name with the file-name punctuation stripped and lowercased: 'Hoshino.glb' -> hoshino.json, 'Hina (Dress).glb' -> hinadress.json. Loaded on first use, so you only need a file for a character you actually want to change.",
+  "_shape": "reactions = event -> lines. states = <tag> -> lines (or <tag> -> {event: lines, '*': lines}). chat_topics = extra topics only this character starts. pair_lines = <other character> -> {greeting|work|...: [[line, tag], ...]}.",
+  "_events": "'idle' is standing around, 'poke' was clicked, 'petting' was patted. 'state_enter' fires once when the computer state starts (Sensei opened Blue Archive) and 'state_exit' when it stops - the natural place for a line about that specific game or site. Scope pools to an event so a poke is still a poke; a plain list answers EVERY event.",
+  "_placeholders": "{name} and {me} are the speaker, {other} the listener, {pronoun} her pronoun. From the watcher: {app} 'Genshin Impact', {site} 'youtube', {battery} '42%', {time} '14:05', {focus_minutes}, {session_minutes}.",
+  "archetype": "",
+  "pronoun": "she",
+  "reactions": {
+    "poke": ["..."],
+    "petting": ["..."]
+  },
+  "states": {
+    "battery_low": ["Sensei, my... your battery. Charge it. Please."],
+    "late_night": ["It is the middle of the night. Why are you awake?"],
+    "app_blue_archive": {
+      "idle": ["Sensei, you are playing our game again."],
+      "state_enter": ["They made a game about us, Sensei. Is that strange?"]
+    },
+    "site_youtube": {
+      "idle": ["YouTube again, Sensei?"],
+      "state_enter": ["What are we learning today, Sensei?"]
+    }
+  },
+  "chat_topics": {
+    "naps": [
+      ["Have you tried sleeping on a title bar, {other}?", "plain"]
+    ]
+  },
+  "pair_lines": {
+    "shiroko": {
+      "greeting": [
+        ["Oh, it is you, {other}.", "warm"]
+      ]
+    }
+  }
+}

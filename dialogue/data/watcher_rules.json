@@ -1,0 +1,380 @@
+{
+  "_note": "Which app, site or game is in front -> which tags. system_watcher.py reads this file; nothing here is code. Rename an exe and it works, add a game and it works.",
+  "_shape": "apps and sites are lists of rules, checked top to bottom. A rule matches when ANY listed exe matches OR any title_regex matches, subject to exclude_exe / exclude_title_regex. A match adds ALL of its tags - that is how app_genshin and gaming arrive together.",
+  "_flags": "require_title_regex -> the exe alone is not enough, the title must match too (generic hosts like javaw.exe). skip_browser -> do not fire on a browser tab that merely mentions the name. browser_only (sites) -> only match when the foreground exe is a listed browser.",
+  "_emulators": "An emulator's exe alone only says 'an emulator' (tag: emulator). emulator_title_regex promotes it to the real game using the window title, which emulators normally set to the app name. Titles vary by emulator and by language, so check yours with --debug and add a pattern if it does not fire.",
+  "_verify": "Exe names were taken from official installs and community documentation, and are treated as a starting set. If a game does not register, run the app, check what the window is actually called, and add it. 'osu!.exe' and 'Wuthering Waves.exe' are the ones most worth confirming yourself.",
+  "_privacy": "Titles are matched in memory and discarded. Only the rule id, the display name and the tags below ever leave the watcher.",
+
+  "apps": [
+    { "id": "blue_archive", "name": "Blue Archive",
+      "exe": ["BlueArchive.exe", "BlueArchiveLauncher.exe", "BlueArchive_JP.exe",
+              "BlueArchiveJP.exe", "BlueArchiveKR.exe", "bluearchive.exe"],
+      "title_regex": ["blue\\s?archive", "ブルーアーカイブ", "블루 ?아카이브", "碧蓝档案"],
+      "emulator_title_regex": ["blue\\s?archive", "ブルーアーカイブ", "블루 ?아카이브",
+                               "碧蓝档案"],
+      "skip_browser": true,
+      "tags": ["app_blue_archive", "gaming"] },
+
+    { "id": "genshin", "name": "Genshin Impact",
+      "exe": ["GenshinImpact.exe", "YuanShen.exe", "Genshin Impact.exe"],
+      "skip_browser": true,
+      "tags": ["app_genshin", "gaming"] },
+
+    { "id": "star_rail", "name": "Honkai: Star Rail",
+      "exe": ["StarRail.exe"],
+      "title_regex": ["honkai:\\s*star ?rail", "崩坏：?星穹 ?铁道", "崩坏:\\s?星穹 ?铁道"],
+      "skip_browser": true,
+      "tags": ["app_star_rail", "gaming"] },
+
+    { "id": "zzz", "name": "Zenless Zone Zero",
+      "exe": ["ZenlessZoneZero.exe", "ZZZ.exe"],
+      "title_regex": ["zenless ?zone ?zero", "绝区零"],
+      "skip_browser": true,
+      "tags": ["app_zzz", "gaming"] },
+
+    { "id": "wuwa", "name": "Wuthering Waves",
+      "exe": ["WutheringWaves.exe", "Wuthering Waves.exe", "Client-Win64-Shipping.exe"],
+      "require_title_regex": true,
+      "title_regex": ["wuthering ?waves", "鳴潮|鸣潮"],
+      "skip_browser": true,
+      "tags": ["app_wuwa", "gaming"] },
+
+    { "id": "honkai_impact_3", "name": "Honkai Impact 3rd",
+      "exe": ["HonkaiImpact3.exe", "HI3.exe"],
+      "title_regex": ["honkai ?impact ?3"],
+      "skip_browser": true,
+      "tags": ["app_honkai_3", "gaming"] },
+
+    { "id": "arknights", "name": "Arknights",
+      "exe": ["Arknights.exe"],
+      "emulator_title_regex": ["arknights", "明日方舟"],
+      "skip_browser": true,
+      "tags": ["app_arknights", "gaming"] },
+
+    { "id": "fgo", "name": "Fate/Grand Order",
+      "exe": ["fgo.exe", "FateGrandOrder.exe"],
+      "emulator_title_regex": ["fate\\s*/?\\s*grand ?order", "fgo"],
+      "skip_browser": true,
+      "tags": ["app_fgo", "gaming"] },
+
+    { "id": "valorant", "name": "VALORANT",
+      "exe": ["VALORANT-Win64-Shipping.exe"],
+      "title_regex": ["\\bvalorant\\b"],
+      "skip_browser": true,
+      "tags": ["app_valorant", "gaming"] },
+
+    { "id": "league", "name": "League of Legends",
+      "exe": ["LeagueClient.exe", "League of Legends.exe", "LeagueClientUx.exe"],
+      "title_regex": ["league of legends"],
+      "skip_browser": true,
+      "tags": ["app_league", "gaming"] },
+
+    { "id": "minecraft", "name": "Minecraft",
+      "exe": ["javaw.exe", "java.exe"],
+      "require_title_regex": true,
+      "title_regex": ["\\bminecraft\\b"],
+      "skip_browser": true,
+      "tags": ["app_minecraft", "gaming"] },
+
+    { "id": "osu", "name": "osu!",
+      "exe": ["osu!.exe"],
+      "title_regex": ["\\bosu!\\b", "\\bosu!"],
+      "skip_browser": true,
+      "tags": ["app_osu", "gaming", "music"] },
+
+    { "id": "steam", "name": "Steam",
+      "exe": ["steam.exe", "steamwebhelper.exe"],
+      "tags": ["app_steam"] },
+
+    { "id": "epic", "name": "Epic Games",
+      "exe": ["EpicGamesLauncher.exe", "EpicWebHelper.exe"],
+      "tags": ["app_epic"] },
+
+    { "id": "obs", "name": "OBS Studio",
+      "exe": ["obs64.exe", "obs32.exe", "obs.exe"],
+      "skip_browser": true,
+      "tags": ["app_obs", "streaming"] },
+
+    { "id": "vlc", "name": "VLC",
+      "exe": ["vlc.exe"],
+      "skip_browser": true,
+      "tags": ["app_vlc", "video"] },
+
+    { "id": "mpv", "name": "mpv",
+      "exe": ["mpv.exe"],
+      "skip_browser": true,
+      "tags": ["app_mpv", "video"] },
+
+    { "id": "spotify", "name": "Spotify",
+      "exe": ["spotify.exe"],
+      "skip_browser": true,
+      "tags": ["app_spotify", "music"] },
+
+    { "id": "foobar2000", "name": "foobar2000",
+      "exe": ["foobar2000.exe"],
+      "skip_browser": true,
+      "tags": ["app_foobar2000", "music"] },
+
+    { "id": "discord", "name": "Discord",
+      "exe": ["discord.exe"],
+      "skip_browser": true,
+      "tags": ["app_discord"] },
+
+    { "id": "telegram", "name": "Telegram",
+      "exe": ["telegram.exe"],
+      "skip_browser": true,
+      "tags": ["app_telegram"] },
+
+    { "id": "slack", "name": "Slack",
+      "exe": ["slack.exe"],
+      "skip_browser": true,
+      "tags": ["app_slack"] },
+
+    { "id": "zoom", "name": "Zoom",
+      "exe": ["zoom.exe"],
+      "tags": ["app_zoom", "meeting"] },
+
+    { "id": "teams", "name": "Microsoft Teams",
+      "exe": ["ms-teams.exe", "Teams.exe", "MicrosoftTeams.exe"],
+      "tags": ["app_teams", "meeting"] },
+
+    { "id": "code", "name": "VS Code",
+      "exe": ["Code.exe"],
+      "tags": ["coding"] },
+
+    { "id": "pycharm", "name": "PyCharm",
+      "exe": ["pycharm64.exe", "pycharm.exe"],
+      "skip_browser": true,
+      "tags": ["coding"] },
+
+    { "id": "intellij", "name": "IntelliJ IDEA",
+      "exe": ["idea64.exe", "idea.exe"],
+      "skip_browser": true,
+      "tags": ["coding"] },
+
+    { "id": "android_studio", "name": "Android Studio",
+      "exe": ["studio64.exe", "studio.exe"],
+      "skip_browser": true,
+      "tags": ["coding"] },
+
+    { "id": "visual_studio", "name": "Visual Studio",
+      "exe": ["devenv.exe"],
+      "skip_browser": true,
+      "tags": ["coding"] },
+
+    { "id": "terminal", "name": "Terminal",
+      "exe": ["WindowsTerminal.exe", "cmd.exe", "powershell.exe", "pwsh.exe",
+              "conhost.exe", "bash.exe", "git-bash.exe"],
+      "tags": ["coding", "text_editor"] },
+
+    { "id": "notepad", "name": "Notepad",
+      "exe": ["notepad.exe"],
+      "skip_browser": true,
+      "tags": ["text_editor"] },
+
+    { "id": "word", "name": "Word",
+      "exe": ["winword.exe"],
+      "skip_browser": true,
+      "tags": ["office"] },
+
+    { "id": "excel", "name": "Excel",
+      "exe": ["excel.exe"],
+      "skip_browser": true,
+      "tags": ["office"] },
+
+    { "id": "powerpoint", "name": "PowerPoint",
+      "exe": ["powerpnt.exe"],
+      "skip_browser": true,
+      "tags": ["office"] },
+
+    { "id": "photoshop", "name": "Photoshop",
+      "exe": ["photoshop.exe"],
+      "skip_browser": true,
+      "tags": ["creative"] },
+
+    { "id": "clip_studio", "name": "Clip Studio Paint",
+      "exe": ["ClipStudioPaint.exe"],
+      "skip_browser": true,
+      "tags": ["creative"] },
+
+    { "id": "blender", "name": "Blender",
+      "exe": ["blender.exe"],
+      "skip_browser": true,
+      "tags": ["creative"] },
+
+    { "id": "krita", "name": "Krita",
+      "exe": ["krita.exe"],
+      "skip_browser": true,
+      "tags": ["creative"] },
+
+    { "id": "explorer", "name": "File Explorer",
+      "exe": ["explorer.exe"],
+      "exclude_title_regex": ["^Program Manager$", "^Desktop$", "^$"],
+      "tags": ["file_explorer"] },
+
+    { "id": "task_manager", "name": "Task Manager",
+      "exe": ["taskmgr.exe"],
+      "skip_browser": true,
+      "tags": ["task_manager"] },
+
+    { "id": "settings", "name": "Settings",
+      "exe": ["SystemSettings.exe"],
+      "skip_browser": true,
+      "tags": ["system"] },
+
+    { "id": "installer", "name": "Installer",
+      "exe": ["msiexec.exe", "setup.exe"],
+      "title_regex": ["\\bsetup\\b", "\\binstall(er|ing)?\\b"],
+      "tags": ["installer"] },
+
+    { "id": "lock", "name": "Lock screen",
+      "exe": ["LockApp.exe"],
+      "tags": ["locked"] }
+  ],
+
+  "sites": [
+    { "id": "youtube", "name": "YouTube", "browser_only": true,
+      "title_regex": ["\\byoutube\\b(?!\\s*music)"],
+      "tags": ["site_youtube", "video"] },
+
+    { "id": "youtube_music", "name": "YouTube Music", "browser_only": true,
+      "title_regex": ["\\byoutube\\s*music\\b", "music\\.youtube\\.com"],
+      "tags": ["site_youtube_music", "music"] },
+
+    { "id": "twitch", "name": "Twitch", "browser_only": true,
+      "title_regex": ["\\btwitch\\b"],
+      "tags": ["site_twitch", "streaming"] },
+
+    { "id": "netflix", "name": "Netflix", "browser_only": true,
+      "title_regex": ["\\bnetflix\\b"],
+      "tags": ["site_netflix", "video"] },
+
+    { "id": "bilibili", "name": "Bilibili", "browser_only": true,
+      "title_regex": ["\\bbilibili\\b", "bilibili\\.com"],
+      "tags": ["site_bilibili", "video"] },
+
+    { "id": "crunchyroll", "name": "Crunchyroll", "browser_only": true,
+      "title_regex": ["\\bcrunchyroll\\b"],
+      "tags": ["site_crunchyroll", "video"] },
+
+    { "id": "disney_plus", "name": "Disney+", "browser_only": true,
+      "title_regex": ["\\bdisney\\s*plus\\b"],
+      "tags": ["site_disney_plus", "video"] },
+
+    { "id": "niconico", "name": "niconico", "browser_only": true,
+      "title_regex": ["\\bniconico\\b", "\\bnicovideo\\b", "\\bニコニコ動画\\b"],
+      "tags": ["site_niconico", "video"] },
+
+    { "id": "twitter", "name": "Twitter / X", "browser_only": true,
+      "title_regex": ["\\btwitter\\b", "\\bx\\.com\\b"],
+      "tags": ["site_twitter"] },
+
+    { "id": "reddit", "name": "Reddit", "browser_only": true,
+      "title_regex": ["\\breddit\\b"],
+      "tags": ["site_reddit"] },
+
+    { "id": "facebook", "name": "Facebook", "browser_only": true,
+      "title_regex": ["\\bfacebook\\b"],
+      "tags": ["site_facebook"] },
+
+    { "id": "discord_web", "name": "Discord", "browser_only": true,
+      "title_regex": ["\\bdiscord(app)?\\b", "discord\\.com"],
+      "tags": ["site_discord"] },
+
+    { "id": "github", "name": "GitHub", "browser_only": true,
+      "title_regex": ["\\bgithub\\b"],
+      "tags": ["site_github", "coding"] },
+
+    { "id": "stackoverflow", "name": "Stack Overflow", "browser_only": true,
+      "title_regex": ["\\bstack\\s*overflow\\b", "stackoverflow\\.com"],
+      "tags": ["site_stackoverflow", "coding"] },
+
+    { "id": "notion", "name": "Notion", "browser_only": true,
+      "title_regex": ["\\bnotion\\b"],
+      "tags": ["site_notion"] },
+
+    { "id": "google_docs", "name": "Google Docs", "browser_only": true,
+      "title_regex": ["\\bgoogle\\s*docs\\b", "docs\\.google\\.com"],
+      "tags": ["site_google_docs", "office"] },
+
+    { "id": "google_sheets", "name": "Google Sheets", "browser_only": true,
+      "title_regex": ["\\bgoogle\\s*sheets\\b", "sheets\\.google\\.com"],
+      "tags": ["site_google_sheets", "office"] },
+
+    { "id": "google_slides", "name": "Google Slides", "browser_only": true,
+      "title_regex": ["\\bgoogle\\s*slides\\b", "slides\\.google\\.com"],
+      "tags": ["site_google_slides", "office"] },
+
+    { "id": "chatgpt", "name": "ChatGPT", "browser_only": true,
+      "title_regex": ["\\bchatgpt\\b", "chat\\.openai\\.com"],
+      "tags": ["site_chatgpt", "ai_chat"] },
+
+    { "id": "claude", "name": "Claude", "browser_only": true,
+      "title_regex": ["\\bclaude\\b"],
+      "tags": ["site_claude", "ai_chat"] },
+
+    { "id": "gemini", "name": "Gemini", "browser_only": true,
+      "title_regex": ["\\bgemini\\b"],
+      "tags": ["site_gemini", "ai_chat"] },
+
+    { "id": "meet", "name": "Google Meet", "browser_only": true,
+      "title_regex": ["\\bgoogle ?meet\\b", "meet\\.google\\.com"],
+      "tags": ["site_meet", "meeting"] },
+
+    { "id": "pixiv", "name": "Pixiv", "browser_only": true,
+      "title_regex": ["\\bpixiv\\b", "pixiv\\.net"],
+      "tags": ["site_pixiv", "art_browsing"] },
+
+    { "id": "art_gallery", "name": "Art gallery", "browser_only": true,
+      "title_regex": ["\\bdanbooru\\b", "\\bgelbooru\\b", "\\bsankaku\\b",
+                      "\\btagtog\\b"],
+      "tags": ["art_browsing"] }
+  ],
+
+  "custom_apps": [],
+
+  "browsers": ["chrome.exe", "msedge.exe", "msedgewebview2.exe", "firefox.exe",
+               "librewolf.exe", "brave.exe", "opera.exe", "opera_gx.exe",
+               "vivaldi.exe", "arc.exe", "thorium.exe", "yandex.exe",
+               "zen.exe"],
+
+  "emulators": ["hd-player.exe", "dnplayer.exe", "mumuplayer.exe",
+                "nemuplayer.exe", "nox.exe", "memu.exe", "memuplayer.exe",
+                "googleplaygames.exe", "bluestacks.exe"],
+
+  "fullscreen_ignore_exe": ["explorer.exe", "searchhost.exe",
+                            "shellexperiencehost.exe", "lockapp.exe",
+                            "startmenuexplorer.exe", "searchui.exe"],
+
+  "disabled_tags": [],
+  "enabled_categories": [],
+
+  "thresholds": {
+    "interval": 3.0,
+    "idle_after": 90.0,
+    "break_after": 600.0,
+    "back_long_after": 1800.0,
+    "session_gap": 300.0,
+    "focus_gap": 120.0,
+    "battery_low": 25.0,
+    "battery_low_clear": 28.0,
+    "battery_critical": 12.0,
+    "battery_critical_clear": 15.0,
+    "battery_full": 98.0,
+    "cpu_high": 85.0,
+    "cpu_high_clear": 70.0,
+    "cpu_high_samples": 3,
+    "memory_high": 88.0,
+    "memory_high_clear": 75.0,
+    "memory_high_samples": 3,
+    "disk_low": 10.0,
+    "high_uptime": 259200.0,
+    "debounce_polls": 2,
+    "app_switch_window": 60.0,
+    "app_switch_max": 8,
+    "screen_off_polls": 3,
+    "fullscreen_tolerance": 4.0,
+    "self_exe": []
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "_note": "Default dialogue. Every character falls back to this file when no character / archetype file has a line for the event. Edit freely, no code changes needed.",
+  "_reactions": "event name -> list of lines. Events used by multi_single_screen_pet_ba.py: poke petting idle hover drag land lost jump cutin summon perch tactical tactical_first launch. Placeholders: {name} the speaker, {me} the speaker, {other} the listener, {pronoun} the speaker's pronoun.",
+  "reactions": {
+    "poke": [
+      "Hm? Did you need something, Sensei?",
+      "Ow... that's a little rude, you know.",
+      "Please don't poke me. I'm trying to rest.",
+      "Sensei, shouldn't you be working?",
+      "...What? Is there something on my face?",
+      "Fine, fine. I'm paying attention.",
+      "If you're bored, I can keep you company. A little.",
+      "{name}: reporting minor injury.",
+      "Hey! Personal space, Sensei!",
+      "...You again? Fine, I'm listening."
+    ],
+    "petting": [
+      "...Sensei? Why are you patting my head?",
+      "H-hey... you're messing up my hair.",
+      "...It's not bad. Don't tell anyone I said that.",
+      "Mmh... just a little longer, okay?",
+      "Careful, {name} doesn't do this for just anyone.",
+      "...Keep it up and I'll start charging rent."
+    ],
+    "idle": [
+      "...",
+      "Is it time to go home yet?",
+      "Sensei, you've been staring at that screen for a while.",
+      "I'll keep watch. Quietly. From right here.",
+      "Hm... I could use a nap.",
+      "Don't forget to drink some water, Sensei.",
+      "{name} is on standby.",
+      "Still here. Still watching. Nothing much has happened.",
+      "Do you want me to do something? I can walk, you know."
+    ],
+    "hover": [
+      "Sensei... you're staring.",
+      "Is something wrong with me?",
+      "Do you need something? You've been hovering for a while.",
+      "{name} sees you hovering.",
+      "Am I... on fire? Never mind."
+    ],
+    "drag": [
+      "W-wait, put me down!",
+      "Eh?! Where are we going?",
+      "Hey! I can walk by myself!",
+      "Sensei, this is undignified.",
+      "{name} can walk! Let me down, Sensei!",
+      "Where are we taking {name}, Sensei?!"
+    ],
+    "land": [
+      "Ow... a little warning next time.",
+      "...Landing: acceptable.",
+      "That was rough, Sensei.",
+      "{name} has filed a complaint about gravity.",
+      "My knees. My everything."
+    ],
+    "lost": [
+      "Whoa- the window moved!",
+      "Eh? The floor disappeared!",
+      "Sensei, the window went away!",
+      "{name} lost her perch. Again."
+    ],
+    "jump": [
+      "Up we go.",
+      "Found a nice spot.",
+      "A better vantage point.",
+      "{name} is ascending.",
+      "Hup! ...That was higher than expected."
+    ],
+    "cutin": [
+      "Alright. I'll take this seriously - just this once.",
+      "This is a one-time thing, {name} is serious now.",
+      "Don't blink, Sensei. {name} is going all out."
+    ],
+    "summon": [
+      "You called, Sensei?",
+      "Reporting for duty.",
+      "{name} is here.",
+      "You summoned me?"
+    ],
+    "perch": [
+      "A good vantage point.",
+      "From up here I can see everything.",
+      "{name} has the high ground."
+    ],
+    "tactical": [
+      "Tactical start. ...Let's get this over with."
+    ],
+    "tactical_first": [
+      "{name}, reporting in. ...Do I really have to work, Sensei?"
+    ],
+    "launch": [
+      "Eeeh?! Sensei!?"
+    ]
+  },
+  "chat_topics": {
+    "greeting": [
+      ["Oh, hello {other}. Didn't expect to see you here.", "plain"],
+      ["Hi {me}. Busy as always?", "warm"],
+      ["You're never far away, are you.", "reply"],
+      ["Somewhere to be, {other}?", "plain"]
+    ],
+    "work": [
+      ["Are you getting all this done today, {other}?", "plain"],
+      ["Enough for today. Probably.", "reply"],
+      ["I can help if you get stuck.", "warm"],
+      ["Then take a break. Both of us.", "plain"],
+      ["You always say that and then work anyway.", "reply"]
+    ],
+    "food": [
+      ["I'm starving, {other}. When do we eat?", "plain"],
+      ["Soon. Go be useful first.", "reply"],
+      ["I'll save you something.", "warm"],
+      ["That's the first sensible thing today.", "reply"]
+    ],
+    "weather": [
+      ["Lovely weather, isn't it, {other}?", "plain"],
+      ["Suspiciously nice. It won't last.", "reply"],
+      ["Good day to be standing on a title bar.", "warm"],
+      ["{other}, it's going to rain later.", "plain"]
+    ],
+    "gossip": [
+      ["Heard something, {other}.", "plain"],
+      ["Don't tell me.", "reply"],
+      ["You were already going to.", "warm"],
+      ["I already knew. Of course I did.", "reply"]
+    ],
+    "compliment": [
+      ["You handled that well, {other}.", "plain"],
+      ["It was nothing.", "warm"],
+      ["I'm not sure I agree, but thank you.", "reply"],
+      ["Say it again and I'll believe you.", "warm"]
+    ],
+    "rest": [
+      ["Long day, {other}?", "plain"],
+      ["Longest one yet.", "reply"],
+      ["Sit down for a minute. Please.", "warm"],
+      ["Sitting down is for other people.", "reply"]
+    ],
+    "weather2": [
+      ["The light looks nice on you today, {other}.", "plain"],
+      ["...Hm? Oh. Thank you.", "warm"],
+      ["Don't make it weird.", "reply"],
+      ["Too late. It's already weird.", "reply"]
+    ]
+  },
+  "topic_labels": {
+    "greeting": "greeting each other",
+    "work": "comparing workloads",
+    "food": "talking about food",
+    "weather": "discussing the weather",
+    "gossip": "sharing gossip",
+    "compliment": "complimenting each other",
+    "rest": "taking a break together",
+    "weather2": "being awkward"
+  },
+  "audience_lines": {
+    "poke": [
+      "That's enough, {other}. Sensei.",
+      "{other}, stop. You'll get us both in trouble.",
+      "Hm? Am I interrupting something?",
+      "Sensei, be gentler with {other}.",
+      "Don't pick on {other}, Sensei.",
+      "I saw that, {other}."
+    ],
+    "petting": [
+      "{other}, your hair's a mess now.",
+      "Hm? Are you getting that too, {other}?",
+      "I want one as well. Don't tell anyone.",
+      "Sensei, you always pick {other}."
+    ],
+    "drag": [
+      "Careful with {other}, Sensei.",
+      "She's not a parcel, you know.",
+      "Put {other} down gently...",
+      "{other} doesn't look happy about that."
+    ]
+  }
+}

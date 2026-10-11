@@ -1,0 +1,21 @@
+{
+  "_note": "Template only - the loader skips every file whose name starts with '_'. Copy it to e.g. sleepy.json and set \"archetype\": \"sleepy\" in a character file to use it. An archetype is a shared personality pool: several characters can point at the same one.",
+  "_shape": "reactions = event -> lines. states = <tag> -> lines (or <tag> -> {event: lines, '*': lines}). chat_topics and pair_lines are merged into the shared topics; a character or pair file wins.",
+  "_events": "'idle' is standing around. 'state_enter' / 'state_exit' fire once when the computer state starts or stops - the right place for a line about a specific game or site, phrased in this personality. A plain list answers EVERY event, so scope it.",
+  "_placeholders": "{name} and {me} are the speaker, {other} the listener, {pronoun} her pronoun. From the watcher: {app} 'Genshin Impact', {site} 'youtube', {battery} '42%', {time} '14:05', {focus_minutes}, {session_minutes}.",
+  "archetype": "",
+  "pronoun": "she",
+  "reactions": {},
+  "states": {
+    "site_youtube": {
+      "idle": ["..."],
+      "state_enter": ["..."]
+    },
+    "app_blue_archive": {
+      "idle": ["..."],
+      "state_enter": ["..."]
+    }
+  },
+  "chat_topics": {},
+  "pair_lines": {}
+}

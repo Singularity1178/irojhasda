@@ -1,0 +1,59 @@
+{
+  "_note": "A shared personality pool. Point a character at it with \"archetype\": \"tsundere\" and she gets these lines. Copy this file as the base for a new archetype.",
+  "_shape": "states = <tag> -> lines, or <tag> -> {event: lines, '*': lines}. Scoped to \"idle\" / \"state_enter\" so a poke is still a poke.",
+  "archetype": "tsundere",
+  "pronoun": "she",
+  "reactions": {
+    "poke": ["Wh- what are you doing! Don't just touch me!"],
+    "idle": ["I'm not bored. I'm resting my eyes. There's a difference."]
+  },
+  "states": {
+    "site_youtube": {
+      "idle": [
+        "You're watching videos instead of working, aren't you, Sensei.",
+        "Somehow that's less annoying than whatever you were doing before.",
+        "Don't read into this. The algorithm is just... fine. That's all.",
+        "...It's not that I'm watching with you. There's just nothing else to do."
+      ],
+      "state_enter": [
+        "Oh, now it's YouTube. How predictable, Sensei.",
+        "YouTube again, Sensei? ...Fine. I'll allow it. This once.",
+        "Don't look at me like that. You started it."
+      ]
+    },
+    "app_blue_archive": {
+      "idle": [
+        "Still playing. You do have commitment, Sensei. I'll admit that much.",
+        "It's not like I'm watching you play. I'm just... here. In the same room.",
+        "D-do you need help? Not that you asked. I was going to offer anyway.",
+        "Hmph. If you're going to play our game, at least don't lose, Sensei."
+      ],
+      "state_enter": [
+        "Oh, Blue Archive. ...You, uh. You could have told me before we ended up here.",
+        "So we're playing the game about us, Sensei. This is fine. This is normal.",
+        "Don't laugh! I read the patch notes too, Sensei! That's all!",
+        "You made me fight that boss four times, Sensei. I'm still not over it."
+      ]
+    },
+    "battery_low": {
+      "idle": [
+        "Your battery is nearly flat, Sensei. Not that I was watching it. Or caring.",
+        "Hmph. Charge your phone. If it dies I'm not carrying you."
+      ]
+    },
+    "long_session": {
+      "idle": [
+        "You've been at this for ages, Sensei. I'm not saying stop. I'm saying... consider it.",
+        "Not that I care if you're tired. But you are. I can tell."
+      ]
+    },
+    "user_idle": {
+      "idle": ["Are you ignoring me on purpose now, Sensei?"]
+    },
+    "meeting": {
+      "idle": ["In a meeting? ...I'll be quiet. Not that I wanted to talk anyway."]
+    }
+  },
+  "chat_topics": {},
+  "pair_lines": {}
+}
