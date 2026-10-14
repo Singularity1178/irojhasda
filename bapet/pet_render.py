@@ -1,0 +1,368 @@
+"""Pet mixin: procedural motion, rendering each frame, click-through mask, painting."""
+from __future__ import annotations
+
+import math
+import sys
+import time
+
+import numpy as np
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt
+
+from .config import TWRAP
+from .mathutil import clamp, fade_back, m4, rot_x, rot_y, rot_z, rot_z4, scale4, translate, wrap_pi
+
+
+# =============================================================================
+#  The pet window
+# =============================================================================
+def heart_path(s):
+    p = QtGui.QPainterPath(); p.moveTo(0, s * 0.8)
+    p.cubicTo(-s * 1.1, s * 0.1, -s * 0.7, -s * 0.9, 0, -s * 0.35)
+    p.cubicTo(s * 0.7, -s * 0.9, s * 1.1, s * 0.1, 0, s * 0.8)
+    return p
+
+def star_path(r):
+    poly = QtGui.QPolygonF()
+    for i in range(8):
+        rr = r if i % 2 == 0 else r * 0.22; a = i * math.pi / 4
+        poly.append(QPointF(math.cos(a) * rr, math.sin(a) * rr))
+    p = QtGui.QPainterPath(); p.addPolygon(poly); p.closeSubpath(); return p
+
+
+class PetRender:
+    def procedural(self, dt, cur):
+        cfg = self.cfg
+        self.rot_return(dt); self.scan_step(dt)
+        hx, hy = self.px + self.head_px[0], self.py + self.head_px[1]
+        # look target: another character if one was picked, else the cursor while she is
+        # attending to it, else a point off in the room (she is looking at nobody)
+        tx_, ty_ = cur.x(), cur.y(); dist = None; idle_target = False
+        peer = self.gaze_peer
+        aim = self.atk_aim_point()                  # shooting: look down the barrel
+        if aim is not None:
+            tx_, ty_ = aim; dist = math.hypot(tx_ - hx, ty_ - hy)
+        elif peer is not None and peer.isVisible() and self.gaze_left > 0:
+            tx_ = peer.px + peer.head_px[0]; ty_ = peer.py + peer.head_px[1]
+            dist = math.hypot(tx_ - hx, ty_ - hy)
+        elif not self.cur_look:
+            reach = self.W * 2.2
+            tx_ = hx + self.idle_pt[0] * reach; ty_ = hy - self.idle_pt[1] * reach
+            dist = math.hypot(tx_ - hx, ty_ - hy)
+            idle_target = True
+        depth = max(self.H * 1.4, dist) if dist is not None else self.H * 1.4
+        ax = math.atan2(tx_ - hx, depth); ay = math.atan2(-(ty_ - hy), depth)
+        running = self.is_running()
+        moving = self.state == "walk" or running
+        active = self.state in ("idle", "alert", "shot", "walk", "shoot", "flee") \
+            and (peer is not None or self.cur_look or idle_target or aim is not None)
+        k = 0.25 if moving else (0.3 if self.shot_key == "cutin" and self.state == "shot" else 1.0)
+        if idle_target: k *= 0.6                    # an absent glance, not a stare
+        tx, ty = (ax * k, ay * k) if active else (0.0, 0.0)
+        f = 1 - math.exp(-dt * 7)
+        self.gx += (tx - self.gx) * f; self.gy += (ty - self.gy) * f
+        yo_user = self.yaw_base()                  # panel + hand rotation (steers a walk)
+        yo = yo_user + self.scan_yaw               # plus the look-around swivel
+        jumping = not self.grounded and self.air_kind == "jump" and not self.dragging
+        # Hand rotation (wheel / rotate-drag) is the way she FACES. If it changes
+        # while she walks, her path turns with it (she goes where she looks).
+        dyo = wrap_pi(yo_user - self._yo_seen)
+        if dyo and self.state == "walk": self.set_heading(self.heading + dyo)
+        self._yo_seen = yo_user
+        # a window top is a line: she settles to the middle depth there
+        if self.support is not None and not self.ragdoll:
+            self.depth *= math.exp(-dt * 2.0)
+        psi = yo + self.body_yaw                              # where she faces now (world yaw)
+        def toward(k, lim):                                   # a partial turn toward the gaze
+            d = wrap_pi(self.gx - yo)                         # target azimuth vs her rest facing
+            return yo + clamp(d * k, -lim, lim) * fade_back(d)
+        if moving:
+            tgt = self.heading                                # absolute: she faces where she walks
+        elif jumping:
+            d = 1 if abs(self.vx) < 20 else (1 if self.vx > 0 else -1)
+            tgt = d * 0.9                                     # face the way she flies
+        elif aim is not None:
+            tgt = clamp(self.gx * 1.0, -0.9, 0.9)             # absolute: she squares up to who she shoots
+        elif self.gaze_peer is not None:
+            tgt = toward(0.8, 0.75)
+        else:
+            tgt = toward(0.5, 0.55)
+        self.body_yaw += wrap_pi(tgt - psi) * (1 - math.exp(-dt * 6))
+        self.body_yaw = wrap_pi(self.body_yaw)                # same pose, keeps the number small
+        psi = yo + self.body_yaw
+        # head: look at the gaze azimuth, measured from where she ACTUALLY faces
+        if moving:
+            dw = wrap_pi(psi)
+            self.head_yaw = clamp(-dw * 0.35 * fade_back(dw, 1.8, 2.6) + self.gx, -1.0, 1.0)
+        else:
+            dh = wrap_pi(self.gx - psi)
+            self.head_yaw = clamp(dh, -1.0, 1.0) * fade_back(dh)
+        self.head_pitch = clamp(self.gy, -0.5, 0.55) - self.bow * 0.35
+        # pendulum roll while carried / tumbling + hold-physics drive
+        raw_vx, raw_vy = 0.0, 0.0
+        if self.dragging:
+            # While a pymunk pet is held, the physics owns her position - she is
+            # moved by the grab joint, not by the window - so feed the springs her
+            # real velocity off the pelvis rather than the window's, or the hair
+            # would hang dead still while she swings.
+            if self.rag_skel is not None:
+                p = self.rag_skel.pose()
+                raw_vx, raw_vy = p["vx"], p["vy"]
+            else:
+                raw_vx = (self.px - self.last_px) / max(dt, 1e-3)
+                raw_vy = (self.py - self.last_py) / max(dt, 1e-3)
+        elif not self.grounded and self.air_kind in ("thrown", "jump"):
+            raw_vx, raw_vy = self.vx * 0.6, self.vy * 0.6
+        self.last_px, self.last_py = self.px, self.py
+        f = 1 - math.exp(-dt * 10)
+        self.hold_vx += (raw_vx - self.hold_vx) * f
+        self.hold_vy += (raw_vy - self.hold_vy) * f
+        # wind gust: radial push from the cursor. Hair chains only (see
+        # Rig.update_hold) - the body roll/pitch below never sees it.
+        wvx, wvy, we = self.A.gust_wind_at(self.px + self.head_px[0], self.py + self.head_px[1])
+        wf = 1 - math.exp(-dt * 14)
+        self.wind_vx += (wvx - self.wind_vx) * wf
+        self.wind_vy += (wvy - self.wind_vy) * wf
+        # energy: 1 while held, decays over ~0.9s after release so hair settles
+        tgt_e = 1.0 if self.dragging else (0.7 if (not self.grounded and self.air_kind in ("thrown", "jump")) else 0.0)
+        self.hold_e += (tgt_e - self.hold_e) * (1 - math.exp(-dt * (12 if tgt_e > self.hold_e else 2.2)))
+        yaw_m = self.model.face_yaw + self.yaw_base() + self.scan_yaw + self.body_yaw
+        self.rig.update_hold(dt, self.hold_vx, self.hold_vy, self.hold_e, yaw_m,
+                             wx=self.wind_vx, wy=self.wind_vy, we=we)
+        # Roll is the "carried / thrown" lean. While she is limp the ragdoll angle
+        # already owns the body rotation, so keep roll at zero or it would fight it
+        # and pop when she gets back up.
+        vxd = 0.0
+        if self.dragging: vxd = raw_vx
+        elif not self.ragdoll and not self.grounded and self.air_kind == "thrown": vxd = self.vx * 0.6
+        rt = clamp(-vxd * 0.0006, -0.5, 0.5)
+        self.roll_v += (60 * (rt - self.roll) - 9 * self.roll_v) * dt; self.roll += self.roll_v * dt
+        # While she is limp the body angle owns her rotation (render_frame does
+        # rot_z4(roll - rg_a)), so roll must be zero or the two would fight and
+        # pop when she gets up. start_ragdoll already zeroes it; this catches the
+        # case where she was carried into the ragdoll.
+        if self.ragdoll and self.rag_skel is not None:
+            self.roll = self.roll_v = 0.0
+        # fore/aft swing while carried (pitch about the grab point) + vertical stretch
+        # With pymunk she is not "carried" - physics swings her - so both of these
+        # stay off, or they would fight the body and pop when she lands.
+        held = self.dragging and self.rag_skel is None
+        pt = clamp(self.hold_vy * 0.00035, -0.35, 0.35) if held else 0.0
+        self.pitch_hold_v += (70 * (pt - self.pitch_hold) - 10 * self.pitch_hold_v) * dt
+        self.pitch_hold += self.pitch_hold_v * dt
+        if held:
+            # fast lift stretches her a touch, fast sideways squashes; springs back on release
+            self.sq_v += clamp(self.hold_vy * 0.00006, -0.12, 0.12) / max(dt, 1e-3) * dt * 0.15
+        self.sq_v += (-180 * self.sq - 14 * self.sq_v) * dt; self.sq += self.sq_v * dt
+        zt = 1.08 if (self.state == "shot" and self.shot_key == "cutin") else 1.0
+        self.zoom += (zt - self.zoom) * (1 - math.exp(-dt * 8))
+
+    def render_frame(self, cur):
+        A, cfg, R = self.A, self.cfg, self.ch.renderer
+        # smoothstep, not the raw clock: half-way through the fade the vehicle
+        # should be half-visible, which a linear ramp front-loads into the first
+        # tenth of it.
+        R.ride_fade = 1.0 if self.ch.ride_clips is None else self.ride_t ** 2 * (3 - 2 * self.ride_t)
+        # limb pendulums first: they run off last frame's world pose + last_M,
+        # so they are always one frame behind the body - stable and cheap.
+        self.rig.rag_post = self.rag_limb_post(self.dt) if self.ragdoll else []
+        world = self.rig.evaluate(self.head_yaw, self.head_pitch,
+                                  self.yaw_base() + self.scan_yaw + self.body_yaw)
+        yaw = self.model.face_yaw + self.yaw_base() + self.scan_yaw + self.body_yaw
+        if self.spin_t >= 0:
+            p = clamp(self.spin_t / 1.1, 0, 1); yaw += math.tau * (p * p * (3 - 2 * p))
+        f = R.fit
+        feet = np.array([f["cx"], f["miny"], f["cz"]]); top = np.array([f["cx"], f["maxy"], f["cz"]])
+        z = self.zoom * self.depth_scale()
+        B = translate(feet) @ scale4((1 + 0.5 * self.sq) * z, (1 - self.sq) * z, (1 + 0.5 * self.sq) * z) @ m4(rot_y(yaw)) @ translate(-feet)
+        # grab pivot: she hangs from the cursor, so swing rotates about the top
+        M = (translate(top) @ m4(rot_x(self.pitch_hold)) @ rot_z4(self.roll) @ translate(-top)) @ B
+        if self.ragdoll and (not self.dragging or self.rag_skel is not None):
+            # Lay her over on the body angle, about her pelvis. rot_z4 is a
+            # right-handed rotation in the feet-anchored frame, where +x is screen
+            # right and +y is screen up, so -rg_a puts a positive rg_a (head
+            # towards screen right) on screen. Both engines feed this from their
+            # own angle: the rod sets rg_a directly, pymunk sets it to
+            # +phi_pelvis in ragdoll_step_pm.
+            #
+            # The one case excluded is the legacy rod WHILE being dragged, where
+            # the cursor owns her position instead. A pymunk pet keeps this
+            # rotation even while held: physics is still driving her pose.
+            p = (B @ np.append(world[self.model.pelvis][:3, 3], 1.0))[:3]
+            M = translate(p) @ rot_z4(self.roll - self.rg_a) @ translate(-p) @ B
+        # Free 3D orientation (pitch / tilt offsets). Applied LAST, in the screen
+        # frame about the middle of her body, so yaw still spins about her own
+        # vertical axis first. last_M deliberately stays WITHOUT it: the pymunk
+        # ragdoll measures its skeleton and its Z axis from last_M, and has to keep
+        # seeing the plain upright-in-the-plane pose. While she is limp the offset
+        # eases back to zero (she falls from upright), then eases back in after.
+        k_o = 1.0 - math.exp(-self.dt * 10.0)
+        tp = 0.0 if self.ragdoll else math.radians(clamp(float(cfg.get("pitch_offset", 0.0)) + self.pitch_user, -90.0, 90.0))
+        tt = 0.0 if self.ragdoll else math.radians(clamp(float(cfg.get("tilt_offset", 0.0)) + self.tilt_user, -40.0, 40.0))
+        self.ori_p += (tp - self.ori_p) * k_o; self.ori_t += (tt - self.ori_t) * k_o
+        self.last_M = M
+        if abs(self.ori_p) > 1e-4 or abs(self.ori_t) > 1e-4:
+            mid = np.array([f["cx"], (f["miny"] + f["maxy"]) * 0.5, f["cz"]])
+            M = translate(mid) @ m4(rot_z(self.ori_t) @ rot_x(self.ori_p)) @ translate(-mid) @ M
+        # light: cursor acts as a point light hovering in front of the screen
+        if cfg["light_follow"]:
+            cx, cy = self.px + self.W / 2, self.py + self.H * 0.4
+            sw, sh = A.screen_size()
+            tgt = np.array([clamp((cur.x() - cx) / (sw * 0.5) * 1.6, -2, 2), clamp(-(cur.y() - cy) / (sh * 0.5) * 1.6, -2, 2), 0.9])
+        else:
+            az, el = math.radians(cfg["light_az"]), math.radians(cfg["light_el"])
+            tgt = np.array([math.cos(el) * math.sin(az), math.sin(el), math.cos(el) * math.cos(az)])
+        self.light += (tgt - self.light) * min(1.0, 1.0 - math.exp(-self.dt * 12))     # B7: frame-rate independent
+        raw = R.draw(world, M, self.light, cfg)
+        w, h = R.w, R.h
+        self.raw = raw
+        self.img = QtGui.QImage(raw, w, h, w * 4, QtGui.QImage.Format.Format_RGBA8888_Premultiplied).mirrored(False, True)
+        self.img.setDevicePixelRatio(self.dpr)              # B8: no resample on fractional-DPI screens
+        self.alpha = np.frombuffer(raw, np.uint8).reshape(h, w, 4)[::-1, :, 3]
+        if self.model.head is not None:
+            hxp, hyp = R.project(world[self.model.head][:3, 3], M)
+            self.head_px = (hxp / self.dpr * (self.W * self.dpr / w), hyp / self.dpr * (self.H * self.dpr / h) - 0.05 * self.H)
+        if cfg["click_through"] and not A.args.no_mask:
+            if sys.platform == "win32":
+                if self.mask_key is not None: self.clearMask(); self.mask_key = None
+            elif self.frame_n % 3 == 0 or self.mask_dirty: self.update_mask()
+        elif self.mask_key is not None:
+            self.clearMask(); self.mask_key = None
+        self.update()
+
+    # ---------------- click-through mask ----------------
+    def bubble_geom(self):
+        if not self.bubble: return None
+        fm = QtGui.QFontMetrics(self.bfont)
+        r = fm.boundingRect(0, 0, int(self.W * 0.82), 2000, TWRAP, self.bubble[0])
+        w, h = r.width() + 28, r.height() + 20
+        bx = (self.W - w) / 2; by = max(4.0, self.H * (1 - self.PADB) - self.char_h() - h - 14)
+        return QRectF(bx, by, w, h), r
+
+    def update_mask(self):
+        self.mask_dirty = False
+        a = self.alpha
+        if a is None: return
+        h, w = a.shape
+        ys = np.minimum((np.arange(self.H) * h / self.H).astype(int), h - 1)
+        xs = np.minimum((np.arange(self.W) * w / self.W).astype(int), w - 1)
+        m = a[np.ix_(ys, xs)] > 12
+        def dil(x):
+            d = x.copy(); d[:, 1:] |= x[:, :-1]; d[:, :-1] |= x[:, 1:]; d[1:] |= x[:-1]; d[:-1] |= x[1:]; return d
+        m = dil(dil(m))
+        packed = np.packbits(m, axis=1, bitorder="little").tobytes()
+        bg = self.bubble_geom()
+        key = (hash(packed), self.grounded, None if bg is None else (int(bg[0].x()), int(bg[0].y()), int(bg[0].width()), int(bg[0].height())),
+               tuple((int(q["x"]), int(q["y"]), q["kind"]) for q in self.parts if q["life"] >= 0))
+        if key == self.mask_key: return
+        self.mask_key = key
+        try:
+            bm = QtGui.QBitmap.fromData(QSize(self.W, self.H), packed, QtGui.QImage.Format.Format_MonoLSB)
+            region = QtGui.QRegion(bm)
+            if self.grounded:
+                rw = self.W * 0.17; cy = self.H * (1 - self.PADB)
+                region = region.united(QtGui.QRegion(QtCore.QRect(int(self.W / 2 - rw), int(cy - rw * 0.24), int(rw * 2), int(rw * 0.48)),
+                                                     QtGui.QRegion.RegionType.Ellipse))
+            if bg is not None: region = region.united(QtGui.QRegion(bg[0].toAlignedRect().adjusted(-2, -2, 2, 14)))
+            # A3: particles float outside the silhouette, so fold them into the mask too
+            for q in self.parts:
+                if q["life"] < 0: continue
+                r = (int(q["len"] * 0.6) if q["kind"] == "wind" else int(q["size"] * 2.2)) + 2
+                region = region.united(QtGui.QRegion(QtCore.QRect(int(q["x"] - r), int(q["y"] - r), r * 2, r * 2),
+                                                         QtGui.QRegion.RegionType.Ellipse))
+            self.setMask(region)
+        except Exception as e:
+            print("[warn] mask disabled:", e); self.cfg["click_through"] = False
+
+    # ---------------- painting ----------------
+    def paintEvent(self, _e):
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        p.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+        p.fillRect(self.rect(), QtGui.QColor(0, 0, 0, 0))
+        p.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
+        if self.grounded:                                           # contact shadow
+            rw = self.W * 0.21; cy = self.H * (1 - self.PADB)
+            p.save(); p.translate(self.W / 2, cy); p.scale(1, 0.22)
+            g = QtGui.QRadialGradient(0, 0, rw); g.setColorAt(0, QtGui.QColor(10, 20, 50, 95)); g.setColorAt(1, QtGui.QColor(10, 20, 50, 0))
+            p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QBrush(g)); p.drawEllipse(QPointF(0, 0), rw, rw); p.restore()
+        if self.img is not None: p.drawImage(QRectF(0, 0, self.W, self.H), self.img)
+        for q in self.parts:
+            if q["life"] < 0: continue
+            al = max(0.0, 1 - (q["life"] / q["max"]) ** 2)
+            p.save(); p.translate(q["x"], q["y"]); p.rotate(q["rot"] * q["life"] * 90)
+            if q["kind"] == "heart":
+                p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QColor(255, 110, 160, int(235 * al))); p.drawPath(heart_path(q["size"]))
+            elif q["kind"] == "star":
+                p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QColor(140, 210, 255, int(240 * al))); p.drawPath(star_path(q["size"] * 1.2))
+            elif q["kind"] == "wind":
+                al = math.sin(math.pi * q["life"] / q["max"])          # quick fade in, fade out
+                L = q["len"]
+                p.rotate(math.degrees(q["ang"]))                       # align with travel direction
+                g = QtGui.QLinearGradient(-L, 0, 0, 0)                 # transparent tail -> bright head
+                g.setColorAt(0, QtGui.QColor(255, 255, 255, 0))
+                g.setColorAt(1, QtGui.QColor(235, 247, 255, int(210 * al)))
+                pen = QtGui.QPen(QtGui.QBrush(g), q["size"]); pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                p.setPen(pen); p.setBrush(Qt.BrushStyle.NoBrush)
+                wob = math.sin(q["life"] * 10 + q["ph"]) * 2.0         # slight flutter
+                path = QtGui.QPainterPath(QPointF(-L, 0)); path.quadTo(QPointF(-L * 0.5, wob), QPointF(0, 0))
+                p.drawPath(path)
+            else:
+                p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QColor(255, 255, 255, int(110 * al)))
+                p.drawEllipse(QPointF(0, 0), q["size"] * (1 + q["life"]), q["size"] * (1 + q["life"]) * 0.7)
+            p.restore()
+        bg = self.bubble_geom()
+        if bg is not None:
+            rect, tr = bg; text, t0, dur = self.bubble
+            age = time.time() - t0
+            al = clamp(min(age / 0.15, (dur - age) / 0.3), 0, 1)
+            p.save(); p.setOpacity(al)
+            path = QtGui.QPainterPath(); path.addRoundedRect(rect, 14, 14)
+            tail = QtGui.QPainterPath()
+            cx = self.W / 2
+            tail.addPolygon(QtGui.QPolygonF([QPointF(cx - 9, rect.bottom() - 1), QPointF(cx + 9, rect.bottom() - 1), QPointF(cx, rect.bottom() + 11)]))
+            path = path.united(tail)
+            p.setPen(QtGui.QPen(QtGui.QColor("#7cbcff"), 2)); p.setBrush(QtGui.QColor(255, 255, 255, 246)); p.drawPath(path)
+            p.fillRect(QRectF(rect.x() + 12, rect.y() + 5, rect.width() - 24, 3), QtGui.QColor("#128cff"))
+            p.setFont(self.bfont); p.setPen(QtGui.QColor("#18325a"))
+            p.drawText(QRectF(rect.x() + 14, rect.y() + 12, tr.width() + 2, tr.height() + 2), TWRAP, text)
+            p.restore()
+        if self.cfg.get("ragdoll_debug"):
+            self.rag_debug_draw(p)
+        p.end()
+
+    def rag_debug_draw(self, p):
+        """--rag-debug: the physics capsules, joints and window boxes, on top.
+
+        Drawn in WINDOW px over the render, so a limb the physics has not caught
+        up with shows up at once as a bone poking outside its capsule.
+        """
+        p.save()
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        sk = self.rag_skel
+        if sk is not None:
+            p.setPen(QtGui.QPen(QtGui.QColor(0, 255, 140, 200), 1))
+            for (a, c, r) in sk.body_ends():
+                p.drawLine(QPointF(a[0] - self.px, a[1] - self.py),
+                           QPointF(c[0] - self.px, c[1] - self.py))
+                p.drawEllipse(QPointF(a[0] - self.px, a[1] - self.py), r, r)
+                p.drawEllipse(QPointF(c[0] - self.px, c[1] - self.py), r, r)
+            pose = sk.pose()
+            p.setPen(QtGui.QPen(QtGui.QColor(255, 60, 60, 230), 1))
+            p.drawEllipse(QPointF(pose["x"] - self.px, pose["y"] - self.py), 5, 5)
+            p.setPen(QtGui.QPen(QtGui.QColor(255, 210, 0, 200), 1))
+            for i, body in enumerate(sk.bodies):
+                par = sk.parents[i]
+                if par < 0:
+                    continue
+                pp = sk.bodies[par].position
+                p.drawLine(QPointF(pp[0] - self.px, pp[1] - self.py),
+                           QPointF(body.position[0] - self.px, body.position[1] - self.py))
+        W = self.A.rag_world
+        if W is not None:
+            p.setPen(QtGui.QPen(QtGui.QColor(120, 180, 255, 110), 1))
+            for _h, w in W._wins.items():
+                l, t, r_, b = w["rect"]
+                p.drawRect(QRectF(l - self.px, t - self.py, r_ - l, b - t))
+        p.restore()

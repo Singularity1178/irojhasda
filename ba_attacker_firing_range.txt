@@ -1,0 +1,148 @@
+================================================================================
+BLUE ARCHIVE - ATTACKER FIRING RANGE RULES FOR AI AGENTS
+================================================================================
+Purpose: Provide deterministic lookup rules to determine the firing range of
+a character (specifically Attackers, plus general combatants) based on Position
+and Role, with explicit enumeration of all character exceptions.
+Dataset: ba_combat_stats.xlsx (bluearchive.wiki data)
+
+--------------------------------------------------------------------------------
+1. QUICK LOOKUP ALGORITHM (FOR AI AGENTS)
+--------------------------------------------------------------------------------
+Input: 
+  - position: "Front" | "Middle" | "Back"
+  - role: "Attacker" | "Tank" | "Support" | "Healer" | "Tactical Support"
+  - character_name: string (optional, to check individual exceptions)
+  - combat_class: "Striker" | "Special" (optional)
+
+Rules:
+  1. If combat_class == "Special" -> firing_range = 1000 (off-field default)
+  2. If character_name in EXCEPTIONS -> return EXCEPTIONS[character_name]
+  3. Otherwise, use BASELINE_LOOKUP[(position, role)]
+
+--------------------------------------------------------------------------------
+2. BASELINE FIRING RANGE (ROLE: ATTACKER)
+--------------------------------------------------------------------------------
+When role == "Attacker":
+
+  • Front + Attacker  -> 450
+    - Accuracy: 100% (5 out of 5 characters in dataset)
+    - Exceptions: NONE
+
+  • Middle + Attacker -> 650
+    - Accuracy: 100% (12 out of 12 characters in dataset)
+    - Exceptions: NONE
+
+  • Back + Attacker   -> 750 (for on-field Strikers)
+    - Baseline: 750 (11 out of 14 Striker Attackers)
+    - Exceptions: See Section 3 below for the 3 Striker exceptions & 8 Special exceptions
+
+--------------------------------------------------------------------------------
+3. ALL EXCEPTIONS FOR ROLE: ATTACKER (BY CHARACTER NAME)
+--------------------------------------------------------------------------------
+A. STRIKER (ON-FIELD) ATTACKER EXCEPTIONS AT BACK POSITION:
+   Standard Back Attacker Striker range is 750. The following 3 characters deviate:
+
+   1. Iori
+      - Position: Back
+      - Combat Class: Striker
+      - Actual Firing Range: 650  (-100 from baseline 750)
+      - Reason: Shorter engagement range despite Back position
+
+   2. Arisu
+      - Position: Back
+      - Combat Class: Striker
+      - Actual Firing Range: 850  (+100 from baseline 750)
+      - Reason: Heavy Railgun weapon profile with ultra-long engagement distance
+
+   3. Misaki
+      - Position: Back
+      - Combat Class: Striker
+      - Actual Firing Range: 850  (+100 from baseline 750)
+      - Reason: Rocket launcher weapon profile with ultra-long engagement distance
+
+B. SPECIAL (OFF-FIELD BENCH) ATTACKER EXCEPTIONS AT BACK POSITION:
+   Special units provide off-field support / EX skills and have default wiki range 1000:
+
+   1.  Chihiro: 1000 (Back, Special)
+   2.  Hibiki:  1000 (Back, Special)
+   3.  Karin:   1000 (Back, Special)
+   4.  Mashiro: 1000 (Back, Special)
+   5.  Minori:  1000 (Back, Special)
+   6.  Nagisa:  1000 (Back, Special)
+   7.  Saki:    1000 (Back, Special)
+   8.  Satsuki: 1000 (Back, Special)
+
+--------------------------------------------------------------------------------
+4. COMPLETE ROSTER BREAKDOWN (ATTACKERS)
+--------------------------------------------------------------------------------
+Front Attackers (Range = 450):
+  - Izuna
+  - Megu
+  - Michiru
+  - Mika
+  - Neru
+
+Middle Attackers (Range = 650):
+  - Asuna
+  - Azusa
+  - Chise
+  - Ichika
+  - Momoi (Maid)
+  - Saori
+  - Serika
+  - Shigure
+  - Shiroko
+  - Toki
+  - Umika
+  - Yuzu
+
+Back Attackers - Standard Strikers (Range = 750):
+  - Aru
+  - Haruna
+  - Hina
+  - Hina (Dress)
+  - Midori
+  - Mutsuki
+  - Nonomi
+  - Pina
+  - Renge
+  - Shun
+  - Wakamo
+
+Back Attackers - Exceptions:
+  - Iori:    650  (Striker)
+  - Arisu:   850  (Striker)
+  - Misaki:  850  (Striker)
+  - Chihiro: 1000 (Special)
+  - Hibiki:  1000 (Special)
+  - Karin:   1000 (Special)
+  - Mashiro: 1000 (Special)
+  - Minori:  1000 (Special)
+  - Nagisa:  1000 (Special)
+  - Saki:    1000 (Special)
+  - Satsuki: 1000 (Special)
+
+--------------------------------------------------------------------------------
+5. EXTENSION: ALL OTHER ROLES (TANK, SUPPORT, HEALER, TACTICAL SUPPORT)
+--------------------------------------------------------------------------------
+If the AI agent needs to evaluate non-Attacker roles or general combatants:
+
+• Front:
+  - Tank:    350 (100% consistent; Atsuko, Haruka, Hoshino, Kurumi, Mine, Miyako, Natsu, Tsubaki, Yuuka)
+  - Support: 450 (Niko)
+  - Healer:  450 (Rumi)
+
+• Middle:
+  - Support: 550 default (Kayoko, Seia)
+             Exceptions: Ibuki (650), Suzumi (650)
+  - Healer:  550 default (Takane)
+             Exception: Kokona (650)
+
+• Back:
+  - Support: 750 for Strikers (Tomoe, Ui)
+             Striker Exception: Kei (850)
+             Special Class (1000): Airi, Ako, Hiyori, Kaede, Kisaki, Kotama, Mari, Ritsu, Shizuko
+  - Healer:  1000 (All Special class: Ayane, Chinatsu, Fuuka, Hanako, Serina)
+  - Tactical Support: 1000 (All Special class: Iroha, Sena)
+================================================================================

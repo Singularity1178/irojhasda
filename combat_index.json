@@ -1,0 +1,270 @@
+{
+  "_legend": {
+    "_note": "Allowed values per field. Every other top-level key is a .glb path naming the model the stats below describe.",
+    "_note_combat_class": "Attack class: Striker (normal damage-dealing agent) or Special (support/utility agent).",
+    "combat_class": [
+      "Striker",
+      "Special"
+    ],
+    "_note_role": "Team job: damage dealer, damage sponge, or ally support.",
+    "role": [
+      "Attacker",
+      "Tank",
+      "Support",
+      "Healer",
+      "Tactical Support"
+    ],
+    "_note_position": "Which of the 3 battlefield rows she stands in. Rows run Front (nearest the enemies) to Back (furthest away).",
+    "position": [
+      "Front",
+      "Middle",
+      "Back"
+    ],
+    "_note_position_Front": "Front: enemies attack whoever is here first, so this row eats the most damage. Tanks stand here to body-block for squishier teammates.",
+    "_note_position_Middle": "Middle: too far back to be the main target, but still in reach of explosions and mid-range skill shots. The safe default row.",
+    "_note_position_Back": "Back: out of range of most direct attacks and AoE, so healers and support stay here. Only stray explosions and back-row-reaching skills can touch her.",
+    "weapon_type": [
+      "Handgun",
+      "Submachine Gun",
+      "Assault Rifle",
+      "Shotgun",
+      "Sniper Rifle",
+      "Machine Gun",
+      "Railgun",
+      "Grenade Launcher",
+      "Rocket Launcher",
+      "Mortar",
+      "Flamethrower"
+    ],
+    "_note_firing_range": "How far she can actually hit, in centimetres (raw wiki 'Firing Range' stat; 100 = 1 m, so 550 means 5.5 m). Bigger number = she can shoot enemies from further away. Support/healer characters with no damaging skill sit at 1000 (10 m)."
+  },
+
+  "Ako.glb": {
+    "_note_combat_class": "Strike type: Striker attacks normally, Special only buffs/debuffs/heals.",
+    "combat_class": "Special",
+    "_note_role": "What she contributes to the team (Attacker/Tank/Support/Healer/Tactical Support).",
+    "role": "Support",
+    "_note_position": "Row she occupies on the battlefield: Front, Middle or Back.",
+    "position": "Back",
+    "weapon_type": "Handgun",
+    "_note_firing_range": "How far she can actually hit, in centimetres (raw wiki 'Firing Range' stat; 100 = 1 m, so 550 means 5.5 m). Bigger number = she can shoot enemies from further away.",
+    "firing_range": 1000,
+    "_note_ammo_per_attack": "Shots/ammunition spent per use of her Attack skill.",
+    "ammo_per_attack": 0,
+    "_note_ammo_to_reload": "Full magazine size after a reload finishes.",
+    "ammo_to_reload": 0,
+    "_note_attacks": "false = she has no damaging Attack skill at all (healers/support without one).",
+    "attacks": false,
+    "_note_source": "Wiki page these stats were taken from.",
+    "source": "https://bluearchive.wiki/wiki/Ako"
+  },
+  "Arisu.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Back",
+    "weapon_type": "Railgun",
+    "firing_range": 850,
+    "ammo_per_attack": 1,
+    "ammo_to_reload": 10,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Arisu"
+  },
+  "Ayane.glb": {
+    "combat_class": "Special",
+    "role": "Healer",
+    "position": "Back",
+    "weapon_type": "Handgun",
+    "firing_range": 1000,
+    "ammo_per_attack": 0,
+    "ammo_to_reload": 0,
+    "attacks": false,
+    "source": "https://bluearchive.wiki/wiki/Ayane"
+  },
+  "Azusa.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Middle",
+    "weapon_type": "Assault Rifle",
+    "firing_range": 650,
+    "ammo_per_attack": 1,
+    "ammo_to_reload": 15,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Azusa"
+  },
+  "Chinatsu.glb": {
+    "combat_class": "Special",
+    "role": "Healer",
+    "position": "Back",
+    "weapon_type": "Handgun",
+    "firing_range": 1000,
+    "ammo_per_attack": 0,
+    "ammo_to_reload": 0,
+    "attacks": false,
+    "source": "https://bluearchive.wiki/wiki/Chinatsu"
+  },
+  "Fuuka.glb": {
+    "combat_class": "Special",
+    "role": "Healer",
+    "position": "Back",
+    "weapon_type": "Submachine Gun",
+    "firing_range": 1000,
+    "ammo_per_attack": 0,
+    "ammo_to_reload": 0,
+    "attacks": false,
+    "source": "https://bluearchive.wiki/wiki/Fuuka"
+  },
+  "Hina (Dress).glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Back",
+    "weapon_type": "Machine Gun",
+    "firing_range": 750,
+    "ammo_per_attack": 7,
+    "ammo_to_reload": 49,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Hina_(Dress)"
+  },
+  "Iroha.glb": {
+    "combat_class": "Special",
+    "role": "Tactical Support",
+    "position": "Back",
+    "weapon_type": "Handgun",
+    "firing_range": 1000,
+    "ammo_per_attack": 1,
+    "ammo_to_reload": 8,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Iroha"
+  },
+  "Kisaki.glb": {
+    "combat_class": "Special",
+    "role": "Support",
+    "position": "Back",
+    "weapon_type": "Submachine Gun",
+    "firing_range": 1000,
+    "ammo_per_attack": 0,
+    "ammo_to_reload": 0,
+    "attacks": false,
+    "source": "https://bluearchive.wiki/wiki/Kisaki"
+  },
+  "Momoi (Maid).glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Middle",
+    "weapon_type": "Assault Rifle",
+    "firing_range": 650,
+    "ammo_per_attack": 3,
+    "ammo_to_reload": 15,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Momoi_(Maid)"
+  },
+  "Niko.glb": {
+    "combat_class": "Striker",
+    "role": "Support",
+    "position": "Front",
+    "weapon_type": "Shotgun",
+    "firing_range": 450,
+    "ammo_per_attack": 1,
+    "ammo_to_reload": 6,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Niko"
+  },
+  "Serika.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Middle",
+    "weapon_type": "Assault Rifle",
+    "firing_range": 650,
+    "ammo_per_attack": 3,
+    "ammo_to_reload": 15,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Serika"
+  },
+  "Shiroko.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Middle",
+    "weapon_type": "Assault Rifle",
+    "firing_range": 650,
+    "ammo_per_attack": 3,
+    "ammo_to_reload": 15,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Shiroko"
+  },
+  "Wakamo.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Back",
+    "weapon_type": "Sniper Rifle",
+    "firing_range": 750,
+    "ammo_per_attack": 1,
+    "ammo_to_reload": 5,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Wakamo"
+  },
+  "model/Hina.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Back",
+    "weapon_type": "Machine Gun",
+    "firing_range": 750,
+    "ammo_per_attack": 7,
+    "ammo_to_reload": 49,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Hina"
+  },
+  "model/Hoshino.glb": {
+    "combat_class": "Striker",
+    "role": "Tank",
+    "position": "Front",
+    "weapon_type": "Shotgun",
+    "firing_range": 350,
+    "ammo_per_attack": 1,
+    "ammo_to_reload": 8,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Hoshino"
+  },
+  "model/Mika.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Front",
+    "weapon_type": "Submachine Gun",
+    "firing_range": 450,
+    "ammo_per_attack": 5,
+    "ammo_to_reload": 25,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Mika"
+  },
+  "model/Mutsuki.glb": {
+    "combat_class": "Striker",
+    "role": "Attacker",
+    "position": "Back",
+    "weapon_type": "Machine Gun",
+    "firing_range": 750,
+    "ammo_per_attack": 3,
+    "ammo_to_reload": 45,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Mutsuki"
+  },
+  "model/Seia.glb": {
+    "combat_class": "Striker",
+    "role": "Support",
+    "position": "Middle",
+    "weapon_type": "Handgun",
+    "firing_range": 550,
+    "ammo_per_attack": 2,
+    "ammo_to_reload": 8,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Seia"
+  },
+  "model/Yuuka.glb": {
+    "combat_class": "Striker",
+    "role": "Tank",
+    "position": "Front",
+    "weapon_type": "Submachine Gun",
+    "firing_range": 350,
+    "ammo_per_attack": 3,
+    "ammo_to_reload": 27,
+    "attacks": true,
+    "source": "https://bluearchive.wiki/wiki/Yuuka"
+  }
+}
