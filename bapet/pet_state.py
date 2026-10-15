@@ -52,8 +52,14 @@ class PetState:
         if state != "shoot": self.atk = None
         if state != "flee": self.flee = None
         # Fighting is the only time she is in her vehicle, and every other state
-        # (reload, idle, walk, carried, airborne, knocked down) stows it again.
-        self.set_ride(state in ("shoot", "flee"))
+        # (idle, walk, carried, airborne, knocked down) stows it again.
+        # The one exception is the reload that follows a fight: she tops up from
+        # the seat, in her tank, and the vehicle is only put away when that clip
+        # ends and behave() puts her back in idle (see begin_reload). Gated on
+        # ride_on so a reload asked for while she is on her feet stays on her
+        # feet, and on the reload key so poke / cutin / tactical still stow it.
+        keep = state in ("shoot", "flee") or (state == "shot" and key == "reload" and self.ride_on)
+        self.set_ride(keep)
         if state in ("shoot", "flee"):
             # driven phase by phase by atk_phase() / flee_step(), not by ANIM_KEYS
             self.state, self.state_t, self.state_dur = state, 0.0, dur

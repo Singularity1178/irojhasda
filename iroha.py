@@ -19,7 +19,8 @@ THE PROBLEM WITH SHOWING IT
     window sized for her body would crop the tracks off it, and a window sized
     for the tank would leave her standing two times too tall - so the ride state
     has to come with a window of its own. That is what the `ride` block below is:
-    a second set of clips AND a second window, used only while she is fighting.
+    a second set of clips AND a second window, used only while she is fighting
+    and for the reload she does from the seat once a fight is over.
 
       ride.window_scale    2.2, the ratio between the two poses (2.22 / 1.00):
                           any more and she is oversized, any less and she comes
