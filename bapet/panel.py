@@ -1,379 +1,359 @@
-"""The tabbed control panel and its stylesheet."""
+"""The control panel.
+
+  +----------------------------------------------------------------+
+  |  Desktop Pets   7 of 7 characters visible          [ search  ] |  header
+  |  Actions apply to [ Everyone v ]               done: Poke > Hina|  target bar, on every page
+  +------------+---------------------------------------------------+
+  | Characters |  +- Section card ------------------------------+ |
+  | Actions    |  | rows: switches, sliders, drop-downs, buttons | |
+  | Behavior   |  +----------------------------------------------+ |
+  | ...        |                                                   |
+  +------------+---------------------------------------------------+
+  |  Hina . idle . Cafe_Idle . looking at cursor    Status of [v]  |  live status footer
+  +----------------------------------------------------------------+
+
+*What* is on each page is data in ui_spec.PAGES; this file only assembles it, owns the search,
+the target and the live status, and is the `ctx` every row talks to (see ui_widgets).
+
+Other modules call into the panel through a handful of names, all kept from the old panel:
+refresh(), sync_char_rows(), sync_screen_note(), sync_gun_box(), update_status(), plus the
+widgets `sel_box` and `status` and the module-level QSS.
+"""
 from __future__ import annotations
 
-from PySide6 import QtGui, QtWidgets
+import html
+import re
+import traceback
+
+from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from . import vfx
-from .config import ANIM_KEYS, PRESETS
+from .config import ANIM_KEYS, DEFAULTS
+from .icons import make_icon
+from .ui_rows import CUSTOM_ROWS
+from .ui_spec import (ACTIONS, PAGES, Actions, Buttons, Choice, Custom, Info, Slider, Toggle,
+                      pet_state)
+from .ui_theme import QSS                      # re-exported: the entry script imports it from here
+from .ui_widgets import (ButtonsRow, ChoiceRow, InfoRow, NoWheelCombo, Section, SliderRow,
+                         ToggleRow, tokens_match)
+
+__all__ = ["Panel", "QSS"]
 
 
-# =============================================================================
-#  Control panel (tabs)
-# =============================================================================
-QSS = """
-QWidget { font-family: 'Segoe UI','Noto Sans',sans-serif; font-size: 12px; color:#1d2b45; }
-QWidget#root { background:#eef4fb; }
-QTabWidget::pane { border:1px solid #c9daf0; border-radius:8px; background:white; top:-1px; }
-QTabBar::tab { padding:7px 18px; background:#dbe8f7; border-top-left-radius:8px; border-top-right-radius:8px; margin-right:2px; color:#3a5a86; }
-QTabBar::tab:selected { background:#128cff; color:white; font-weight:600; }
-QPushButton { background:#128cff; color:white; border:none; border-radius:8px; padding:7px 12px; font-weight:600; }
-QPushButton:hover { background:#3aa1ff; } QPushButton:pressed { background:#0b6fd0; }
-QPushButton#alt { background:#dbe8f7; color:#1d4e89; } QPushButton#alt:hover { background:#c7ddf5; }
-QSlider::groove:horizontal { height:6px; background:#d6e4f5; border-radius:3px; }
-QSlider::sub-page:horizontal { background:#128cff; border-radius:3px; }
-QSlider::handle:horizontal { background:white; border:2px solid #128cff; width:14px; margin:-6px 0; border-radius:8px; }
-QComboBox { border:1px solid #bcd3ee; border-radius:6px; padding:4px 8px; background:white; }
-QMenu { background:white; border:1px solid #bcd3ee; padding:4px; }
-QMenu::item { padding:6px 24px; border-radius:4px; } QMenu::item:selected { background:#128cff; color:white; }
-QMenu::separator { height:1px; background:#dbe8f7; margin:4px 8px; }
-QLabel#title { font-size:16px; font-weight:700; color:white; }
-QLabel#status { font-family:Consolas,monospace; background:#f2f7fd; border:1px solid #d3e3f6; border-radius:6px; padding:6px; }
-"""
+class PageView:
+    """One entry of the page stack: its widget, its sections, and what the search can match."""
+
+    def __init__(self, spec, widget, sections=(), blob=""):
+        self.spec, self.widget, self.sections, self.blob = spec, widget, list(sections), blob
+
+    def apply_filter(self, tokens) -> int:
+        """Narrow the page to what matches. Returns how many rows (or 1 for a text page) matched."""
+        if not self.sections:                                   # a text page such as Help
+            return 1 if (not tokens or tokens_match(tokens, self.blob)) else 0
+        return sum(s.apply_filter(tokens, self.spec.title) for s in self.sections)
+
 
 class Panel(QtWidgets.QWidget):
     def __init__(self, A):
         super().__init__()
-        self.A = A; self.ctrl = {}
-        self.setObjectName("root"); self.setWindowTitle("Desktop Pets - Control Panel"); self.resize(520, 660)
-        lay = QtWidgets.QVBoxLayout(self); lay.setContentsMargins(10, 10, 10, 10)
-        head = QtWidgets.QFrame(); head.setStyleSheet("background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #0b4fb3,stop:1 #35b6ff); border-radius:10px;")
-        hl = QtWidgets.QHBoxLayout(head)
-        self.title = QtWidgets.QLabel("Desktop Pets"); self.title.setObjectName("title"); hl.addWidget(self.title)
-        lay.addWidget(head)
-        tabs = QtWidgets.QTabWidget(); lay.addWidget(tabs, 1)
-        tabs.addTab(self.tab_chars(), "Characters"); tabs.addTab(self.tab_pet(), "Pet")
-        tabs.addTab(self.tab_shader(), "Shader"); tabs.addTab(self.tab_interact(), "Interact")
-        tabs.addTab(self.tab_help(), "Help")
-        self.status = QtWidgets.QLabel(""); self.status.setObjectName("status"); lay.addWidget(self.status)
+        self.A = A
+        self.rows = []            # every settings row, so refresh() can re-sync them all
+        self.live_rows = []       # rows that show live text (refreshed on every status tick)
+        self.named = {}           # composite rows by their Custom(...) name
+        self.views = []           # PageView per sidebar entry, same order as PAGES
+        self.tokens = []          # the current search words
+        self._page = 0            # page to come back to once the search is cleared
+        self._toast = QtCore.QTimer(self); self._toast.setSingleShot(True)
+        self._toast.timeout.connect(lambda: self.toast.setText(""))
 
-    # ---- widgets helpers ----
-    def check(self, lay, label, key):
-        cb = QtWidgets.QCheckBox(label); cb.setChecked(bool(self.A.cfg[key]))
-        cb.toggled.connect(lambda v, k=key: self.A.set(k, v)); lay.addWidget(cb); self.ctrl[key] = ("check", cb)
+        self.setObjectName("root")
+        self.setWindowTitle("Desktop Pets - Control Panel")
+        self.setWindowIcon(make_icon("D"))
+        self.resize(860, 740); self.setMinimumSize(700, 540)
 
-    def slider(self, lay, label, key, lo, hi, mult, fmt="{:.2f}"):
-        row = QtWidgets.QHBoxLayout(); lb = QtWidgets.QLabel(label); lb.setMinimumWidth(135)
-        sl = QtWidgets.QSlider(Qt.Orientation.Horizontal); sl.setRange(int(lo * mult), int(hi * mult))
-        sl.setValue(int(self.A.cfg[key] * mult)); vl = QtWidgets.QLabel(fmt.format(self.A.cfg[key])); vl.setMinimumWidth(46)
-        def ch(v, k=key, m=mult, vl=vl, fmt=fmt): vl.setText(fmt.format(v / m)); self.A.set(k, v / m)
-        sl.valueChanged.connect(ch)
-        row.addWidget(lb); row.addWidget(sl, 1); row.addWidget(vl); lay.addLayout(row)
-        self.ctrl[key] = ("slider", sl, mult, vl, fmt)
+        root = QtWidgets.QVBoxLayout(self); root.setContentsMargins(12, 12, 12, 12); root.setSpacing(10)
+        root.addWidget(self._build_header())
+        root.addWidget(self._build_bar())
+        body = QtWidgets.QHBoxLayout(); body.setSpacing(12)
+        self.nav = QtWidgets.QListWidget(); self.nav.setObjectName("nav"); self.nav.setFixedWidth(158)
+        self.nav.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.stack = QtWidgets.QStackedWidget()
+        body.addWidget(self.nav); body.addWidget(self.stack, 1)
+        root.addLayout(body, 1)
+        root.addWidget(self._build_footer())
 
-    def button(self, text, fn, alt=False):
-        # clicked(bool) into a plain callable: Qt fills any parameter it can, so a
-        # one-argument lambda would be handed `False` and blow up. Take no args.
-        if callable(fn):
-            def go(_=None, _f=fn):
-                _f()
-            fn = go
-        b = QtWidgets.QPushButton(text); b.clicked.connect(fn)
-        if alt: b.setObjectName("alt")
-        return b
+        self._build_pages()
+        self.nav.currentRowChanged.connect(self._on_nav)
+        self.nav.setCurrentRow(0)
+        QtGui.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Find), self, activated=self._focus_search)
+        QtGui.QShortcut(QtGui.QKeySequence("Escape"), self, activated=self._escape)
+        self.refresh()
 
-    def refresh(self):
-        for key, c in self.ctrl.items():
-            v = self.A.cfg[key]
-            if c[0] == "check":
-                c[1].blockSignals(True); c[1].setChecked(bool(v)); c[1].blockSignals(False)
-            else:
-                c[1].blockSignals(True); c[1].setValue(int(v * c[2])); c[1].blockSignals(False); c[3].setText(c[4].format(v))
-        self.preset_box.blockSignals(True); self.preset_box.setCurrentText(self.A.cfg["preset"]); self.preset_box.blockSignals(False)
-        if getattr(self, "gun_box", None) is not None:
-            self.sync_gun_box()
+    # =========================================================================
+    #  Building the window
+    # =========================================================================
+    def _build_header(self):
+        head = QtWidgets.QFrame(); head.setObjectName("header")
+        lay = QtWidgets.QHBoxLayout(head); lay.setContentsMargins(18, 12, 14, 12)
+        col = QtWidgets.QVBoxLayout(); col.setSpacing(0)
+        self.title = QtWidgets.QLabel("Desktop Pets"); self.title.setObjectName("title")
+        self.subtitle = QtWidgets.QLabel(""); self.subtitle.setObjectName("subtitle")
+        col.addWidget(self.title); col.addWidget(self.subtitle)
+        lay.addLayout(col); lay.addStretch(1)
+        self.search = QtWidgets.QLineEdit(); self.search.setObjectName("search")
+        self.search.setPlaceholderText("Search settings\u2026  (Ctrl+F)")
+        self.search.setClearButtonEnabled(True); self.search.setFixedWidth(260)
+        self.search.textChanged.connect(self._on_search)
+        lay.addWidget(self.search)
+        return head
 
-    def sync_gun_box(self):
-        """Put the Interact tab's weapon picker back on what the settings file says."""
-        self.gun_box.blockSignals(True)
-        self.gun_box.setCurrentIndex(max(0, self.gun_box.findData(self.A.cfg.get("test_weapon") or "")))
-        self.gun_box.blockSignals(False)
+    def _build_bar(self):
+        """'Actions apply to' lives above every page so it is never a tab away from the buttons."""
+        bar = QtWidgets.QFrame(); bar.setObjectName("bar")
+        lay = QtWidgets.QHBoxLayout(bar); lay.setContentsMargins(14, 8, 14, 8); lay.setSpacing(10)
+        lay.addWidget(QtWidgets.QLabel("Actions apply to"))
+        self.who_box = NoWheelCombo(); self.who_box.setMinimumWidth(190)
+        self.who_box.addItem("Everyone", -1)
+        for i, p in enumerate(self.A.pets): self.who_box.addItem(p.name, i)
+        self.who_box.currentIndexChanged.connect(lambda i: self._set_target(self.who_box.itemData(i)))
+        lay.addWidget(self.who_box)
+        note = QtWidgets.QLabel("for the Actions page and quick buttons"); note.setObjectName("barNote")
+        lay.addWidget(note); lay.addStretch(1)
+        self.toast = QtWidgets.QLabel(""); self.toast.setObjectName("toast"); lay.addWidget(self.toast)
+        return bar
 
-    # ---- tabs ----
-    def tab_chars(self):
-        w = QtWidgets.QWidget(); l = QtWidgets.QVBoxLayout(w)
-        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Screen"))
-        self.screen_box = QtWidgets.QComboBox()
-        for i, s in enumerate(self.A.qapp.screens()):
-            g = s.availableGeometry()
-            self.screen_box.addItem(f"{i}: {s.name()}  ({g.width()}x{g.height()})", i)
-        self.screen_box.addItem("Cursor screen at startup", "cursor")
-        self.screen_box.addItem("Primary screen", "primary")
-        cur = self.A.cfg.get("screen", "cursor")
-        idx = self.screen_box.findData(cur)
-        self.screen_box.setCurrentIndex(idx if idx >= 0 else self.screen_box.count() - 2)
-        self.screen_box.currentIndexChanged.connect(self.on_screen_changed)
-        row.addWidget(self.screen_box, 1)
-        bt = self.button("Apply", self.on_screen_apply, True); row.addWidget(bt)
-        l.addLayout(row)
-        self.screen_note = QtWidgets.QLabel(""); self.screen_note.setWordWrap(True); l.addWidget(self.screen_note)
-        self.sync_screen_note()
-        l.addSpacing(6)
-        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Act on"))
-        self.who_box = QtWidgets.QComboBox()
-        self.who_box.addItems(["All characters"] + [p.name for p in self.A.pets])
-        self.who_box.currentIndexChanged.connect(lambda _i: self.A.set_target(self.who_box.currentIndex()))
-        row.addWidget(self.who_box, 1); l.addLayout(row)
-        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Selected"))
-        self.sel_box = QtWidgets.QComboBox()
+    def _build_footer(self):
+        foot = QtWidgets.QFrame(); foot.setObjectName("footer")
+        lay = QtWidgets.QHBoxLayout(foot); lay.setContentsMargins(14, 8, 14, 8); lay.setSpacing(10)
+        col = QtWidgets.QVBoxLayout(); col.setSpacing(1)
+        self.status = QtWidgets.QLabel(""); self.status.setObjectName("statusMain")
+        self.status.setTextFormat(Qt.TextFormat.RichText)
+        self.status_sub = QtWidgets.QLabel(""); self.status_sub.setObjectName("statusSub")
+        col.addWidget(self.status); col.addWidget(self.status_sub)
+        lay.addLayout(col, 1)
+        cap = QtWidgets.QLabel("Status of"); cap.setObjectName("barNote"); lay.addWidget(cap)
+        self.sel_box = NoWheelCombo(); self.sel_box.setMinimumWidth(140)
         self.sel_box.addItems([p.name for p in self.A.pets] or ["-"])
         self.sel_box.currentIndexChanged.connect(lambda i: self.A.set_active_by_index(max(0, i)))
-        row.addWidget(self.sel_box, 1); l.addLayout(row)
-        l.addSpacing(6)
-        self.char_rows = []
-        for p in self.A.pets:
-            box = QtWidgets.QGroupBox(p.name); g = QtWidgets.QGridLayout(box)
-            cbs = QtWidgets.QCheckBox("visible"); cbs.setChecked(p.isVisible())
-            cbs.toggled.connect(lambda v, pp=p: self.A.set_pet_visible(pp, v))
-            g.addWidget(cbs, 0, 0)
-            g.addWidget(self.button("Reset pos", lambda pp=p: pp.reset_position(), True), 0, 1)
-            g.addWidget(self.button("Summon", lambda pp=p: self.A.summon(pp), True), 0, 2)
-            g.addWidget(self.button("Poke", lambda pp=p: pp.poke(), True), 0, 3)
-            g.addWidget(self.button("Say", lambda pp=p: pp.say(pp.line("idle", "poke")), True), 0, 4)
-            g.addWidget(self.button("Spin", lambda pp=p: pp.spin(), True), 0, 5)
-            l.addWidget(box)
-            self.char_rows.append((p, cbs))
-        l.addWidget(self.button("Show all", lambda: self.A.set_all_visible(True)))
-        l.addWidget(self.button("Hide all", lambda: self.A.set_all_visible(False)))
-        note = QtWidgets.QLabel("Tip: if no characters appear at startup, something was left "
-                                "hidden last time. Press <b>Show all</b>.")
-        note.setWordWrap(True); l.addWidget(note)
-        l.addStretch(1); return w
+        lay.addWidget(self.sel_box)
+        return foot
+
+    def _build_pages(self):
+        for page in PAGES:
+            view = self._html_page(page) if page.html else self._settings_page(page)
+            self.views.append(view)
+            self.stack.addWidget(view.widget)
+            self.nav.addItem(self._nav_text(page))
+        self.empty = QtWidgets.QLabel(""); self.empty.setObjectName("empty")
+        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter); self.empty.setWordWrap(True)
+        self.stack.addWidget(self.empty)
+
+    def _nav_text(self, page, hits=None) -> str:
+        return f"{page.glyph}   {page.title}" + ("" if hits is None else f"    {hits}")
+
+    def _settings_page(self, page) -> PageView:
+        scroll = QtWidgets.QScrollArea(); scroll.setObjectName("page"); scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        host = QtWidgets.QWidget()
+        lay = QtWidgets.QVBoxLayout(host); lay.setContentsMargins(0, 0, 6, 8); lay.setSpacing(12)
+        sections = []
+        for sp in page.sections:
+            sec = Section(sp.title, sp.hint, sp.collapsed)
+            for rs in sp.rows: sec.add(self._make_row(rs))
+            lay.addWidget(sec); sections.append(sec)
+        lay.addStretch(1)
+        scroll.setWidget(host)
+        return PageView(page, scroll, sections)
+
+    def _html_page(self, page) -> PageView:
+        tb = QtWidgets.QTextBrowser(); tb.setOpenExternalLinks(True); tb.setHtml(page.html)
+        text = html.unescape(re.sub(r"<[^>]+>", " ", page.html)).lower()
+        return PageView(page, tb, blob=f"{page.title.lower()} {text}")
+
+    def _make_row(self, spec):
+        """One spec object from ui_spec -> one live row."""
+        t = type(spec)
+        if t is Toggle: row = ToggleRow(self, spec)
+        elif t is Slider: row = SliderRow(self, spec)
+        elif t is Choice: row = ChoiceRow(self, spec)
+        elif t is Info:
+            row = InfoRow(self, spec.fn, spec.live)
+            if spec.live: self.live_rows.append(row)
+        elif t is Buttons:
+            row = ButtonsRow(self, [dict(label=b.label, fn=(lambda f=b.run: f(self)), kind=b.kind, hint=b.hint)
+                                    for b in spec.items], spec.columns)
+        elif t is Actions:
+            acts = [a for a in ACTIONS if a.group == spec.group and (spec.only is None or a.key in spec.only)]
+            if spec.only: acts.sort(key=lambda a: spec.only.index(a.key))
+            row = ButtonsRow(self, [dict(label=f"{a.glyph}  {a.label}", fn=(lambda a=a: self.run_action(a)),
+                                         kind="action", hint=a.hint, blob=f"{a.key} {a.group}") for a in acts],
+                             spec.columns)
+        elif t is Custom:
+            row = CUSTOM_ROWS[spec.name](self)
+            self.named[spec.name] = row
+            if hasattr(row, "refresh_live"): self.live_rows.append(row)
+        else:
+            raise TypeError(f"unknown row spec: {spec!r}")
+        self.rows.append(row)
+        return row
+
+    # =========================================================================
+    #  ctx: what the rows call
+    # =========================================================================
+    def set(self, key, value):
+        """A row changed a setting."""
+        self.A.set(key, value)
+        self.touch()
+
+    def touch(self):
+        """Something changed: grey out rows that no longer apply, refresh live text."""
+        for r in self.rows: r.update_enabled()
+        for r in self.live_rows:
+            if hasattr(r, "refresh_live"): r.refresh_live()
+            else: r.sync()
+
+    def flash(self, text: str, ms: int = 3200):
+        """A short confirmation at the right of the target bar."""
+        self.toast.setText(text); self._toast.start(ms)
+
+    def run_action(self, action, pets=None):
+        """Run a ui_spec.Action on `pets` (default: the chosen target) and say what happened."""
+        A = self.A
+        try:
+            if action.scope == "app":
+                action.run(A, None); who = ""
+            else:
+                chosen = A.targets() if pets is None else list(pets)
+                chosen = [p for p in chosen if p.isVisible()]
+                if not chosen:
+                    self.flash("Nobody visible to act on"); return
+                for p in chosen: action.run(A, p)
+                who = chosen[0].name if len(chosen) == 1 else f"{len(chosen)} characters"
+        except Exception as e:                       # a bad action must never kill the panel
+            traceback.print_exc()
+            self.flash(f"{action.label} failed: {type(e).__name__}: {e}", 6000); return
+        self.flash(f"\u2714 {action.label}" + (f" \u2192 {who}" if who else ""))
+
+    def toggle_target(self, index: int):
+        """Aim at one character, or back at everyone when she already is the target."""
+        self._set_target(-1 if self.A.target == index else index)
+
+    def reset_defaults(self):
+        keep = {"screen", "positions", "hidden", "pos_x"}       # where things are is not a 'setting'
+        ask = QtWidgets.QMessageBox.question(
+            self, "Reset all settings",
+            "Restore every option to its default?\n\nThe screen, character positions and which "
+            "characters are hidden are kept.",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No)
+        if ask != QtWidgets.QMessageBox.StandardButton.Yes: return
+        for key, val in DEFAULTS.items():
+            if key not in keep: self.A.set(key, val)        # through set(): scale / fps / flags apply at once
+        self.refresh()
+        self.flash("All settings restored to their defaults")
+
+    # =========================================================================
+    #  Target
+    # =========================================================================
+    def _set_target(self, index):
+        A = self.A
+        index = -1 if index is None else int(index)
+        A.set_target(index)
+        if 0 <= index < len(A.pets): A.set_active(A.pets[index])    # the footer follows the target
+        self.sync_target()
+
+    def sync_target(self):
+        A = self.A
+        t = A.target if 0 <= A.target < len(A.pets) else -1
+        self.who_box.blockSignals(True); self.who_box.setCurrentIndex(max(0, self.who_box.findData(t)))
+        self.who_box.blockSignals(False)
+        cast = self.named.get("cast")
+        if cast is not None: cast.sync_target()
+
+    # =========================================================================
+    #  Search + navigation
+    # =========================================================================
+    def _on_nav(self, row: int):
+        if row < 0: return
+        self.stack.setCurrentIndex(row); self._page = row
+
+    def _focus_search(self):
+        self.search.setFocus(); self.search.selectAll()
+
+    def _escape(self):
+        if self.search.text(): self.search.clear()
+        else: self.hide()
+
+    def _on_search(self, text: str):
+        self.tokens = text.lower().split()
+        hits = [v.apply_filter(self.tokens) for v in self.views]
+        for i, n in enumerate(hits):
+            item = self.nav.item(i)
+            item.setHidden(bool(self.tokens) and n == 0)
+            item.setText(self._nav_text(PAGES[i], n if self.tokens else None))
+        cur = self.nav.currentRow()
+        if not self.tokens:                                     # cleared: stay where you are
+            self.nav.setCurrentRow(cur if cur >= 0 else self._page)
+            self.stack.setCurrentIndex(self.nav.currentRow())
+        elif not any(hits):
+            self.nav.setCurrentRow(-1)
+            self.empty.setText(f"Nothing matches \u201c{html.escape(text.strip())}\u201d.\n\n"
+                               "Try fewer or shorter words, such as speed, shadow or ragdoll.")
+            self.stack.setCurrentWidget(self.empty)
+        else:
+            if cur < 0 or hits[cur] == 0:
+                self.nav.setCurrentRow(next(i for i, n in enumerate(hits) if n))
+            self.stack.setCurrentIndex(self.nav.currentRow())
+
+    # =========================================================================
+    #  Keeping the window in step with the app (names other modules call)
+    # =========================================================================
+    def refresh(self):
+        """Re-read every setting from the app (after a preset, a wheel resize, a reset ...)."""
+        for r in self.rows: r.sync()
+        self.touch()
+        self.sync_target()
+        self._summary()
 
     def sync_char_rows(self):
-        for p, cb in getattr(self, "char_rows", ()):
-            cb.blockSignals(True); cb.setChecked(p.isVisible()); cb.blockSignals(False)
+        """Visibility changed somewhere else (tray, menu, startup)."""
+        for name in ("cast", "hidden_banner"):
+            if name in self.named: self.named[name].sync()
+        self._summary()
 
     def sync_screen_note(self):
-        if getattr(self, "screen_note", None):
-            g = self.A.resolve_screen()
-            self.screen_note.setText(f"All characters are locked to screen {self.A.screen_label()}  "
-                                     f"(x {g.left()}..{g.right()}, y {g.top()}..{g.bottom()}).")
+        if "screen" in self.named: self.named["screen"].sync_note()
 
-    def on_screen_changed(self, _i): self.sync_screen_note()
+    def sync_gun_box(self):
+        """Put the weapon picker back on what the settings file says."""
+        if "gun" in self.named: self.named["gun"].sync()
 
-    def on_test_weapon(self, _i):
-        """Weapon picked on the Interact tab: "" = the test gun is off."""
-        self.A.set("test_weapon", self.gun_box.currentData())
-        self.gun_status.setText(self.A.gun_status())
-
-    def fire_test_gun_now(self):
-        """One round of the picked weapon at the cursor, without any click - so the
-        effects can be looked at even where no global mouse hook is allowed."""
-        w = self.A.cfg.get("test_weapon") or ""
-        if not w:
-            self.gun_status.setText("Pick a weapon first, then Fire one.")
-            return
-        self.A.test_gun_fire(w, QtGui.QCursor.pos())
-        self.gun_status.setText(self.A.gun_status())
-
-    def on_screen_apply(self):
-        self.A.set_screen(self.screen_box.currentData())
-        self.sync_screen_note()
-
-    def tab_pet(self):
-        w = QtWidgets.QWidget(); l = QtWidgets.QVBoxLayout(w)
-        self.slider(l, "Size", "scale", 0.5, 2.5, 100)
-        self.slider(l, "Walk speed", "walk_speed", 20, 220, 1, "{:.0f}")
-        self.slider(l, "Lean forward / back (deg)", "pitch_offset", -90, 90, 1, "{:.0f}")
-        self.slider(l, "Lean left / right (deg)", "tilt_offset", -40, 40, 1, "{:.0f}")
-        self.check(l, "Hand-rotated students turn back to face the desktop", "rotation_return")
-        self.slider(l, "Turn-back delay (s)", "rotation_return_delay", 0.0, 10.0, 10, "{:.1f}")
-        self.check(l, "Idle students look around (turn left / right, then back)", "look_around")
-        self.slider(l, "Look-around chance", "look_around_chance", 0.0, 1.0, 100, "{:.2f}")
-        l.addSpacing(6)
-        for label, key in (("Wander around on her own", "wander"), ("Look at my cursor", "look_at_cursor"),
-                           ("Follow my cursor (walk to it)", "follow_cursor"),
-                           ("Perch / jump on top of my windows (Windows only)", "perch"),
-                           ("Speech bubbles", "speech"), ("Particles (hearts / sparkles)", "particles"),
-                           ("Blue Archive VFX (flashes, sparks, beams, rings)", "ba_vfx"),
-                           ("Emote balloons (! ? \u2665 \u266a ...)", "emotes"),
-                           ("Damage numbers / CRITICAL / MISS / BLOCK", "damage_numbers"),
-                           ("Always on top", "always_on_top"), ("Click-through transparent areas", "click_through")):
-            self.check(l, label, key)
-        l.addSpacing(6)
-        l.addWidget(QtWidgets.QLabel("Together"))
-        self.check(l, "Look at other characters", "peer_look")
-        self.slider(l, "How often they glance over", "peer_look_rate", 0.0, 1.0, 100, "{:.2f}")
-        self.slider(l, "Cursor notice range (widths)", "cursor_gaze_range", 0.5, 8.0, 10, "{:.1f}")
-        self.slider(l, "Still-noticed when far", "cursor_gaze_far", 0.0, 1.0, 100, "{:.2f}")
-        self.check(l, "Talk to each other", "chat")
-        self.slider(l, "Chattiness", "chat_rate", 0.0, 1.0, 100, "{:.2f}")
-        self.check(l, "Walk over before talking", "chat_meetup")
-        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Frame rate"))
-        self.fps_box = QtWidgets.QComboBox(); self.fps_box.addItems(["30", "60"]); self.fps_box.setCurrentText(str(int(self.A.cfg["fps"])))
-        self.fps_box.currentTextChanged.connect(lambda s: self.A.set("fps", int(s))); row.addWidget(self.fps_box); row.addStretch(1); l.addLayout(row)
-        row = QtWidgets.QHBoxLayout()
-        row.addWidget(self.button("Reset lean", lambda: (self.A.set("pitch_offset", 0.0), self.A.set("tilt_offset", 0.0, refresh=True)), True))
-        row.addWidget(self.button("Reset positions", lambda: [p.reset_position() for p in self.A.pets], True))
-        row.addWidget(self.button("Hide to tray", lambda: self.A.toggle_pet(), True)); l.addLayout(row)
-        l.addStretch(1); return w
-
-    def tab_shader(self):
-        w = QtWidgets.QWidget(); l = QtWidgets.QVBoxLayout(w)
-        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Preset"))
-        self.preset_box = QtWidgets.QComboBox(); self.preset_box.addItems(list(PRESETS)); self.preset_box.setCurrentText(self.A.cfg["preset"])
-        self.preset_box.currentTextChanged.connect(self.A.apply_preset); row.addWidget(self.preset_box, 1); l.addLayout(row)
-        self.slider(l, "Shadow threshold", "toon_threshold", 0.05, 0.95, 100)
-        self.slider(l, "Shadow softness", "toon_softness", 0.002, 0.30, 1000, "{:.3f}")
-        self.slider(l, "Shadow strength", "shadow_strength", 0.0, 1.0, 100)
-        self.slider(l, "Deep shadow band", "deep_shadow", 0.0, 1.0, 100)
-        self.slider(l, "Light intensity", "exposure", 0.4, 1.5, 100)
-        self.slider(l, "Rim light", "rim", 0.0, 1.5, 100)
-        self.slider(l, "Specular tick", "spec", 0.0, 1.0, 100)
-        self.slider(l, "Saturation", "saturation", 0.4, 1.7, 100)
-        self.slider(l, "Outline width (px)", "outline_px", 0.0, 5.0, 100)
-        self.slider(l, "Outline darkness", "outline_dark", 0.0, 1.0, 100)
-        self.check(l, "Eyes through bangs (experimental)", "eyes_through_bangs")
-        self.check(l, "Light follows my cursor (3D point light)", "light_follow")
-        self.slider(l, "Manual light azimuth", "light_az", -180, 180, 1, "{:.0f}")
-        self.slider(l, "Manual light elevation", "light_el", -20, 85, 1, "{:.0f}")
-        l.addStretch(1); return w
-
-    def tab_interact(self):
-        # The longest tab by far, and it keeps growing: scroll it rather than let the
-        # bottom (Blow) slide off the panel for anyone who does not resize it.
-        w = QtWidgets.QWidget(); l = QtWidgets.QVBoxLayout(w)
-        note = QtWidgets.QLabel("Applies to the target chosen on the Characters tab (All = everyone).")
-        note.setWordWrap(True); l.addWidget(note)
-        grid = QtWidgets.QGridLayout()
-        def run(fn):
-            self.A.each(fn)
-        items = [("Poke  (Cafe_Reaction)", lambda p: p.poke()), ("Pet  (patting)", lambda p: p.pet()),
-                 ("EX Cut-in  (Exs_Cutin)", lambda p: p.do_cutin()), ("Tactical Start", lambda p: p.do_tactical()),
-                 ("Spin 360° (3D)", lambda p: p.spin()), ("Launch!", lambda p: p.launch()),
-                 ("Ragdoll  (go limp)", lambda p: p.start_ragdoll(kick=False)),
-                 ("Cafe_Idle", lambda p: p.play_anim("idle")), ("Cafe_Walk", lambda p: p.play_anim("walk")),
-                 ("Formation_Idle", lambda p: p.play_anim("alert")), ("Formation_Pickup", lambda p: p.play_anim("pickup"))]
-        for i, (t, fn) in enumerate(items):
-            grid.addWidget(self.button(t, lambda f=fn: run(f), alt=i >= 7), i // 2, i % 2)
-        grid.addWidget(self.button("Shoot a student", lambda: run(lambda p: p.try_shoot(force=True))), 6, 0)
-        grid.addWidget(self.button("Say something", lambda: self.A.each(lambda p: p.say(p.line("idle", "poke")))), 6, 1)
-        grid.addWidget(self.button("Summon to cursor", lambda: self.A.summon()), 7, 0)
-        grid.addWidget(self.button("Look around", lambda: run(lambda p: p.look_around())), 7, 1)
-        l.addLayout(grid)
-        l.addSpacing(8)
-        l.addWidget(QtWidgets.QLabel("Shooting"))
-        self.check(l, "Random shooting events (students shoot each other)", "shoot_events")
-        self.slider(l, "Event chance", "shoot_chance", 0.0, 0.6, 100, "{:.2f}")
-        self.slider(l, "Hit chance", "shoot_hit_chance", 0.0, 1.0, 100, "{:.2f}")
-        self.slider(l, "Stray bullet hits one in the way", "shoot_intercept_chance", 0.0, 1.0, 100, "{:.2f}")
-        self.slider(l, "Ragdoll on hit", "shoot_ragdoll_chance", 0.0, 1.0, 100, "{:.2f}")
-        self.slider(l, "Armed target shoots back (base odds)", "shoot_retaliate_chance", 0.0, 1.0, 100, "{:.2f}")
-        self.slider(l, "Armed target runs away (base odds)", "shoot_flee_chance", 0.0, 1.0, 100, "{:.2f}")
-        self.slider(l, "Kneel behind a student for cover", "shoot_cover_chance", 0.0, 1.0, 100, "{:.2f}")
-        l.addSpacing(8)
-        l.addWidget(QtWidgets.QLabel("Weapon test gun"))
-        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Ctrl + left click"))
-        self.gun_box = QtWidgets.QComboBox()
-        self.gun_box.addItem("Off", "")
-        for wname in vfx.WEAPON_FX: self.gun_box.addItem(wname, wname)
-        self.gun_box.setCurrentIndex(max(0, self.gun_box.findData(self.A.cfg.get("test_weapon") or "")))
-        self.gun_box.currentIndexChanged.connect(self.on_test_weapon)
-        row.addWidget(self.gun_box, 1)
-        row.addWidget(self.button("Fire one", self.fire_test_gun_now, True))
-        l.addLayout(row)
-        note = QtWidgets.QLabel("A bench for the weapon effects. <b>Press or hold Ctrl + left click</b> "
-                                "and a round of that weapon flies from the middle of this screen to "
-                                "your cursor, hitting any student it crosses. Ctrl + click <i>on a "
-                                "student</i> works with no system hook; elsewhere it needs the hook "
-                                "Windows allows. While a weapon is picked, Ctrl + click is taken by "
-                                "the test gun - on <i>Off</i> it reaches the app underneath as usual.")
-        note.setWordWrap(True); l.addWidget(note)
-        self.gun_status = QtWidgets.QLabel(self.A.gun_status()); self.gun_status.setWordWrap(True)
-        l.addWidget(self.gun_status)
-        l.addSpacing(8)
-        l.addWidget(QtWidgets.QLabel("Together"))
-        h = QtWidgets.QHBoxLayout()
-        h.addWidget(self.button("Start a conversation", lambda: self.A.start_chat()))
-        h.addWidget(self.button("Introduce everyone", self.A.introduce_all))
-        l.addLayout(h)
-        h2 = QtWidgets.QHBoxLayout()
-        h2.addWidget(self.button("Stop all conversations", self.A.end_all_chats, True))
-        l.addLayout(h2)
-        self.chat_note = QtWidgets.QLabel(""); self.chat_note.setWordWrap(True); l.addWidget(self.chat_note)
-        l.addSpacing(8)
-        l.addWidget(QtWidgets.QLabel("Blow"))
-        self.check(l, "Blow mode: double-middle-click gusts wind from cursor", "blow_mode")
-        self.slider(l, "Gust strength", "blow_strength", 0.2, 2.5, 100, "{:.2f}")
-        h3 = QtWidgets.QHBoxLayout()
-        h3.addWidget(self.button("Gust at cursor now", lambda: self.A.spawn_gust()))
-        l.addLayout(h3)
-        l.addStretch(1)
-        sa = QtWidgets.QScrollArea()
-        sa.setWidgetResizable(True)
-        sa.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
-        # A scroll area's viewport paints its own background, so it never picks up the
-        # white from QTabWidget::pane - without this the whole tab comes up black.
-        sa.setStyleSheet("QScrollArea { background:#ffffff; }"
-                         " QScrollArea > QWidget > QWidget { background:#ffffff; }")
-        sa.setWidget(w)
-        return sa
-
-    def tab_help(self):
-        tb = QtWidgets.QTextBrowser(); tb.setOpenExternalLinks(True)
-        tb.setHtml("""<h3>Characters</h3><p>Every <code>.glb</code> file in the <code>model</code> folder becomes its own character with its own
-        window, animations, walk cycle and dialogue. Drop another <code>.glb</code> in and restart to add more.</p>
-        <h3>One screen only</h3><p>All of them are locked to a single monitor - they spawn on it, walk on it, only jump onto
-        windows that sit on it, and can't be dragged off it. Pick which monitor on the Characters tab.</p>
-        <h3>Together</h3><p>With more than one character they notice each other:</p><ul>
-        <li>They <b>glance at each other</b> between idle animations. Move your cursor near one and she looks at you instead.</li>
-        <li>They start <b>conversations</b> on their own - different topics, a few lines each, and whoever is
-        listening faces the speaker and reacts. Poke one and a nearby character comments on it.</li>
-        <li>When two of them walk past each other they say hello.</li></ul>
-        <p>All of it is on the Pet tab (<i>Together</i>) and the Interact tab.</p>
-        <h3>Controls</h3><ul>
-        <li><b>Move cursor</b> - head and body follow it when it is <i>near</i>; further away
-        they mostly glance at a friend or off into the room instead
-        (<i>Cursor notice range</i> / <i>Still-noticed when far</i> on the Pet tab).</li>
-        <li><b>Click</b> - poke. <b>Double-click</b> - EX cut-in.</li>
-        <li><b>Drag</b> - pick up (Formation_Pickup). Release while moving to <b>throw</b>.</li>
-<li><b>Right-click &rarr; Ragdoll</b> - she goes limp: tumbles, bounces off the floor and
-your window title bars, flops about, lies there a few seconds, then gets back up on her own
-(turn <i>Ragdoll: auto get-up</i> off to keep her down). While she's limp, <b>click</b> shoves her
-away from the cursor and you can still pick her up and throw her.</li>
-<li><b>Ctrl + 1</b> - works from <i>any</i> window, including ones you are typing in:
-whatever character is under the cursor goes limp, with a short sound to confirm the hit
-(press it again to stand her back up). On bare desktop it does nothing at all. Note that
-Ctrl+1 is swallowed while this is running, so the app underneath will not act on it
-either.</li>
-        <li><b>Double-middle-click</b> - gust of wind from the cursor (needs <i>Blow mode</i> on the Interact tab). Hair and clothes flutter - the body stays put.</li>
-        <li><b>Ctrl + left click</b> - fires one round of the weapon picked under <i>Weapon test gun</i> on
-        the Interact tab, from the middle of this screen to your cursor; hold the button to keep firing.
-        It works over <i>any</i> app, and the round hits any student it crosses (damage number, flinch, and
-        the ragdoll chance above), so it is the quickest way to see what each weapon's tracer, beam or
-        explosion actually looks like. On <i>Off</i> your Ctrl + click reaches the app underneath as usual.</li>
-        <li><b>Stroke the cursor back and forth over her head</b> - petting. She bows as you go.</li>
-        <li><b>Wheel</b> - resize everyone. <b>Ctrl+wheel / middle-drag / Ctrl+drag</b> - turn ONLY that student; she eases back to facing the desktop a couple of seconds after you let go (Pet tab). <b>Shift+wheel</b> - turn EVERY student the same way; they all ease back by themselves. Idle students also occasionally <i>look around</i> by themselves.</li>
-        <li><b>Right-click a character</b> - its own quick menu. Tray icon: show/hide, panel, quit.</li></ul>
-        <p><b>Click-through</b> is a per-pixel Windows hit-test; on Linux/macOS it falls back to a mask region.</p>
-        <h3>Windows</h3><p>With <i>Perch</i> on they jump up onto your open windows, walk along their title bars,
-        ride them while you move them, and fall if you close or minimise them.</p>
-        <h3>Tips</h3><p>Run with <code>--dump</code> to print
-        bone / animation / material names for every model.</p>""")
-        return tb
+    def _summary(self):
+        A = self.A
+        n = sum(1 for p in A.pets if p.isVisible())
+        self.subtitle.setText(f"{n} of {len(A.pets)} characters visible  \u00b7  screen {A.screen_label()}")
 
     def update_status(self):
-        p = self.A.active or (self.A.pets[0] if self.A.pets else None)
+        """Called about four times a second while the panel is open."""
+        A = self.A
+        p = A.active or (A.pets[0] if A.pets else None)
         if p is None: return
-        n = sum(1 for q in self.A.pets if q.isVisible())
-        short = self.A.dialogue.display_name
+        short = A.dialogue.display_name
+        state, _tone = pet_state(p)
         if p.gaze_peer is not None and p.gaze_left > 0: looking = f"looking at {short(p.gaze_peer.name)}"
         elif not p.cur_look: looking = "looking off into the room"
         else: looking = "looking at cursor"
-        chat = ""
+        bits = [state, ANIM_KEYS.get(p.anim_key, (p.anim_key,))[0], looking]
         if p.busy_chat():
-            if p.meet_target is not None: chat = f"walking over to {short(p.meet_target.name)}"
-            elif p.chat_with is not None:
-                chat = f"{self.A.dialogue.topic_label(p.chat_topic)} with {short(p.chat_with.name)}"
-        self.status.setText(f"{n} character(s) | screen {self.A.screen_label()} | fps: {self.A.fps:4.0f}\n"
-                            f"{p.name}: state {p.state:<6} anim: {ANIM_KEYS[p.anim_key][0]:<17} "
-                            f"pos: {int(p.px)},{int(p.py)}  grounded: {p.grounded}  on-window: {p.support is not None}\n"
-                            f"{looking}" + (f"  |  {chat}" if chat else ""))
-        if getattr(self, "chat_note", None):
-            if not self.A.cfg["chat"] or n < 2:
-                self.chat_note.setText("Needs 2+ visible characters and <i>Talk to each other</i> on.")
-            else:
-                self.chat_note.setText(f"Topics: {self.A.dialogue.topic_label_text()}.")
-        if getattr(self, "gun_status", None) is not None:
-            self.gun_status.setText(self.A.gun_status())
+            if p.meet_target is not None: bits.append(f"walking over to {short(p.meet_target.name)}")
+            elif p.chat_with is not None: bits.append(f"{A.dialogue.topic_label(p.chat_topic)} with {short(p.chat_with.name)}")
+        self.status.setText(f"<b>{html.escape(p.name)}</b> &nbsp;\u00b7&nbsp; " + " \u00b7 ".join(html.escape(b) for b in bits))
+        place = "on a window" if p.support is not None else ("on the floor" if p.grounded else "in the air")
+        n = sum(1 for q in A.pets if q.isVisible())
+        self.status_sub.setText(f"{n} of {len(A.pets)} visible  \u00b7  {A.fps:.0f} fps  \u00b7  "
+                                f"at {int(p.px)}, {int(p.py)}  \u00b7  {place}")
+        self._summary()
+        for r in self.live_rows:
+            if hasattr(r, "refresh_live"): r.refresh_live()
+            else: r.sync()
