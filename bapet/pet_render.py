@@ -9,6 +9,7 @@ import numpy as np
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt
 
+from . import vfx
 from .config import TWRAP
 from .mathutil import clamp, fade_back, m4, rot_x, rot_y, rot_z, rot_z4, scale4, translate, wrap_pi
 
@@ -239,6 +240,38 @@ class PetRender:
         bx = (self.W - w) / 2; by = max(4.0, self.H * (1 - self.PADB) - self.char_h() - h - 14)
         return QRectF(bx, by, w, h), r
 
+    # ---------------- overhead UI: emote balloon + reload gauge ----------------
+    def emote_pos(self):
+        s = math.sqrt(max(0.4, self.cfg["scale"]))
+        x = clamp(self.head_px[0] + self.W * 0.15, 30 * s, self.W - 30 * s)
+        y = clamp(self.head_px[1] - self.H * 0.07, 28 * s, self.H - 28 * s)
+        return x, y, s
+
+    def emote_geom(self):
+        if not self.emo: return None
+        x, y, s = self.emote_pos(); r = 34 * s
+        return QRectF(x - r, y - r, r * 2, r * 2)
+
+    def reload_frac(self):
+        """0..1 progress of the reload she is doing right now, else None."""
+        a = self.atk
+        in_atk = a is not None and a.get("phase") == "reload"
+        in_shot = self.state == "shot" and self.shot_key == "reload"
+        if not (in_atk or in_shot): return None
+        c = self.rig.clip; rc = self.clips.get("reload")
+        if c is not None and rc is not None and c is rc and c.duration > 0:
+            return clamp(self.rig.t / c.duration, 0.0, 1.0)
+        if in_atk:
+            tot = max(0.1, float(a.get("reload_total", 2.0)))
+            return clamp(1.0 - a["reload_t"] / tot, 0.0, 1.0)
+        return None
+
+    def reload_pos(self):
+        s = math.sqrt(max(0.4, self.cfg["scale"]))
+        x = clamp(self.head_px[0] - self.W * 0.16, 26 * s, self.W - 26 * s)
+        y = clamp(self.head_px[1] - self.H * 0.03, 26 * s, self.H - 40 * s)
+        return x, y, s
+
     def update_mask(self):
         self.mask_dirty = False
         a = self.alpha
@@ -252,8 +285,10 @@ class PetRender:
         m = dil(dil(m))
         packed = np.packbits(m, axis=1, bitorder="little").tobytes()
         bg = self.bubble_geom()
+        eg = self.emote_geom(); rf = self.reload_frac()
         key = (hash(packed), self.grounded, None if bg is None else (int(bg[0].x()), int(bg[0].y()), int(bg[0].width()), int(bg[0].height())),
-               tuple((int(q["x"]), int(q["y"]), q["kind"]) for q in self.parts if q["life"] >= 0))
+               tuple((int(q["x"]), int(q["y"]), q["kind"]) for q in self.parts if q["life"] >= 0),
+               None if eg is None else (int(eg.x()), int(eg.y())), rf is not None)
         if key == self.mask_key: return
         self.mask_key = key
         try:
@@ -264,10 +299,15 @@ class PetRender:
                 region = region.united(QtGui.QRegion(QtCore.QRect(int(self.W / 2 - rw), int(cy - rw * 0.24), int(rw * 2), int(rw * 0.48)),
                                                      QtGui.QRegion.RegionType.Ellipse))
             if bg is not None: region = region.united(QtGui.QRegion(bg[0].toAlignedRect().adjusted(-2, -2, 2, 14)))
+            if eg is not None: region = region.united(QtGui.QRegion(eg.toAlignedRect()))
+            if rf is not None:
+                rx, ry, rs = self.reload_pos(); rr = int(24 * rs)
+                region = region.united(QtGui.QRegion(QtCore.QRect(int(rx - rr), int(ry - rr), rr * 2, int(rr * 2 + 18 * rs))))
             # A3: particles float outside the silhouette, so fold them into the mask too
             for q in self.parts:
                 if q["life"] < 0: continue
-                r = (int(q["len"] * 0.6) if q["kind"] == "wind" else int(q["size"] * 2.2)) + 2
+                if "mask_r" in q: r = int(q["mask_r"]) + 2
+                else: r = (int(q["len"] * 0.6) if q["kind"] == "wind" else int(q["size"] * 2.2)) + 2
                 region = region.united(QtGui.QRegion(QtCore.QRect(int(q["x"] - r), int(q["y"] - r), r * 2, r * 2),
                                                          QtGui.QRegion.RegionType.Ellipse))
             self.setMask(region)
@@ -287,10 +327,16 @@ class PetRender:
             p.save(); p.translate(self.W / 2, cy); p.scale(1, 0.22)
             g = QtGui.QRadialGradient(0, 0, rw); g.setColorAt(0, QtGui.QColor(10, 20, 50, 95)); g.setColorAt(1, QtGui.QColor(10, 20, 50, 0))
             p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QBrush(g)); p.drawEllipse(QPointF(0, 0), rw, rw); p.restore()
+        fancy = bool(self.cfg.get("ba_vfx", True))
+        self.paint_back_fx(p, fancy)                                 # floor rings + EX aura, behind her
         if self.img is not None: p.drawImage(QRectF(0, 0, self.W, self.H), self.img)
         for q in self.parts:
-            if q["life"] < 0: continue
-            al = max(0.0, 1 - (q["life"] / q["max"]) ** 2)
+            if q["life"] < 0 or q["kind"] == "ring": continue
+            u = q["life"] / q["max"]
+            al = max(0.0, 1 - u ** 2)
+            kind = q["kind"]
+            if kind in ("sparkle", "shard", "dust", "tap") or (fancy and kind in ("heart", "star", "puff")):
+                self.paint_ba_part(p, q, u, al); continue
             p.save(); p.translate(q["x"], q["y"]); p.rotate(q["rot"] * q["life"] * 90)
             if q["kind"] == "heart":
                 p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QColor(255, 110, 160, int(235 * al))); p.drawPath(heart_path(q["size"]))
@@ -312,6 +358,7 @@ class PetRender:
                 p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QColor(255, 255, 255, int(110 * al)))
                 p.drawEllipse(QPointF(0, 0), q["size"] * (1 + q["life"]), q["size"] * (1 + q["life"]) * 0.7)
             p.restore()
+        self.paint_overhead(p)                                       # emote balloon + reload gauge
         bg = self.bubble_geom()
         if bg is not None:
             rect, tr = bg; text, t0, dur = self.bubble
@@ -331,6 +378,59 @@ class PetRender:
         if self.cfg.get("ragdoll_debug"):
             self.rag_debug_draw(p)
         p.end()
+
+    # ---------------- Blue Archive VFX painting ----------------
+    def paint_back_fx(self, p, fancy):
+        """Ground rings and the EX aura: drawn before the model so she stands in front of them."""
+        for q in self.parts:
+            if q["kind"] != "ring" or q["life"] < 0: continue
+            vfx.ground_ring(p, q["x"], q["y"], q["life"] / q["max"], q["size"], q.get("col", vfx.BA_SKY), q.get("flat", 0.3))
+        if fancy and self.state == "shot" and self.shot_key == "cutin" and not self.ragdoll:
+            t = self.state_t if self.state_t > 0 else 0.0
+            fx, fy = self.W / 2, self.H * (1 - self.PADB)
+            ch = self.char_h(); cy = fy - ch * 0.5
+            a = min(1.0, t / 0.25) * (0.75 + 0.25 * math.sin(t * 7.0))
+            vfx.glow(p, fx, cy, ch * 0.62, vfx.BA_SKY, 120 * a)
+            vfx.glow(p, fx, cy, ch * 0.32, vfx.WHITE, 70 * a)
+            p.save(); p.translate(fx, fy); p.scale(1.0, 0.3); p.rotate(t * 90)  # turning halo on the floor
+            pn = vfx.pen(vfx.BA_SKY, 200 * a, 4.0); pn.setDashPattern([6, 4]); p.setPen(pn); p.setBrush(vfx.NOBRUSH)
+            p.drawEllipse(QPointF(0, 0), self.W * 0.3, self.W * 0.3)
+            p.setPen(vfx.pen(vfx.WHITE, 160 * a, 2.0)); p.drawEllipse(QPointF(0, 0), self.W * 0.24, self.W * 0.24)
+            p.restore()
+
+    def paint_ba_part(self, p, q, u, al):
+        kind = q["kind"]; x, y = q["x"], q["y"]
+        if kind == "sparkle" or kind == "star":
+            tw = 0.65 + 0.35 * math.sin(q["life"] * 18 + q.get("ph", q["x"]))
+            col = q.get("col", vfx.BA_SKY)
+            vfx.sparkle(p, x, y, q["size"] * (1.25 if kind == "star" else 1.0) * tw * (1.0 - 0.3 * u), col, 255 * al,
+                        q["rot"] * q["life"] * 90)
+        elif kind == "shard":
+            vfx.shard(p, x, y, q["size"], q.get("col", vfx.WHITE), 255 * al, math.degrees(q["rot"] * q["life"] * 3),
+                      outline=q.get("hollow", False))
+        elif kind == "heart":
+            p.save(); p.translate(x, y); p.rotate(q["rot"] * q["life"] * 60)
+            s = q["size"] * (1.0 + 0.12 * math.sin(q["life"] * 12))
+            hp = heart_path(s)
+            p.strokePath(hp, vfx.pen(vfx.WHITE, 235 * al, 2.4)); p.fillPath(hp, vfx.qc(vfx.BA_PINK, 240 * al))
+            p.setPen(Qt.PenStyle.NoPen); p.setBrush(vfx.qc(vfx.WHITE, 210 * al))
+            p.drawEllipse(QPointF(-s * 0.4, -s * 0.28), s * 0.17, s * 0.11)
+            p.restore()
+        elif kind in ("dust", "puff"):
+            r = q["size"] * (0.8 + 1.1 * vfx.ease_out(u))
+            vfx.dust_cloud(p, x, y, r, 235 * (1.0 - u) ** 1.3, q.get("seed", int(q["size"] * 977)))
+        elif kind == "tap":
+            vfx.tap_fx(p, x, y, u, q["size"], q.get("seed", 0))
+
+    def paint_overhead(self, p):
+        if self.emo:
+            kind, t0, dur = self.emo
+            x, y, s = self.emote_pos()
+            vfx.emote(p, kind, x, y, (time.time() - t0) / max(0.1, dur), s)
+        rf = self.reload_frac()
+        if rf is not None and self.cfg.get("ba_vfx", True):
+            x, y, s = self.reload_pos()
+            p.save(); p.translate(x, y); p.scale(s, s); vfx.reload_gauge(p, 0, 0, rf); p.restore()
 
     def rag_debug_draw(self, p):
         """--rag-debug: the physics capsules, joints and window boxes, on top.

@@ -73,11 +73,16 @@ class PetState:
         if not self.grounded or self.dragging: return
         self.enter("shot", "react"); self.say(self.line("poke")); self.emit("star", 7)
         self.sq_v += 1.2
+        # BA cafe tap: the touch ripple where she was clicked, and an emote balloon
+        self.emit_tap()
+        self.emote(random.choices(("heart", "exclaim", "question", "surprise"), (0.4, 0.3, 0.18, 0.12))[0], 1.5)
         self.audience("poke")
 
     def pet(self):
         if not self.grounded or self.dragging: return
         self.enter("shot", "react"); self.say(self.line("petting")); self.emit("heart", 9); self.bow = 1.0
+        self.emote("shy", 2.0)
+        self.emit_sparkles(6, spread=110, colors=((255, 255, 255), (255, 170, 205)))
         self.audience("petting")
 
     def do_cutin(self):
@@ -88,10 +93,17 @@ class PetState:
         c = self.clips.get("cutin"); dur = clamp(c.duration if c else 2.0, 1.8, 4.0)
         self.A.cutin.start(scr, self.px + self.head_px[0], self.py + self.head_px[1], dur, self.name)
         self.emit("star", 14, spread=160)
+        # EX burst at her feet: double halo ring + triangles + sparkles (the aura is drawn by pet_render)
+        self.emit_ring(size=self.W * 0.42, life=0.8)
+        self.emit_ring(size=self.W * 0.3, color=(255, 255, 255), life=0.7, delay=0.1)
+        fx_, fy_ = self.feet_local()
+        self.emit_shards(12, fx_, fy_ - self.char_h() * 0.5, spread=self.W * 0.4, speed=(200, 460))
+        self.emit_sparkles(10, fx_, fy_ - self.char_h() * 0.6, spread=self.W * 0.5)
 
     def do_tactical(self, first=False):
         if not self.grounded or self.dragging: return
         self.enter("shot", "tactical"); self.say(self.line("tactical_first" if first else "tactical"), 3.6)
+        self.emit_spawn()                                       # BA tactical start: halo rings + rising light
 
     def spin(self): self.spin_t = 0.0
 
@@ -102,6 +114,8 @@ class PetState:
         self.vx = random.choice([-1, 1]) * random.uniform(500, 1400) * self.cfg["scale"]
         self.vy = -random.uniform(1500, 2300) * self.cfg["scale"]
         self.air_kind = "thrown"; self.bounces = 0; self.enter("fall"); self.say(self.line("launch"), 1.8)
+        self.emote("surprise", 1.4)
+        fx_, fy_ = self.feet_local(); self.emit_impact(fx_, fy_, 1.0)
 
     def recall(self):
         """Called when the user summons this specific character."""

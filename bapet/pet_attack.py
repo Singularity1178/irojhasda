@@ -13,7 +13,8 @@ from .combat_config import (
     SHOOT_KNOCK_SPEED, SHOOT_KNOCK_SPIN, SHOOT_LINES, SHOOT_MAX_TIME, SHOOT_MOCK_PERIOD,
     SHOOT_RUN_DODGE, SHOOT_STANCE_WEIGHT, STRESS_HIT, STRESS_NEAR
 )
-from .combat_data import attack_sets, move_sets
+from . import vfx
+from .combat_data import attack_sets, move_sets, weapon_for
 from .mathutil import clamp
 
 
@@ -97,6 +98,7 @@ class PetAttack:
             rc = self.reload_clip()                              # Normal_Reload, else stand about in Formation_Idle
             a["reload_anim"] = rc is not None
             a["reload_t"] = (rc.duration + 1.0) if rc is not None else random.uniform(*RELOAD_TIME)
+            a["reload_total"] = a["reload_t"]                       # for the BA reload gauge (pet_render)
             self.rig.play(rc if rc is not None else self.clips.get("alert"), rc is None, 1.0, 0.16)
             a["want_reload"] = False
             self.say_combat(random.choice(SHOOT_LINES[a["reload_why"]]), 1.6); a["reload_why"] = "reload"; return
@@ -138,6 +140,30 @@ class PetAttack:
         plays Normal_Reload and reloads, otherwise she just goes back to idle."""
         if not self.begin_reload(): self.enter("idle")
         self.plan_next()
+
+    # ---------------- Blue Archive VFX helpers ----------------
+    def weapon_type(self):
+        """Her weapon_type from combat_index.json (cached), or None."""
+        w = getattr(self, "_weapon_type", False)
+        if w is False:
+            try: w = weapon_for(self.ch.path)
+            except Exception: w = None
+            self._weapon_type = w
+        return w
+
+    def weapon_look(self):
+        """The merged look of her shots: weapon defaults + her profile bullet (Iroha's shell)."""
+        return vfx.weapon_fx(self.weapon_type(), self.ch.bullet)
+
+    def shielding_for(self, shooter):
+        """True when she is the student someone else is kneeling behind, and this bullet was
+        meant for that student: the BA 'BLOCK'."""
+        sa = getattr(shooter, "atk", None) if shooter is not None else None
+        tgt = sa.get("target") if sa else None
+        if tgt is None or tgt is self: return False
+        ta = getattr(tgt, "atk", None)
+        cv = ta.get("cover") if ta else None
+        return cv is not None and cv.get("shield") is self
 
     def shoot_target_ok(self, q):
         return q is not None and q.isVisible() and not q.ragdoll and not q.dragging
@@ -289,7 +315,12 @@ class PetAttack:
         d = math.hypot(tx - mx, ty - my) or 1.0
         ux, uy = (tx - mx) / d, (ty - my) / d
         mx += ux * self.H * 0.06; my += uy * self.H * 0.06       # out to the end of the barrel
-        fx.flash(mx, my)
+        fx.fancy = bool(self.cfg.get("ba_vfx", True))
+        wpn = self.weapon_type(); look = self.weapon_look(); ang = math.atan2(uy, ux)
+        fsz = float(look.get("flash", 1.0)) * clamp(math.sqrt(max(0.4, self.cfg["scale"])), 0.7, 1.4)
+        fx.flash(mx, my, ang, fsz, look.get("color"))           # BA muzzle flash, along the barrel
+        if look.get("casing") and not self.ch.bullet:            # brass flicks out of the ejection port, backwards
+            fx.casing(mx - ux * self.H * 0.05, my - uy * self.H * 0.05, 1 if ux >= 0 else -1)
         sc = max(0.6, self.cfg["scale"])
         q = a["target"]
         cv = a.get("cover"); shield = cv["shield"] if cv is not None else None   # her own shield is never in her line of fire
@@ -300,7 +331,7 @@ class PetAttack:
                             if s_ is not None and s_ not in hostile)
         bl = self.ch.bullet                                      # None = an ordinary bullet (see iroha.py)
         if bl and bl.get("muzzle_flash", 1.0) > 1.0:             # a cannon flash is bigger
-            for _ in range(int(bl["muzzle_flash"])): fx.flash(mx, my)
+            for _ in range(int(bl["muzzle_flash"])): fx.flash(mx, my, ang, fsz * 1.5, (255, 150, 60))
         hit = random.random() < self.aim_accuracy(q)
         self.ammo = max(0, self.ammo - 1); a["planted"] += 1  # one round gone; one more from this spot
         if hit:
@@ -315,13 +346,13 @@ class PetAttack:
         if other is not None:                                    # somebody else got in the way
             bd = math.hypot(bx - mx, by - my) or 1.0
             bux, buy = (bx - mx) / bd, (by - my) / bd
-            fx.fire(mx, my, bx, by, impact="spark", style=bl,
+            fx.fire(mx, my, bx, by, impact="spark", style=bl, weapon=wpn,
                     cb=lambda o=other, ux=bux, uy=buy: o.shot_landed(self, ux, uy, bl))
         elif hit:
-            fx.fire(mx, my, ex, ey, impact="spark", style=bl,
+            fx.fire(mx, my, ex, ey, impact="spark", style=bl, weapon=wpn,
                     cb=lambda q=q, ux=ux, uy=uy: q.shot_landed(self, ux, uy, bl))
         else:
-            fx.fire(mx, my, ex, ey, impact="spark", style=bl, cb=lambda q=q, sh=self: q.shot_missed(sh))
+            fx.fire(mx, my, ex, ey, impact="spark", style=bl, weapon=wpn, cb=lambda q=q, sh=self: q.shot_missed(sh))
 
     def shot_to_edge(self, x0, y0, x1, y1):
         """Extend the line (x0,y0)->(x1,y1) until it leaves this pet's screen."""
@@ -345,6 +376,12 @@ class PetAttack:
         sa = shooter.atk if shooter is not None else None        # the shooter's fight records that this bullet landed
         if sa is not None: sa.setdefault("hit_on", set()).add(id(self))
         self.emit("star", 6)
+        # BA combat text: damage number, CRITICAL, or BLOCK when she is shielding someone
+        look = shooter.weapon_look() if shooter is not None and hasattr(shooter, "weapon_look") else vfx.weapon_fx(None, bullet)
+        shell = bool(bullet) and float(bullet.get("impact_size", 1.0)) >= 2.0
+        blocked = self.shielding_for(shooter)
+        dmg, crit = vfx.roll_damage(look, 0.0 if blocked else (0.35 if shell else 0.15), 0.35 if blocked else 1.0)
+        self.combat_popup(dmg, "block" if blocked else ("crit" if crit else "normal"), 1.25 if shell else 1.0)
         self.add_stress(STRESS_HIT); self.flinch_until = time.monotonic() + FLINCH_TIME   # shaken, aim spoiled
         rag_p = float(self.cfg.get("shoot_ragdoll_chance", 0.5))
         if self.ch.shot_ragdoll_chance is not None and self.ride_on: rag_p = self.ch.shot_ragdoll_chance   # profile override, only while riding (Iroha: 0 in her tank)
@@ -357,6 +394,12 @@ class PetAttack:
             imp = (ux * spd, uy * spd * 0.5 - random.uniform(*SHOOT_KNOCK_LIFT) * s, spin)
             self.rag_edge_slam = False
             self.atk = None; self.flee = None
+            if self.vfx_on():                                    # knocked down: oversized BA hit burst on her
+                try:
+                    bx_, by_ = self.shoot_body_pt(self)
+                    self.A.shotfx.burst(bx_, by_, 1.4 * knock, tuple(look.get("tint", (255, 236, 170))))
+                except Exception: pass
+                self.emit_shards(8, spread=self.W * 0.3)
             self.start_ragdoll(kick=False, impulse=imp)
             if self.ragdoll: self.say_combat(random.choice(SHOOT_LINES["knocked"]), 2.2, force=True)
             return
@@ -366,6 +409,7 @@ class PetAttack:
             self.chat_abort()
             if self.grounded:
                 self.enter("shot", "react"); self.sq_v += 1.2
+            self.emote(random.choice(("exclaim", "surprise", "angry")), 1.4)   # caught off guard
         self.say_combat(random.choice(self.ch.hit_lines or SHOOT_LINES["hit"]), 1.8)
         if shooter is not None and shooter is not self:
             self.provoked(shooter)                               # a stray bullet counts too: retaliate / run / nothing
@@ -375,6 +419,9 @@ class PetAttack:
         may shoot back or run just as if it had hit."""
         if not self.isVisible() or self.ragdoll: return
         who = shooter if (shooter is not None and shooter is not self) else None
+        if who is not None: self.combat_popup("MISS", "miss")     # BA: an evaded / wide shot reads MISS
+        if who is not None and self.state not in ("shoot", "flee") and random.random() < 0.5:
+            self.emote("sweat", 1.3)
         if who is not None: self.add_stress(STRESS_NEAR)
         if not self.bubble and random.random() < 0.6:
             self.say_combat(random.choice(SHOOT_LINES["miss"]), 1.6)

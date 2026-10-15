@@ -111,6 +111,8 @@ class Pet(
         self.light = np.array([-0.5, 0.6, 0.8])
         self.head_px = (BASE_W / 2, BASE_H * 0.3)
         self.bubble = None; self.parts = []
+        self.emo = None                        # (kind, t0, dur): the emote balloon over her head (see vfx.emote)
+        self.emo_seen = None                   # last emote drawn, so the mask refreshes when it ends
         # earliest time she may next swap her bubble for a reactive combat line, see say_combat
         self.say_lock = 0.0
         # --- pet-to-pet (all of it lives on self.conv) ---
@@ -189,7 +191,9 @@ class Pet(
             self.chat_t = random.uniform(30, 80)
             if self.grounded and not self.bubble and self.state == "idle" and not self.in_chat(now):
                 self.say(self.line("idle"))
+                if random.random() < 0.35: self.emote(random.choice(("note", "note", "dots", "idea")), 1.8)
         if self.bubble and now - self.bubble[1] > self.bubble[2]: self.bubble = None; self.mask_dirty = True
+        if self.emo and now - self.emo[1] > self.emo[2]: self.emo = None; self.mask_dirty = True
         if self.spin_t >= 0:
             self.spin_t += dt
             if self.spin_t > 1.1: self.spin_t = -1.0
@@ -199,6 +203,8 @@ class Pet(
             q["x"] += q["vx"] * dt; q["y"] += q["vy"] * dt
             if q["kind"] == "wind":
                 k = math.exp(-1.4 * dt); q["vx"] *= k; q["vy"] *= k      # straight, just slows
+            elif "g" in q:                                 # BA VFX particles: own gravity + drag (pet_speech)
+                k = math.exp(-q["drag"] * dt); q["vx"] *= k; q["vy"] = q["vy"] * k + q["g"] * dt
             else:
                 q["vx"] *= 0.985; q["vy"] = q["vy"] * 0.985 - (30 if q["kind"] != "puff" else -10) * dt
         self.parts = [q for q in self.parts if q["life"] < q["max"]]

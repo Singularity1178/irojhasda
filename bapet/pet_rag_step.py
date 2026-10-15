@@ -126,7 +126,7 @@ class PetRagStep:
         if impact > 700 * s and self.rag_hit_t > 0.25:
             self.rag_hit_t = 0.0
             self.sq = min(0.26, impact / 6500)
-            self.emit("puff", 5, self.W / 2, self.H * (1 - self.PADB), spread=90)
+            self.emit_impact(self.W / 2, self.H * (1 - self.PADB), min(1.8, impact / (1400 * s)))
 
         # ---- rest detection -> auto get-up ----
         if self.rag_contact and speed < 40 * s: self.rag_rest += dt
@@ -241,7 +241,7 @@ class PetRagStep:
             if self.rag_hit_t > ragphys.RAGP_IMPACT_COOLDOWN:
                 self.rag_hit_t = 0.0
                 lx, ly = im.point[0] - self.px, im.point[1] - self.py
-                self.emit("puff", 5, lx, ly, spread=90)
+                self.emit_impact(lx, ly, min(1.8, im.strength))
 
     def rag_pm_failsafe(self, sk):
         """Catch the three ways physics can go wrong, and undo all of them."""

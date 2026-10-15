@@ -34,6 +34,10 @@ DEFAULTS = dict(
     scale=1.0, walk_speed=70.0, fps=30, always_on_top=True, wander=True,
     look_at_cursor=True, follow_cursor=False, perch=True, speech=True,
     particles=True, click_through=True, pos_x=None,
+    ba_vfx=True,                 # Blue Archive effects: directional muzzle flashes, smoke, brass, hit sparks,
+                                 #   per-weapon tracers / beams / explosions, landing rings, tap ripples
+    emotes=True,                 # story-mode emoticon balloons over her head (! ? heart note sweat ...)
+    damage_numbers=True,         # floating damage / CRITICAL / MISS / BLOCK text in fights
     rotation_return=True,        # a student turned by hand (Ctrl+wheel / rotate-drag) turns back to face the desktop
     rotation_return_delay=2.0,   # s after the last hand rotation before she turns back
     look_around=True,            # idle students now and then swivel left / right and come back

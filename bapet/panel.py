@@ -162,6 +162,9 @@ class Panel(QtWidgets.QWidget):
                            ("Follow my cursor (walk to it)", "follow_cursor"),
                            ("Perch / jump on top of my windows (Windows only)", "perch"),
                            ("Speech bubbles", "speech"), ("Particles (hearts / sparkles)", "particles"),
+                           ("Blue Archive VFX (flashes, sparks, beams, rings)", "ba_vfx"),
+                           ("Emote balloons (! ? \u2665 \u266a ...)", "emotes"),
+                           ("Damage numbers / CRITICAL / MISS / BLOCK", "damage_numbers"),
                            ("Always on top", "always_on_top"), ("Click-through transparent areas", "click_through")):
             self.check(l, label, key)
         l.addSpacing(6)

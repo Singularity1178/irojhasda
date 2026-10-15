@@ -72,6 +72,15 @@ def ammo_for(glb_path):
     return AMMO_PER_ATTACK_DEFAULT, None, False
 
 
+def weapon_for(glb_path):
+    """Her weapon_type from combat_index.json ("Shotgun", "Sniper Rifle", "Railgun", ...), or None.
+    Only drives the look of her shots (vfx.WEAPON_FX): tracer, muzzle flash, impact, damage numbers."""
+    ent = load_combat_index().get(Path(glb_path).name.lower())
+    if ent is None: return None
+    w = ent.get("weapon_type")
+    return w if isinstance(w, str) and w else None
+
+
 def move_sets(model):
     """{"run": Move_Ing clip, "stop": Move_End_Normal clip, "kneel_stop": Move_End_Kneel clip} for one
     model (any may be missing)."""
