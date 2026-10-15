@@ -1,9 +1,10 @@
 """The tabbed control panel and its stylesheet."""
 from __future__ import annotations
 
-from PySide6 import QtWidgets
+from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
+from . import vfx
 from .config import ANIM_KEYS, PRESETS
 
 
@@ -79,6 +80,14 @@ class Panel(QtWidgets.QWidget):
             else:
                 c[1].blockSignals(True); c[1].setValue(int(v * c[2])); c[1].blockSignals(False); c[3].setText(c[4].format(v))
         self.preset_box.blockSignals(True); self.preset_box.setCurrentText(self.A.cfg["preset"]); self.preset_box.blockSignals(False)
+        if getattr(self, "gun_box", None) is not None:
+            self.sync_gun_box()
+
+    def sync_gun_box(self):
+        """Put the Interact tab's weapon picker back on what the settings file says."""
+        self.gun_box.blockSignals(True)
+        self.gun_box.setCurrentIndex(max(0, self.gun_box.findData(self.A.cfg.get("test_weapon") or "")))
+        self.gun_box.blockSignals(False)
 
     # ---- tabs ----
     def tab_chars(self):
@@ -142,6 +151,21 @@ class Panel(QtWidgets.QWidget):
                                      f"(x {g.left()}..{g.right()}, y {g.top()}..{g.bottom()}).")
 
     def on_screen_changed(self, _i): self.sync_screen_note()
+
+    def on_test_weapon(self, _i):
+        """Weapon picked on the Interact tab: "" = the test gun is off."""
+        self.A.set("test_weapon", self.gun_box.currentData())
+        self.gun_status.setText(self.A.gun_status())
+
+    def fire_test_gun_now(self):
+        """One round of the picked weapon at the cursor, without any click - so the
+        effects can be looked at even where no global mouse hook is allowed."""
+        w = self.A.cfg.get("test_weapon") or ""
+        if not w:
+            self.gun_status.setText("Pick a weapon first, then Fire one.")
+            return
+        self.A.test_gun_fire(w, QtGui.QCursor.pos())
+        self.gun_status.setText(self.A.gun_status())
 
     def on_screen_apply(self):
         self.A.set_screen(self.screen_box.currentData())
@@ -207,6 +231,8 @@ class Panel(QtWidgets.QWidget):
         l.addStretch(1); return w
 
     def tab_interact(self):
+        # The longest tab by far, and it keeps growing: scroll it rather than let the
+        # bottom (Blow) slide off the panel for anyone who does not resize it.
         w = QtWidgets.QWidget(); l = QtWidgets.QVBoxLayout(w)
         note = QtWidgets.QLabel("Applies to the target chosen on the Characters tab (All = everyone).")
         note.setWordWrap(True); l.addWidget(note)
@@ -237,6 +263,26 @@ class Panel(QtWidgets.QWidget):
         self.slider(l, "Armed target runs away (base odds)", "shoot_flee_chance", 0.0, 1.0, 100, "{:.2f}")
         self.slider(l, "Kneel behind a student for cover", "shoot_cover_chance", 0.0, 1.0, 100, "{:.2f}")
         l.addSpacing(8)
+        l.addWidget(QtWidgets.QLabel("Weapon test gun"))
+        row = QtWidgets.QHBoxLayout(); row.addWidget(QtWidgets.QLabel("Ctrl + left click"))
+        self.gun_box = QtWidgets.QComboBox()
+        self.gun_box.addItem("Off", "")
+        for wname in vfx.WEAPON_FX: self.gun_box.addItem(wname, wname)
+        self.gun_box.setCurrentIndex(max(0, self.gun_box.findData(self.A.cfg.get("test_weapon") or "")))
+        self.gun_box.currentIndexChanged.connect(self.on_test_weapon)
+        row.addWidget(self.gun_box, 1)
+        row.addWidget(self.button("Fire one", self.fire_test_gun_now, True))
+        l.addLayout(row)
+        note = QtWidgets.QLabel("A bench for the weapon effects. <b>Press or hold Ctrl + left click</b> "
+                                "and a round of that weapon flies from the middle of this screen to "
+                                "your cursor, hitting any student it crosses. Ctrl + click <i>on a "
+                                "student</i> works with no system hook; elsewhere it needs the hook "
+                                "Windows allows. While a weapon is picked, Ctrl + click is taken by "
+                                "the test gun - on <i>Off</i> it reaches the app underneath as usual.")
+        note.setWordWrap(True); l.addWidget(note)
+        self.gun_status = QtWidgets.QLabel(self.A.gun_status()); self.gun_status.setWordWrap(True)
+        l.addWidget(self.gun_status)
+        l.addSpacing(8)
         l.addWidget(QtWidgets.QLabel("Together"))
         h = QtWidgets.QHBoxLayout()
         h.addWidget(self.button("Start a conversation", lambda: self.A.start_chat()))
@@ -253,7 +299,16 @@ class Panel(QtWidgets.QWidget):
         h3 = QtWidgets.QHBoxLayout()
         h3.addWidget(self.button("Gust at cursor now", lambda: self.A.spawn_gust()))
         l.addLayout(h3)
-        l.addStretch(1); return w
+        l.addStretch(1)
+        sa = QtWidgets.QScrollArea()
+        sa.setWidgetResizable(True)
+        sa.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        # A scroll area's viewport paints its own background, so it never picks up the
+        # white from QTabWidget::pane - without this the whole tab comes up black.
+        sa.setStyleSheet("QScrollArea { background:#ffffff; }"
+                         " QScrollArea > QWidget > QWidget { background:#ffffff; }")
+        sa.setWidget(w)
+        return sa
 
     def tab_help(self):
         tb = QtWidgets.QTextBrowser(); tb.setOpenExternalLinks(True)
@@ -283,6 +338,11 @@ whatever character is under the cursor goes limp, with a short sound to confirm 
 Ctrl+1 is swallowed while this is running, so the app underneath will not act on it
 either.</li>
         <li><b>Double-middle-click</b> - gust of wind from the cursor (needs <i>Blow mode</i> on the Interact tab). Hair and clothes flutter - the body stays put.</li>
+        <li><b>Ctrl + left click</b> - fires one round of the weapon picked under <i>Weapon test gun</i> on
+        the Interact tab, from the middle of this screen to your cursor; hold the button to keep firing.
+        It works over <i>any</i> app, and the round hits any student it crosses (damage number, flinch, and
+        the ragdoll chance above), so it is the quickest way to see what each weapon's tracer, beam or
+        explosion actually looks like. On <i>Off</i> your Ctrl + click reaches the app underneath as usual.</li>
         <li><b>Stroke the cursor back and forth over her head</b> - petting. She bows as you go.</li>
         <li><b>Wheel</b> - resize everyone. <b>Ctrl+wheel / middle-drag / Ctrl+drag</b> - turn ONLY that student; she eases back to facing the desktop a couple of seconds after you let go (Pet tab). <b>Shift+wheel</b> - turn EVERY student the same way; they all ease back by themselves. Idle students also occasionally <i>look around</i> by themselves.</li>
         <li><b>Right-click a character</b> - its own quick menu. Tray icon: show/hide, panel, quit.</li></ul>
@@ -315,3 +375,5 @@ either.</li>
                 self.chat_note.setText("Needs 2+ visible characters and <i>Talk to each other</i> on.")
             else:
                 self.chat_note.setText(f"Topics: {self.A.dialogue.topic_label_text()}.")
+        if getattr(self, "gun_status", None) is not None:
+            self.gun_status.setText(self.A.gun_status())

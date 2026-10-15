@@ -366,9 +366,12 @@ class PetAttack:
         t = max(1.0, min(ts)) if ts else 1.0
         return x0 + dx * t, y0 + dy * t
 
-    def shot_landed(self, shooter, ux, uy, bullet=None):
+    def shot_landed(self, shooter, ux, uy, bullet=None, look=None):
         """A bullet has reached her. (ux, uy) is the unit direction it was travelling in.
-        `bullet` is the shooter's profile bullet (Iroha's tank shell), or None for an ordinary one."""
+        `bullet` is the shooter's profile bullet (Iroha's tank shell), or None for an ordinary one.
+        `look` is the merged weapon look the damage number is rolled from, when the shooter is
+        not a character with a weapon of her own - the panel's test gun passes the weapon the
+        player picked there, and None (with shooter None) falls back to the plain bullet look."""
         if not self.isVisible() or self.ragdoll or self.dragging: return
         if self.is_running() and random.random() < SHOOT_RUN_DODGE:
             self.shot_missed(shooter); return                    # dodged while running
@@ -377,7 +380,8 @@ class PetAttack:
         if sa is not None: sa.setdefault("hit_on", set()).add(id(self))
         self.emit("star", 6)
         # BA combat text: damage number, CRITICAL, or BLOCK when she is shielding someone
-        look = shooter.weapon_look() if shooter is not None and hasattr(shooter, "weapon_look") else vfx.weapon_fx(None, bullet)
+        look = look or (shooter.weapon_look() if shooter is not None and hasattr(shooter, "weapon_look")
+                        else vfx.weapon_fx(None, bullet))
         shell = bool(bullet) and float(bullet.get("impact_size", 1.0)) >= 2.0
         blocked = self.shielding_for(shooter)
         dmg, crit = vfx.roll_damage(look, 0.0 if blocked else (0.35 if shell else 0.15), 0.35 if blocked else 1.0)

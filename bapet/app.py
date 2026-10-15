@@ -17,6 +17,7 @@ from .app_hotkey import AppHotkey
 from .app_pets import AppPets
 from .app_screen import AppScreen
 from .app_settings import AppSettings
+from .app_testgun import AppTestGun
 from .app_ui import AppUI
 from .character import Character
 from .config import DEFAULTS, SETTINGS_PATH
@@ -28,7 +29,7 @@ from .renderer import Renderer
 from .wintracker import WinTracker
 
 
-class App(AppHotkey, AppPets, AppScreen, AppSettings, AppEffects, AppUI, QtCore.QObject):
+class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, AppUI, QtCore.QObject):
     def __init__(self, qapp, paths, args):
         super().__init__()
         self.qapp, self.args = qapp, args
@@ -103,7 +104,8 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppEffects, AppUI, QtCore.
             pet = Pet(self, ch)
             self.pets.append(pet)
         self.active = self.pets[0]
-        self.panel = Panel(self)
+        self.setup_mouse_hook()              # before the panel: it draws the weapon
+        self.panel = Panel(self)             # picker and asks the gun how it is doing
         self.setup_tray()
         self.save_timer = QTimer(self); self.save_timer.setSingleShot(True); self.save_timer.timeout.connect(self.save)
         # one pet reacts to a computer-state change, e.g. opening a game
@@ -121,6 +123,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppEffects, AppUI, QtCore.
         self.setup_hotkey()
         self.setup_rag_sound()
         qapp.aboutToQuit.connect(self.shutdown_hotkey)
+        qapp.aboutToQuit.connect(self.shutdown_mouse_hook)
 
     # ---- main loop ----
     def tick(self):
@@ -157,6 +160,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppEffects, AppUI, QtCore.
             self.reactor.poll()
             for p in self.pets:
                 if p.isVisible(): p.tick(dt)
+            self.test_gun_step(dt)                        # Ctrl + left click test weapon
             if self.cutin.active: self.cutin.step()
             if self.shotfx.active: self.shotfx.step(dt)
             self.restack()                                     # cheap: only acts when a shield changes the order

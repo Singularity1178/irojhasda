@@ -78,6 +78,10 @@ DEFAULTS = dict(
     shoot_cover_chance=0.55,      # 0..1  a student with Kneel_Attack_* clips, starting a fight with another
                                   #       student standing nearby, kneels behind her and uses her as cover
                                   #       (see the COVER block). Nobody to hide behind = a normal fight.
+    test_weapon="",             # Interact tab: pick a weapon and Ctrl + left click fires one round of it
+                                #   from the middle of the screen at the cursor, holding to keep firing.
+                                #   A bench for the per-weapon VFX; the round hits any student it crosses.
+                                #   "" = off, and Ctrl + click then reaches the app underneath as usual.
     ragdoll_engine="pymunk",    # "pymunk" = articulated ragdoll, "legacy" = the old rod
     ragdoll_debug=False,        # draw the capsules, joints and window colliders over her
     ragdoll_edge_slam=True,     # slamming into a screen edge fast enough knocks her over

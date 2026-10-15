@@ -70,8 +70,16 @@ class PetInput:
         self.A.set_active(self)
         self.A.restack(force=True)          # clicking must not change who is in front
         if e.button() in (Qt.MouseButton.LeftButton, Qt.MouseButton.MiddleButton):
-            self.press_g = e.globalPosition().toPoint(); self.press_win = QPoint(int(self.px), int(self.py))
             mods = e.modifiers()
+            # The panel's test gun (Interact tab) claims Ctrl + left click before this
+            # window does, so it fires a round from the middle of the screen instead of
+            # starting a rotate-drag. Clicking a student is how you aim one, and it is
+            # also the route that needs no global hook at all. A click the hook claimed
+            # never reaches us, so the two can never both answer it.
+            if e.button() == Qt.MouseButton.LeftButton and mods & Qt.KeyboardModifier.ControlModifier \
+                    and self.A.gun_window_press():
+                return
+            self.press_g = e.globalPosition().toPoint(); self.press_win = QPoint(int(self.px), int(self.py))
             self.rotating = e.button() == Qt.MouseButton.MiddleButton or bool(mods & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier))
             self.rot_yaw0 = self.yaw_user; self.hist.clear(); self.moved = False
             self.rot_pitch0 = self.pitch_user; self.rot_tilt0 = self.tilt_user
@@ -142,6 +150,9 @@ class PetInput:
 
     def mouseReleaseEvent(self, e):
         self.A.restack(force=True)
+        # Before the press_g guard: a test-gun press never set one, so this is the only
+        # release such a click has, and the hold would never end without it.
+        self.A.gun_window_release()
         if self.press_g is None: return
         was_drag, rot, moved = self.dragging, self.rotating, getattr(self, "moved", False)
         self.press_g = None; self.rotating = False
@@ -172,7 +183,12 @@ class PetInput:
             self.poke()
 
     def mouseDoubleClickEvent(self, e):
-        if e.button() == Qt.MouseButton.LeftButton: self.do_cutin(); return
+        if e.button() == Qt.MouseButton.LeftButton:
+            # Qt sends this INSTEAD of a second mousePressEvent, so the test gun has to
+            # claim it here too or the second click of a double-click would do nothing.
+            if e.modifiers() & Qt.KeyboardModifier.ControlModifier and self.A.gun_window_press():
+                return
+            self.do_cutin(); return
         if e.button() == Qt.MouseButton.MiddleButton and self.cfg.get("blow_mode"):
             try: self.A.spawn_gust(e.globalPosition().toPoint())
             except Exception: pass

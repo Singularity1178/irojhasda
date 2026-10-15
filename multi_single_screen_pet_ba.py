@@ -38,6 +38,7 @@ Where to look in bapet/   ("I want to change ...")
   per-model overrides (iroha.py) ..... profiles.py, character.py
   control panel ...................... panel.py
   tray, menu, screen, z-order ........ app.py + app_*.py
+      app_testgun.py    Ctrl + left click test weapon from the screen centre
   one pet (class Pet) ................ pet.py + the pet_* mixins:
       pet_state.py      animation playback, state changes, poke / pet / cut-in / launch
       pet_behavior.py   idle / walk / jump decisions, flying, landing
@@ -77,6 +78,10 @@ Interaction
                     the cursor. A character also gets a short sound; bare desktop
                     is silent.
   blow mode         double-middle-click gusts wind from the cursor (hair physics)
+  weapon test gun   pick a weapon on the Interact tab and Ctrl + left click fires one round of it from the
+                    middle of this screen at your cursor - anywhere on the desktop, holding to keep firing.
+                    The round hits any student it crosses, so it is a bench for the per-weapon VFX.
+                    Off by default; on, Ctrl + click no longer reaches the app underneath.
   stroke over head  petting (move the cursor back and forth over her head)
   shooting          every so often a student opens fire on another student and keeps
                     firing at that same student until she ragdolls. Uses the model's own

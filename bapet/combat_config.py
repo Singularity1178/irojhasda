@@ -135,3 +135,11 @@ SHOOT_LINES["chase"] = ["Run all you want, reloading!", "Not so fast... reloadin
 # and says one of these. A profile can also supply its own `give_up_lines`.
 SHOOT_LINES["give_up"] = ["It's a tank... my bullets just bounce off!", "Forget it, that armor is too thick!",
                           "This is pointless against a tank!", "Okay, okay, I can't scratch that thing!"]
+# ------------------------------------------------------------------- weapon test gun
+# A weapon picked on the Interact tab turns Ctrl + left mouse button into a bench for
+# the per-weapon looks in vfx.WEAPON_FX: a round leaves the middle of the pets' screen
+# for the cursor and lands on the first student it crosses, hit for real through
+# Pet.shot_landed (flinch, damage number, ragdoll chance). It is not a fight: no shooter
+# to answer, no magazine, no aim roll - so nothing here has to be balanced, only the
+# spacing of the rounds so a held button reads as a stream rather than a blur.
+TEST_GUN_INTERVAL = 0.15    # s between rounds while the button is held
