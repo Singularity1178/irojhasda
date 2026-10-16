@@ -29,9 +29,10 @@ class AppSettings:
         elif key == "screen":
             # the home screen moved, so the physics walls have to move with it
             self.resolve_screen()
-            if self.rag_world is not None:
-                g = self.home
-                self.rag_world.set_screen((g.left(), g.top(), g.right() + 1, g.bottom() + 1))
+            g = self.home
+            for wld in (self.rag_world, getattr(self, "rag_world3d", None)):
+                if wld is not None:
+                    wld.set_screen((g.left(), g.top(), g.right() + 1, g.bottom() + 1))
         if refresh and hasattr(self, "panel"): self.panel.refresh()
 
     def apply_preset(self, name):

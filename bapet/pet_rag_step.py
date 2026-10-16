@@ -38,6 +38,9 @@ class PetRagStep:
             # stand her up in mid-air - it only stops a ragdoll that will never settle
             # (or one left behind by ragdoll_auto_getup=False) from lasting forever.
             blend = self.rag_getup()
+        if self.rag3 is not None:
+            # the fully 3D engine, falling or getting up (pet_rag3d.py)
+            self.ragdoll_step_3d(dt); return
         if self.rag_skel is not None:
             self.ragdoll_step_pm(dt); return
         if blend == "pm":

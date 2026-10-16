@@ -18,6 +18,8 @@ class PetRagPose:
         one angle and one velocity per limb, driven by apparent gravity, the
         body's acceleration and its spin.
         """
+        if self.rag3 is not None:                    # fully 3D engine: full 3x3 posts (pet_rag3d.py)
+            return self.rag3_post()
         if self.rag_skel is not None:
             return self.rag_post_pm()
         if self.rag_phi is not None:                 # get-up blend, no skeleton left

@@ -30,9 +30,14 @@ class PetRagdoll:
         was on: a body left behind in the space would keep colliding with the
         other pets and the windows after she has stood back up.
         """
-        if self.rag_skel is not None and self.A.rag_world is not None:
-            self.A.rag_world.remove_skeleton(self.rag_skel)
+        if self.rag_skel is not None:
+            # Out of whichever world she is in: the pymunk one or the 3D one. Both
+            # skeleton types remember their own world.
+            wld = getattr(self.rag_skel, "world", None) or self.A.rag_world
+            if wld is not None:
+                wld.remove_skeleton(self.rag_skel)
         self.rag_skel = None
+        self.rag3 = None                   # 3D engine: spawn matrix, post map, get-up blend
         self.ragdoll = False; self.rag_state = "fall"; self.rag_want_up = False
         self.rag_edge_slam = False
         self.rig.dangle_on = True; self.rig.rag_post = []
@@ -101,7 +106,13 @@ class PetRagdoll:
         # rag_freeze_pose picks its pose out of the clip set - both of which are
         # about to change underneath it anyway.
         self.set_ride(False, fade=False)
-        if self.cfg.get("ragdoll_engine", "pymunk") == "pymunk":
+        engine = self.cfg.get("ragdoll_engine", "pymunk")
+        if engine == "3d":
+            # The fully 3D ragdoll (ragphys3d.py + pet_rag3d.py). If her rig cannot
+            # do it, she falls back to pymunk, then to the rod.
+            if self.start_ragdoll_3d(kick, impulse):
+                return
+        if engine in ("pymunk", "3d"):
             if self.start_ragdoll_pm(kick, impulse):
                 return
             # no usable skeleton for this rig: say so once and fall back below
@@ -277,6 +288,8 @@ class PetRagdoll:
     def rag_shove(self, power=1.0):
         """Click / Launch on a ragdolled pet = push her away from the cursor."""
         if not self.ragdoll: return
+        if self.rag3 is not None and self.rag_skel is None:
+            return                          # 3D get-up already running: she is on her way up
         s = max(0.6, self.cfg["scale"]); cur = QtGui.QCursor.pos()
         self.rag_state = "fall"; self.rag_rest = 0.0; self.rag_strength = 1.0
         if self.rag_skel is not None:
@@ -301,7 +314,7 @@ class PetRagdoll:
         with numbers belonging to the other engine.
         """
         if not self.ragdoll or self.rag_state == "getup": return
-        if _ragdiag_on():
+        if _ragdiag_on() and not getattr(self.rag_skel, "is3d", False):
             _ragdiag().diag_end(self.rag_owner, self.rag_skel,
                                 f"rag_getup after {getattr(self, 'rag_t', 0.0):.2f}s down, "
                                 f"peak={getattr(self, '_rag_diag_peak', 0.0):.1f}px/s")
@@ -313,6 +326,11 @@ class PetRagdoll:
             return
         self.rag_want_up = False
         self.rag_state, self.rag_t = "getup", 0.0
+        if self.rag_skel is not None and getattr(self.rag_skel, "is3d", False):
+            # 3D engine: freeze every bone's 3D rotation and her depth, leave the
+            # world, and let rag3_getup_step blend her upright at z = 0.
+            self.rag3_getup_begin()
+            return "3d"
         if self.rag_skel is not None:
             # Record the pose she is lying in and take her OUT of the world. The
             # blend below plays it back into the rig; while it runs nothing can

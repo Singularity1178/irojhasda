@@ -11,7 +11,7 @@ from PySide6 import QtCore
 from PySide6.QtCore import QTimer, Qt
 
 from dialogue import ChatDirector, DialogueEngine, StateReactor, SystemWatcher
-from .deps import HAVE_PYMUNK, RagWorld
+from .deps import HAVE_PYMUNK, Rag3DWorld, RagWorld
 from .app_effects import AppEffects
 from .app_hotkey import AppHotkey
 from .app_pets import AppPets
@@ -75,9 +75,13 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         # them can collide with each other. Only exists with pymunk; without it
         # every pet falls back to the legacy rod ragdoll.
         self.rag_world = RagWorld() if HAVE_PYMUNK else None
-        if self.rag_world is not None:
-            g = self.home
-            self.rag_world.set_screen((g.left(), g.top(), g.right() + 1, g.bottom() + 1))
+        # The fully 3D world (cfg ragdoll_engine="3d"): pure Python, so it always
+        # exists. Shared by every pet on the 3D engine, so they collide in depth too.
+        self.rag_world3d = Rag3DWorld() if Rag3DWorld is not None else None
+        g = self.home
+        for wld in (self.rag_world, self.rag_world3d):
+            if wld is not None:
+                wld.set_screen((g.left(), g.top(), g.right() + 1, g.bottom() + 1))
         self.trk_wins = None                              # last window list we synced
         self.cutin = Cutin()
         self.shotfx = ShotFX()
@@ -145,15 +149,20 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
             # Physics: window colliders first (only when the list actually
             # changed), then ONE step for the whole app - not one per pet, or
             # four pets on screen would advance the world four times as fast.
-            if self.rag_world is not None:
-                if self.tracker.wins is not self.trk_wins:
-                    self.trk_wins = self.tracker.wins
+            if self.tracker.wins is not self.trk_wins:
+                self.trk_wins = self.tracker.wins
+                for wld in (self.rag_world, self.rag_world3d):
+                    if wld is None:
+                        continue
                     try:
-                        self.rag_world.sync_windows(self.tracker.wins, self.trk_t,
-                                                    bool(self.cfg["perch"] and self.tracker.enabled))
+                        wld.sync_windows(self.tracker.wins, self.trk_t,
+                                         bool(self.cfg["perch"] and self.tracker.enabled))
                     except Exception:
                         traceback.print_exc()
+            if self.rag_world is not None:
                 self.rag_world.step(dt)
+            if self.rag_world3d is not None:
+                self.rag_world3d.step(dt)            # returns at once while nobody is limp in 3D
             self.watcher.tick()                                # cheap; throttles itself
             self.dialogue.set_context(self.watcher.current_context())
             self.reactor.reconfigure(self.pets)

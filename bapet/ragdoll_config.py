@@ -4,7 +4,17 @@ from __future__ import annotations
 
 
 # ------------------------------------------------------------------- ragdoll
-# Two engines, chosen per pet by cfg["ragdoll_engine"]:
+# Three engines, chosen per pet by cfg["ragdoll_engine"]:
+#
+#   "3d" - the fully 3D ragdoll in ragphys3d.py (pure Python, always available).
+#      The world gets a thin slab of depth. Nobody moves in it on her feet; once
+#      limp, her pelvis, head and limbs can fall into it (toppling toward or away
+#      from you, landing on her back / front / side, a leg crossing in front of
+#      the other), and getting up puts her back in the middle of it. Joints have
+#      anatomical limits (knees and elbows only fold one way), muscle tone fades
+#      as she goes down, and only hard hits bounce. Every physics tunable is in
+#      the RAG3_* block there; the two below are the Pet side. She maps back onto
+#      the rig with one FULL 3x3 post rotation per body (see pet_rag3d.py).
 #
 #   "pymunk" (default) - the articulated ragdoll in ragphys.py. One capsule body
 #      per limb, pinned and angle-limited against its parent, colliding with the
@@ -25,6 +35,10 @@ from __future__ import annotations
 RAG_REST_TIME = 3.0        # seconds lying still before she gets up on her own
 
 RAG_GETUP_TIME = 0.7
+RAG3_GETUP_TIME = 0.9      # s, 3D engine: blend from lying (any 3D orientation) back to standing
+RAG3_HEAD_R = 80.0         # percentile of head-vertex distances from their centre used as her skull radius
+RAG3_PERSPECTIVE = 0.0     # 0..1 share of the camera's true size change for her depth (0 = matches the
+                           # physics exactly; 1 = nearer looks bigger but feet can dip into the floor)
 # ---- edge slam: a screen edge hit hard enough knocks her over ----
 # She normally bounces off the sides and the ceiling (see air / walk / mouseMoveEvent),
 # which is right for a pet ambling around but not for one that has been thrown across

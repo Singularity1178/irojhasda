@@ -178,7 +178,12 @@ class PetRender:
         B = translate(feet) @ scale4((1 + 0.5 * self.sq) * z, (1 - self.sq) * z, (1 + 0.5 * self.sq) * z) @ m4(rot_y(yaw)) @ translate(-feet)
         # grab pivot: she hangs from the cursor, so swing rotates about the top
         M = (translate(top) @ m4(rot_x(self.pitch_hold)) @ rot_z4(self.roll) @ translate(-top)) @ B
-        if self.ragdoll and (not self.dragging or self.rag_skel is not None):
+        if self.ragdoll and self.rag3 is not None:
+            # Fully 3D ragdoll: the matrix she went limp with, turned by her pelvis's
+            # full 3D rotation about the pelvis (pet_rag3d.py). Yaw, squash and lean
+            # are frozen into it, so nothing but the physics turns her while limp.
+            M = self.rag3_model_matrix(world)
+        elif self.ragdoll and (not self.dragging or self.rag_skel is not None):
             # Lay her over on the body angle, about her pelvis. rot_z4 is a
             # right-handed rotation in the feet-anchored frame, where +x is screen
             # right and +y is screen up, so -rg_a puts a positive rg_a (head
@@ -440,6 +445,10 @@ class PetRender:
         """
         p.save()
         p.setBrush(Qt.BrushStyle.NoBrush)
+        if self.rag3 is not None:                    # 3D engine: joints shaded by depth
+            self.rag3_debug_draw(p)
+            p.restore()
+            return
         sk = self.rag_skel
         if sk is not None:
             p.setPen(QtGui.QPen(QtGui.QColor(0, 255, 140, 200), 1))

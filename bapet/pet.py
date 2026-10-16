@@ -21,6 +21,7 @@ from .pet_combat import PetCombat
 from .pet_cover import PetCover
 from .pet_heading import PetHeading
 from .pet_input import PetInput
+from .pet_rag3d import PetRag3D
 from .pet_rag_pose import PetRagPose
 from .pet_rag_step import PetRagStep
 from .pet_ragdoll import PetRagdoll
@@ -36,7 +37,7 @@ from .rig import Rig
 
 class Pet(
         PetRagSkeleton, PetHeading, PetWindow, PetSpeech, PetState, PetAttack, PetCombat,
-        PetCover, PetRagdoll, PetRagStep, PetRagPose, PetBehavior, PetInput, PetRender,
+        PetCover, PetRagdoll, PetRagStep, PetRagPose, PetRag3D, PetBehavior, PetInput, PetRender,
         QtWidgets.QWidget
 ):
     PADB = Renderer.PADB
@@ -152,7 +153,10 @@ class Pet(
         self.rag_drop = 0.0                              # pelvis -> feet, window px
         self.rag_com = RAG_COM_FRAC               # measured off her own pelvis, see rag_resolve
         self.rag_names = []                # lowercased bone names, see rag_bone
-        self.rag_skel = None               # her RagSkeleton while she is limp, else None
+        self.rag_skel = None               # her RagSkeleton (or Rag3DSkeleton) while she is limp, else None
+        # fully 3D ragdoll (see ragphys3d.py and pet_rag3d.py)
+        self.rag3 = None                   # 3D state while limp or getting up: spawn matrix, post map, pose
+        self.rag3_failed = False           # her rig cannot do the 3D engine; stop trying
         self.last_M = np.eye(4); self.rag_bones = []
         self.apply_flags(show=False)
         self.apply_scale()

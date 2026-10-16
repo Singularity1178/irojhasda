@@ -111,6 +111,9 @@ class PetInput:
                 # from that, and the physics carries the rest of her along
                 self.rag_skel.grab((g.x(), g.y()), (g.x(), g.y()))
                 self.rag_state = "fall"; self.rag_rest = 0.0
+            elif self.rag3 is not None:
+                # picked up halfway through the 3D get-up: she is simply standing again
+                self.rag3_finish_now()
             self.enter("drag"); self.setCursor(Qt.CursorShape.ClosedHandCursor)
             if random.random() < 0.6: self.say(self.line("drag"), 2.0)
             self.audience("drag")

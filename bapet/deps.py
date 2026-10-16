@@ -31,6 +31,16 @@ except ImportError as _e:                           # pragma: no cover
     HAVE_PYMUNK = False
     print("pymunk not available, falling back to the rod ragdoll:", _e)
 
+# The fully 3D ragdoll (cfg ragdoll_engine="3d") is pure Python - no pymunk needed -
+# so it is always there unless ragphys3d.py itself is missing from the folder.
+try:
+    import ragphys3d
+    from ragphys3d import Rag3DWorld
+except ImportError as _e:                           # pragma: no cover
+    ragphys3d = None
+    Rag3DWorld = None
+    print("ragphys3d.py not found next to the script; the 3D ragdoll is unavailable:", _e)
+
 # Dialogue lives in its own package (no PySide import, so no cycle). It must sit in the
 # same folder as the main script.
 try:

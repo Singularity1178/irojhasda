@@ -19,6 +19,10 @@ What lives where
   bapet/          the app, one topic per module (map below)
   ragphys.py      the articulated ragdoll (pymunk). No Qt, no GL, so it can be
                     imported and tested on its own: `python test_ragphys.py`
+  ragphys3d.py    the fully 3D ragdoll (pure Python, cfg ragdoll_engine="3d"):
+                    joints with anatomical limits, a thin slab of screen depth
+                    a limp body can fall into. `python test_ragphys3d.py`
+                    (+ test_ragphys3d_map.py / test_ragphys3d_pet.py on the real rig)
   model/          the *.glb files, one character each
   dialogue/       everything they say, and who says it to whom
                     engine.py            look up one line for a character + event
@@ -54,6 +58,7 @@ Where to look in bapet/   ("I want to change ...")
       pet_rag_step.py   per-frame ragdoll stepping (rod + pymunk)
       pet_rag_pose.py   physics pose -> bone rotations
       pet_skeleton.py   ragdoll bone lookup and pymunk skeleton spec
+      pet_rag3d.py      the 3D ragdoll: skeleton from the frame, 3x3 bone posts, get-up to mid-depth
   Every pet_* / app_* file is a mixin: its methods use `self` exactly as before, and
   Pet / App just list them as base classes, so nothing else changed.
 
@@ -73,7 +78,9 @@ Interaction
   drag / throw      Formation_Pickup, pendulum swing, gravity, bounce, squash
   ragdoll           right-click -> Ragdoll: she goes limp, tumbles, lands on the floor
                     or a window top, flops about, lies there, then stands back up.
-                    Two cheap layers (see the RAG_* block), no physics engine.
+                    Engine picked on the Physics tab: "Realistic 3D" (ragphys3d.py) lets
+                    her body fall into the depth of the screen - she never moves in that
+                    depth on her feet, and getting up puts her back in its middle.
   Ctrl + 1          the same, from anywhere in Windows, aimed at whoever is under
                     the cursor. A character also gets a short sound; bare desktop
                     is silent.

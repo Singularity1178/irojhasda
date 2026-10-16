@@ -407,9 +407,17 @@ PAGES: list[Page] = [
 
     Page("physics", "Physics", "\u21af", [
         Section("Ragdoll", [
-            Choice("ragdoll_engine", "Engine", [("Articulated (pymunk)", "pymunk"), ("Simple rod (legacy)", "legacy")],
-                   "Applies the next time someone goes limp." + ("" if HAVE_PYMUNK else " pymunk is not installed."),
-                   disabled=() if HAVE_PYMUNK else ("pymunk",)),
+            Choice("ragdoll_engine", "Engine", [("Realistic 3D", "3d"), ("Articulated (pymunk)", "pymunk"),
+                                                ("Simple rod (legacy)", "legacy")],
+                   "Applies the next time someone goes limp. Realistic 3D lets her body fall into the depth "
+                   "of the screen, with real joint limits." + ("" if HAVE_PYMUNK else " pymunk is not installed."),
+                   disabled=() if HAVE_PYMUNK else ("pymunk",), tags="3d realistic depth"),
+            Slider("ragdoll_3d_depth", "3D depth", 0.10, 1.00, 100, "{:.0f}%",
+                   "How far into the screen a limp body may fall, as a share of her height. "
+                   "Standing students always stay in the middle.", is_("ragdoll_engine", "3d"), 100.0),
+            Slider("ragdoll_3d_tone", "Muscle tone", 0.0, 1.0, 100, "{:.0f}%",
+                   "0% = limp the instant she goes down. Higher = she sags at the knees first.",
+                   is_("ragdoll_engine", "3d"), 100.0),
             Toggle("ragdoll_auto_getup", "Stand back up by herself", "She gets up after lying still for a few seconds."),
             Toggle("ragdoll_self_collide", "Limbs collide with each other", "Looks better but roughly doubles physics cost.",
                    is_("ragdoll_engine", "pymunk")),
