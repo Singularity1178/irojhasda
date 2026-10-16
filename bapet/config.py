@@ -82,7 +82,7 @@ DEFAULTS = dict(
                                 #   from the middle of the screen at the cursor, holding to keep firing.
                                 #   A bench for the per-weapon VFX; the round hits any student it crosses.
                                 #   "" = off, and Ctrl + click then reaches the app underneath as usual.
-    ragdoll_engine="pymunk",    # "3d" = fully 3D ragdoll (ragphys3d.py), "pymunk" = articulated 2D, "legacy" = the old rod
+    ragdoll_engine="3d",        # "3d" = fully 3D ragdoll (ragphys3d.py), "pymunk" = articulated 2D, "legacy" = the old rod
     ragdoll_3d_depth=0.35,      # 3D engine: how far into the screen a limp body may fall, x her height (the
                                 #   half-depth of the slab; standing students always stay in its middle)
     ragdoll_3d_tone=0.5,        # 3D engine: muscle tone as she goes down. 0 = limp at once; higher = she
