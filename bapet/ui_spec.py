@@ -429,6 +429,22 @@ PAGES: list[Page] = [
             Toggle("ragdoll_edge_slam", "Hard hits on a screen edge knock her over", "Thrown fast enough, she goes limp instead of bouncing."),
             Slider("ragdoll_edge_slam_speed", "Slam speed", 600, 6000, 0.01, "{:.0f} px/s", "Speed at 100% size that counts as a slam.", on("ragdoll_edge_slam")),
         ], "Right-click a character, or press Ctrl + 1 over her, to go limp."),
+        Section("Forces", [
+            Slider("phys_gravity", "Gravity", -1.0, 2.0, 100, "{:.0f}%",
+                   "100% = normal, 0% = weightless, below 0 = reverse gravity (they fall to the top of the "
+                   "screen). With 0% or less nobody stands up by herself until gravity points down again.",
+                   None, 100.0, tags="gravity weightless reverse upside down zero g float"),
+            Slider("phys_grab_strength", "Cursor grip", 0.05, 1.0, 100, "{:.0f}%",
+                   "How firmly the cursor carries a limp student. 100% = pinned to the cursor; lower = she "
+                   "trails behind and sags; very low = too heavy to lift.",
+                   None, 100.0, tags="grab carry hold drag cursor strength"),
+            Slider("phys_throw_strength", "Throw strength", 0.0, 2.0, 100, "{:.0f}%",
+                   "How much speed a limp student keeps when you let go of her mid-swing.",
+                   None, 100.0, tags="throw fling release"),
+            Slider("phys_getup_delay", "Get-up delay", 0.5, 15.0, 10, "{:.1f} s",
+                   "Seconds lying still before she stands back up by herself. Holding her with the "
+                   "cursor keeps resetting it.", on("ragdoll_auto_getup"), tags="rest time stand up"),
+        ]),
         Section("Wind", [
             Toggle("blow_mode", "Blow mode", "Double-middle-click gusts wind from the cursor: hair and clothes flutter."),
             Slider("blow_strength", "Gust strength", 0.2, 2.5, 100, "{:.2f}\u00d7", enabled=on("blow_mode")),

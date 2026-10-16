@@ -380,6 +380,67 @@ class TestWorld(unittest.TestCase):
         print(f"\n  [12] sleep: asleep on a window, woke on close / shove / grab / body landing, "
               f"pile asleep again, idle step {w.cost_ms:.3f} ms")
 
+    def test_13_occluded_windows_clipped_not_just_dropped(self):
+        """A window hidden behind another one (including a maximised window whose own top is
+        above the screen) must not act as a perch or a collider. Fully hidden windows are
+        dropped; half hidden ones are clipped to the part you can actually see."""
+        import importlib.util
+        from pathlib import Path
+        spec = importlib.util.spec_from_file_location(
+            "wintracker", Path(__file__).resolve().parent / "bapet" / "wintracker.py")
+        wt_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(wt_mod)
+        WT = wt_mod.WinTracker
+        SCREEN = (0.0, 0.0, 1920.0, 1040.0)
+        TOP_LIMIT = 0.0
+
+        def kept(cands):
+            """Drive the real refresh() filtering over a front-to-back candidate list."""
+            out, above, occ = [], [], {}
+            for h, l, t, r, b in cands:
+                usable = not (r - l < wt_mod.MIN_WIN_W or b - t < wt_mod.MIN_WIN_H or t < TOP_LIMIT + 60.0)
+                if usable:
+                    v = WT._visible_rect((l, t, r, b), above, SCREEN)
+                    if v is not None:
+                        occ[h] = list(above)
+                        out.append((h, v))
+                above.append((l, t, r, b))
+            return out, occ
+
+        # A: terminal completely behind a maximised Edge window -> gone
+        out, _ = kept([(1, 0.0, 0.0, 1920.0, 1040.0), (2, 300.0, 220.0, 1100.0, 750.0)])
+        self.assertEqual(out, [], f"terminal behind a maximised window was kept: {out}")
+
+        # B: terminal completely inside a normal Edge window -> gone
+        out, _ = kept([(1, 150.0, 120.0, 1600.0, 920.0), (2, 300.0, 220.0, 1100.0, 750.0)])
+        self.assertEqual([h for h, _ in out], [1], f"covered terminal was kept: {out}")
+
+        # C: terminal half behind Edge -> CLIPPED to the exposed left half, not left full size
+        out, _ = kept([(1, 800.0, 120.0, 1700.0, 920.0), (2, 200.0, 250.0, 1100.0, 800.0)])
+        by_h = dict(out)
+        self.assertIn(2, by_h, "a still-visible terminal was dropped")
+        self.assertEqual(by_h[2], (200.0, 250.0, 800.0, 800.0),
+                         f"terminal was not clipped to its exposed strip: {by_h[2]}")
+
+        # D: title bar hidden behind Edge (only the body sticks out below) -> gone,
+        #    because there is no visible top edge to land on
+        out, _ = kept([(1, 150.0, 120.0, 1400.0, 500.0), (2, 250.0, 300.0, 1000.0, 800.0)])
+        self.assertEqual([h for h, _ in out], [1], f"terminal with a hidden title bar was kept: {out}")
+
+        # E: a 90% buried terminal reduced to a sliver is not somewhere to stand -> gone
+        out, _ = kept([(1, 200.0, 220.0, 1100.0, 750.0), (2, 200.0, 220.0, 300.0, 750.0)])
+        self.assertEqual([h for h, _ in out], [1], f"a 100px sliver of a window was kept: {out}")
+
+        # the live re-check a standing student relies on: what surfaces() offers at each x
+        tr = WT()
+        tr.wins, tr._occ_before = [(2, 200.0, 250.0, 800.0, 800.0)], {2: [(800.0, 120.0, 1700.0, 920.0)]}
+        self.assertTrue(tr.surface_visible(2, 500.0), "exposed half reported as covered")
+        self.assertFalse(tr.surface_visible(2, 900.0), "covered half reported as a perch")
+        self.assertEqual(tr.surfaces(500.0), [(250.0, 2)])
+        self.assertEqual(tr.surfaces(900.0), [])
+        print("\n  [13] occlusion: fully hidden dropped, half hidden clipped to (200, 250, 800, 800), "
+              "hidden title bar dropped, sliver dropped; surface_visible tracks the covered half")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

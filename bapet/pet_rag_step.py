@@ -32,7 +32,10 @@ class PetRagStep:
         self.rag_t += dt; self.rag_hit_t += dt
         v0x, v0y, w0 = self.rg_vx, self.rg_vy, self.rg_w
         blend = None
-        if self.rag_edge_slam and self.rag_state != "getup" and self.rag_t > RAG_EDGE_SLAM_MAX_T:
+        if self.dragging and self.rag_state == "fall":
+            self.rag_rest = 0.0; self.rag_t = 0.0          # held: both get-up clocks stay at zero
+        if self.rag_edge_slam and self.rag_state != "getup" and self.rag_t > RAG_EDGE_SLAM_MAX_T \
+                and self.rag_may_get_up():
             # An edge slam is meant to read as "a few seconds on the floor, then up".
             # rag_getup() defers by itself while she is still flying, so this cannot
             # stand her up in mid-air - it only stops a ragdoll that will never settle
@@ -61,7 +64,7 @@ class PetRagStep:
             self.rag_accel(dt, v0x, v0y, w0); return
 
         # ---- integrate ----
-        self.rg_vy += G * dt
+        self.rg_vy += G * float(self.cfg.get("phys_gravity", 1.0)) * dt
         self.rg_x += self.rg_vx * dt; self.rg_y += self.rg_vy * dt; self.rg_a += self.rg_w * dt
         self.rg_w *= math.exp(-0.15 * dt)
         lo, hi = gh.left() + self.W * 0.15, max(gh.left() + self.W * 0.15, gh.right() - self.W * 0.15)
@@ -132,10 +135,11 @@ class PetRagStep:
             self.emit_impact(self.W / 2, self.H * (1 - self.PADB), min(1.8, impact / (1400 * s)))
 
         # ---- rest detection -> auto get-up ----
-        if self.rag_contact and speed < 40 * s: self.rag_rest += dt
-        else: self.rag_rest = 0.0
-        if self.rag_want_up and self.rag_rest > 0.2: self.rag_getup()
-        elif self.cfg.get("ragdoll_auto_getup", True) and self.rag_rest > RAG_REST_TIME:
+        self.rag_tick_rest(dt, self.rag_contact and speed < 40 * s)
+        if self.dragging: pass
+        elif self.rag_want_up and self.rag_rest > 0.2: self.rag_getup()
+        elif self.cfg.get("ragdoll_auto_getup", True) and self.rag_may_get_up() \
+                and self.rag_rest > self.rag_rest_time():
             self.rag_getup()
 
         # ---- sync window + legacy fields (hair/cloth springs read vx/vy) ----
@@ -181,10 +185,7 @@ class PetRagStep:
             self.vx, self.vy = pose["vx"], pose["vy"]   # hair / skirt / tie springs
             self.rag_pm_impacts()
             # --- rest detection -> auto get-up ---
-            if self.rag_contact and sk.speed() < ragphys.RAGP_REST_SPEED * s:
-                self.rag_rest += dt
-            else:
-                self.rag_rest = 0.0
+            self.rag_tick_rest(dt, self.rag_contact and sk.speed() < ragphys.RAGP_REST_SPEED * s)
             # --rag-diag: the get-up decision and the numbers behind it. A
             # character that never gets up is almost always this line, not the
             # physics: she is one px/s over RAGP_REST_SPEED forever, or
@@ -198,13 +199,16 @@ class PetRagStep:
                 _ragdiag().diag_tick(
                     self.rag_owner, self._rag_diag_t, sk.speed(),
                     ragphys.RAGP_REST_SPEED * s, self.rag_contact,
-                    self.rag_rest, RAG_REST_TIME, bool(self.rag_want_up),
+                    self.rag_rest, self.rag_rest_time(), bool(self.rag_want_up),
                     bool(self.cfg.get("ragdoll_auto_getup", True)))
-            if self.rag_want_up and self.rag_rest > 0.2:
+            if self.dragging:
+                pass                                # held: never stands up in the cursor's hand
+            elif self.rag_want_up and self.rag_rest > 0.2:
                 if _ragdiag_on():
                     _ragdiag().diag_getup(self.rag_owner, "wanted (cursor)", self.rag_rest)
                 self.rag_getup()
-            elif self.cfg.get("ragdoll_auto_getup", True) and self.rag_rest > RAG_REST_TIME:
+            elif self.cfg.get("ragdoll_auto_getup", True) and self.rag_may_get_up() \
+                    and self.rag_rest > self.rag_rest_time():
                 if _ragdiag_on():
                     _ragdiag().diag_getup(self.rag_owner, "auto", self.rag_rest)
                 self.rag_getup()

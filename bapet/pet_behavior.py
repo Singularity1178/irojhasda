@@ -18,6 +18,9 @@ class PetBehavior:
             if h != self.support and hg > 30 and r - l > 140:
                 tx = min(max(fx, l + 60), r - 60)
                 tx = self.A.clamp_x(tx, self.W)
+                # don't pick a window that is hidden behind another one right now
+                if hasattr(self.A.tracker, "surface_visible") and not self.A.tracker.surface_visible(h, tx):
+                    continue
                 if abs(tx - fx) < 520 * s: cand.append((t, h, tx))
         if not cand: return False
         t, h, tx = random.choice(cand); hg = fy - t
@@ -34,8 +37,9 @@ class PetBehavior:
         if self.support is not None:
             gh = A.resolve_screen()
             r = A.tracker.rect(self.support)
-            if (r is None or not (r[0] + 4 <= fx <= r[2] - 4)
-                    or not (gh.left() + 4 <= fx <= gh.right() - 4)):   # window closed / slid to another monitor
+            vis = (not hasattr(A.tracker, "surface_visible")) or A.tracker.surface_visible(self.support, fx)
+            if (r is None or not vis or not (r[0] + 4 <= fx <= r[2] - 4)
+                    or not (gh.left() + 4 <= fx <= gh.right() - 4)):   # window closed / covered / slid to another monitor
                 self.support = None; self.grounded = False; self.vx = self.vy = 0.0
                 self.air_kind = "jump"; self.bounces = 0; self.say(self.line("lost"), 1.8)
                 self.enter("fall"); return

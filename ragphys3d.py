@@ -118,6 +118,7 @@ RAG3_REST_SPEED = 40.0           # px/s (x scale): slower than this while touchi
 RAG3_CONTACT_GRACE = 0.10        # s a contact still counts after it ends
 RAG3_GRAB_RADIUS = 60.0          # px (x scale) the cursor may miss a limb by and still grab it
 RAG3_GRAB_THROW_V = 3000.0       # px/s cap per particle when she is let go
+RAG3_GRIP_DAMP = 20.0            # 1/s damping of the held particle's own swing at a weak grip (< 100%)
 RAG3_SHOVE_UP = (500.0, 900.0)   # px/s upward kick from a click, x scale x power
 RAG3_SHOVE_SIDE = 6.0            # horizontal shove = (pelvis x - cursor x) * this, clamped
 RAG3_SHOVE_CLAMP = 1400.0        # px/s cap on that horizontal shove
@@ -357,6 +358,10 @@ class Rag3DWorld:
         self._trace = 0
         self.iters, self.substep = iters_to_substep(iters)
         self.cost_ms = 0.0               # smoothed wall-clock cost of step(), for the panel's status line
+        # Live physics settings (Physics page), pushed every tick by App.push_phys_settings:
+        self.g_mul = 1.0                 # gravity multiplier: 1 normal, 0 weightless, < 0 falls UP
+        self.grab_k = 1.0                # cursor grip 0..1: 1 = the held limb is pinned to the cursor
+        self.throw_mul = 1.0             # x RAG3_GRAB_THROW_V: how hard a let-go limb may fly
         self.active = 0                  # awake ragdolls in the last step
 
     # ------------------------------------------------------------ iterations
@@ -366,6 +371,21 @@ class Rag3DWorld:
         self.iters, self.substep = iters_to_substep(iters)
         self._acc = min(self._acc, self.substep)
         return self.iters
+
+    # -------------------------------------------------------- live settings
+    def set_physics(self, g_mul=1.0, grab_k=1.0, throw_mul=1.0):
+        """Physics page sliders. Cheap no-op unless something changed."""
+        g_mul = float(g_mul); grab_k = min(1.0, max(0.02, float(grab_k)))
+        throw_mul = max(0.0, float(throw_mul))
+        if g_mul != self.g_mul:
+            self.g_mul = g_mul
+            for s in self._skels.values():                 # a sleeper must feel the new pull
+                s.wake()
+        if grab_k != self.grab_k:
+            self.grab_k = grab_k
+            for s in self._skels.values():
+                s.apply_grip()
+        self.throw_mul = throw_mul
 
     # ---------------------------------------------------------------- screen
     def set_screen(self, rect):
@@ -1086,10 +1106,13 @@ class Rag3DSkeleton:
     def predict(self, h, sub_i):
         if h != self._h:
             self._set_rate(h)
-        g = self.gravity * h
+        g = self.gravity * self.world.g_mul * h
         drag = 1.0 - RAG3_AIR_DRAG * h
         X, Y, Z, VX, VY, VZ, W = self.X, self.Y, self.Z, self.VX, self.VY, self.VZ, self.W
         OX, OY, OZ = self.OX, self.OY, self.OZ
+        if self.grab_i >= 0 and self.world.grab_k < 0.999:   # weak grip: damp the held limb's swing
+            f = max(0.0, 1.0 - RAG3_GRIP_DAMP * h)
+            VX[self.grab_i] *= f; VY[self.grab_i] *= f
         for i in range(self.n):
             OX[i] = X[i]; OY[i] = Y[i]; OZ[i] = Z[i]
             if W[i] == 0.0:
@@ -1103,8 +1126,23 @@ class Rag3DSkeleton:
             fx, fy = self._grab_from
             tx, ty = self._grab_to
             nx, ny = fx + (tx - fx) * t, fy + (ty - fy) * t
-            VX[gi] = (nx - OX[gi]) / h; VY[gi] = (ny - OY[gi]) / h; VZ[gi] = 0.0
-            X[gi] = nx; Y[gi] = ny
+            k = self.world.grab_k
+            if k < 0.999:
+                # Weak grip: the held particle keeps part of its weight (apply_grip) and is
+                # only pulled a share of the way to the cursor each substep, so the rest of
+                # her body drags it down and she trails / sags under the cursor instead of
+                # being pinned. Its own swing is damped (RAG3_GRIP_DAMP) or the pull turns
+                # into a bouncy spring. Tuned at 300 Hz, rescaled for other substep sizes.
+                # Measured sag below the cursor, held by the pelvis (300 Hz): 50% ~40 px,
+                # 20% ~190 px, 5% = too heavy to lift off the floor.
+                a = 1.0 - (1.0 - (0.0005 + 0.03 * k * k)) ** (h * 300.0)
+                nx = X[gi] + (nx - X[gi]) * a
+                ny = Y[gi] + (ny - Y[gi]) * a
+                VX[gi] = (nx - OX[gi]) / h; VY[gi] = (ny - OY[gi]) / h
+                X[gi] = nx; Y[gi] = ny
+            else:
+                VX[gi] = (nx - OX[gi]) / h; VY[gi] = (ny - OY[gi]) / h; VZ[gi] = 0.0
+                X[gi] = nx; Y[gi] = ny
         self.contacts.clear()
 
     def _set_rate(self, h):
@@ -1735,12 +1773,24 @@ class Rag3DSkeleton:
         tx, ty = target if target is not None else point
         self.grab_i = i
         self._grab_w = self.W[i]
-        self.W[i] = 0.0                                      # held: infinitely heavy, the rest hangs off it
+        self.apply_grip()                                    # full grip: infinitely heavy, the rest hangs off it
         self.grab_at = (float(tx), float(ty))
         self._grab_from = self._grab_to = (self.X[i], self.Y[i])
         self._grab_n = 1
         self.tone0 = self.tone = 0.0                         # a body hanging from a hand is fully limp
         return True
+
+    def apply_grip(self):
+        """Inverse mass of the held particle for the world's current grip strength.
+
+        grip 1 -> 0 (pinned, the original behaviour); weaker grips leave it part of its
+        own weight so constraints and gravity can pull it away from the cursor."""
+        i = self.grab_i
+        if i < 0:
+            return
+        w0 = self._grab_w or (1.0 / self.M[i])
+        k = self.world.grab_k
+        self.W[i] = 0.0 if k >= 0.999 else w0 * (1.0 - k) ** 2
 
     def move_grab(self, target):
         if self.grab_i >= 0:
@@ -1752,7 +1802,7 @@ class Rag3DSkeleton:
             return
         self.W[i] = self._grab_w or (1.0 / self.M[i])
         self.grab_i = -1
-        cap = RAG3_GRAB_THROW_V
+        cap = RAG3_GRAB_THROW_V * getattr(self.world, "throw_mul", 1.0)
         for k in range(self.n):
             s2 = self.VX[k] ** 2 + self.VY[k] ** 2 + self.VZ[k] ** 2
             if s2 > cap * cap:

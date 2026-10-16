@@ -63,6 +63,12 @@ DEFAULTS = dict(
     blow_mode=False,            # double-middle-click = gust of wind from cursor
     blow_strength=1.0,          # 0.2..2.5 gust power multiplier
     ragdoll_auto_getup=True,    # she stands back up by herself after lying still
+    phys_gravity=1.0,           # ragdoll gravity x normal: 1 = normal, 0 = weightless, < 0 = falls UP (-1 = reversed).
+                                #   With 0 or less nobody gets up by herself until gravity points down again.
+    phys_grab_strength=1.0,     # 0.05..1  how firmly the cursor holds a limp student (1 = pinned to the cursor,
+                                #   lower = she trails behind and sags, very low = too heavy to lift)
+    phys_throw_strength=1.0,    # 0..2  x the speed cap a limp student keeps when you let go of her
+    phys_getup_delay=3.0,       # s lying still before she gets up by herself (held = timer stays at 0)
     shoot_events=True,          # students now and then shoot each other
     shoot_chance=0.10,          # 0..1  chance that a wander decision becomes a shooting event
     shoot_hit_chance=0.75,      # 0..1  a shot lands at close/medium range (less at long range, and while

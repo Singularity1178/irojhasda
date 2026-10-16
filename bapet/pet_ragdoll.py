@@ -10,7 +10,7 @@ from PySide6 import QtGui
 from .deps import ragphys
 from .mathutil import clamp
 from .rag_diag import _ragdiag, _ragdiag_on
-from .ragdoll_config import RAG_COM_PAD, RAG_EDGE_SLAM, RAG_EDGE_SLAM_MAX_V
+from .ragdoll_config import RAG_COM_PAD, RAG_EDGE_SLAM, RAG_EDGE_SLAM_MAX_V, RAG_REST_TIME
 
 
 class PetRagdoll:
@@ -284,6 +284,43 @@ class PetRagdoll:
         # stop her dead, which is what "you just hit a wall" should look like.
         self.start_ragdoll(kick=True, allow_drag=drag)
         return True
+
+    # ---------------- Physics page settings ----------------
+    def rag_rest_time(self):
+        """Seconds lying still before an automatic get-up (Physics page slider)."""
+        try:
+            return max(0.3, float(self.cfg.get("phys_getup_delay", RAG_REST_TIME)))
+        except (TypeError, ValueError):
+            return RAG_REST_TIME
+
+    def rag_tick_rest(self, dt, resting):
+        """Advance or reset the lying-still timer.
+
+        Being HELD by the cursor always resets it: a body hanging still from the
+        cursor (or pressed against a window / edge while carried) reads as
+        \"touching and slow\", which used to stand her up in mid-air after a few
+        seconds of being held. rag_t is reset too so the edge-slam failsafe
+        (RAG_EDGE_SLAM_MAX_T) cannot fire while she is carried either."""
+        if self.dragging:
+            self.rag_rest = 0.0
+            if self.rag_state == "fall":
+                self.rag_t = 0.0
+            return
+        self.rag_rest = self.rag_rest + dt if resting else 0.0
+
+    def rag_may_get_up(self):
+        """May she stand up on her own right now?
+
+        Never while held, and never with zero / reversed gravity: lying on the
+        ceiling (or floating) and then snapping to a standing pose on the floor
+        looks broken. She gets up once gravity points down again (or on demand
+        from the Ragdoll / get up action)."""
+        if self.dragging:
+            return False
+        try:
+            return float(self.cfg.get("phys_gravity", 1.0)) > 0.05
+        except (TypeError, ValueError):
+            return True
 
     def rag_shove(self, power=1.0):
         """Click / Launch on a ragdolled pet = push her away from the cursor."""

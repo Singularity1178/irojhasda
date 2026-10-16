@@ -435,6 +435,9 @@ class RagWorld:
         self._anc = set()                     # any skeletons that need the self-collision guard
         self._shape_win = {}                  # id(window shape) -> hwnd
         self._dead = 0.0                      # seconds of contact, for rest detection
+        self.g_mul = 1.0                      # Physics page: gravity multiplier (< 0 = falls up)
+        self.grab_k = 1.0                     # Physics page: cursor grip 0..1
+        self.throw_mul = 1.0                  # Physics page: x RAGP_GRAB_THROW_V on release
         # pymunk routes every collision of a pair of shapes to the most specific
         # handler registered for their two collision types. One handler per pair.
         self.space.on_collision(RAGP_CT_BODY, RAGP_CT_SCREEN, data="screen",
@@ -883,12 +886,28 @@ class RagWorld:
                   f"speed={sp:7.1f} anchor_err={anch:6.3f}px rel_err={rel:6.4f}rad "
                   f"contact={len(skel.contacts)} ignore={len(self._ignore)}")
 
+    # -------------------------------------------------------- live settings
+    def set_physics(self, g_mul=1.0, grab_k=1.0, throw_mul=1.0):
+        """Physics page sliders. Cheap no-op unless something changed."""
+        g_mul = float(g_mul); grab_k = min(1.0, max(0.02, float(grab_k)))
+        self.throw_mul = max(0.0, float(throw_mul))
+        if g_mul != self.g_mul:
+            self.g_mul = g_mul
+            self.space.gravity = (0.0, self.gravity * g_mul)
+            for sk in self._skels.values():
+                sk.apply_gravity()
+        if grab_k != self.grab_k:
+            self.grab_k = grab_k
+            for sk in self._skels.values():
+                sk.apply_grip()
+
     # ------------------------------------------------------------- skeletons
     def add_skeleton(self, owner_id, spec, kick=None):
         skel = RagSkeleton(self, owner_id, spec, kick)
         self._skels[owner_id] = skel
         self.gravity = 2600.0 * max(0.6, float(spec.get("scale", 1.0)))
-        self.space.gravity = (0.0, self.gravity)
+        self.space.gravity = (0.0, self.gravity * self.g_mul)
+        skel.apply_gravity()
         # A pet standing on the floor is IN FRONT of any window she overlaps -
         # that is where she is drawn - so going limp must not suddenly make
         # those windows solid. She is normally inside a large or maximised one:
@@ -1703,14 +1722,33 @@ class RagSkeleton:
         joint = pymunk.PivotJoint(kin, body, (0.0, 0.0), anchor_b)
         # ~40x her weight: firm enough to swing her, not so firm that a window
         # or a wall can lever her through one.
-        joint.max_force = RAGP_GRAB_FORCE * self.gravity
-        joint.max_bias = RAGP_GRAB_MAX_BIAS
         self.space.add(kin, joint)
         self.grab_body, self.grab_joint, self.grab_target = body, joint, kin
+        self.apply_grip()
         self.grab_at = (tx, ty)
         self._grab_from, self._grab_to, self._grab_n = (tx, ty), (tx, ty), 1
         self.grab_point = (float(point[0]), float(point[1]))
         return True
+
+    def apply_gravity(self):
+        """Per-body gravity = her scale's g x the world's gravity multiplier."""
+        g = (0.0, self.gravity * getattr(self.world, "g_mul", 1.0))
+        for b in self.bodies:
+            b._rag_g = g
+            try:
+                b.activate()
+            except Exception:
+                pass
+
+    def apply_grip(self):
+        """Grab joint force / pull speed for the world's grip strength (1 = original)."""
+        j = self.grab_joint
+        if j is None:
+            return
+        k = getattr(self.world, "grab_k", 1.0)
+        # Below ~1/40 of the original force she can no longer be lifted at all.
+        j.max_force = RAGP_GRAB_FORCE * self.gravity * max(0.02, k * k)
+        j.max_bias = RAGP_GRAB_MAX_BIAS * max(0.05, k)
 
     def move_grab(self, target):
         if self.grab_joint is not None:
@@ -1728,7 +1766,7 @@ class RagSkeleton:
         """
         if self.grab_joint is None:
             return
-        cap = RAGP_GRAB_THROW_V
+        cap = RAGP_GRAB_THROW_V * getattr(self.world, "throw_mul", 1.0)
         for body in self.bodies:
             v = body.velocity
             s = v.x * v.x + v.y * v.y

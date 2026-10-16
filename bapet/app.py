@@ -149,6 +149,22 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
             if wld is not None:
                 wld.set_screen(rect)
 
+    def push_phys_settings(self):
+        """Hand the Physics page's force sliders to both worlds (no-op if unchanged)."""
+        c = self.cfg
+        try:
+            g = float(c.get("phys_gravity", 1.0))
+            k = float(c.get("phys_grab_strength", 1.0))
+            t = float(c.get("phys_throw_strength", 1.0))
+        except (TypeError, ValueError):
+            g, k, t = 1.0, 1.0, 1.0
+        for wld in (self.rag_world, getattr(self, "rag_world3d", None)):
+            if wld is not None and hasattr(wld, "set_physics"):
+                try:
+                    wld.set_physics(g, k, t)
+                except Exception:
+                    traceback.print_exc()
+
     # ---- main loop ----
     def tick(self):
         now = time.perf_counter(); dt = min(0.1, now - self.last); self.last = now
@@ -180,6 +196,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
                     except Exception:
                         traceback.print_exc()
             self.sync_phys_screen()                            # home may have moved monitors
+            self.push_phys_settings()                          # gravity / grip / throw sliders
             if self.rag_world is not None:
                 self.rag_world.step(dt)
             if self.rag_world3d is not None:

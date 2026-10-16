@@ -347,13 +347,13 @@ class PetRag3D:
             self.vx, self.vy = pose["vx"], pose["vy"]       # hair / skirt / tie springs
             self.sq = self.sq_v = 0.0                        # realistic: no cartoon squash
             self.rag3_impacts()
-            if self.rag_contact and sk.speed() < ragphys3d.RAG3_REST_SPEED * s:
-                self.rag_rest += dt
-            else:
-                self.rag_rest = 0.0
-            if self.rag_want_up and self.rag_rest > 0.2:
+            self.rag_tick_rest(dt, self.rag_contact and sk.speed() < ragphys3d.RAG3_REST_SPEED * s)
+            if self.dragging:
+                pass                                         # held: never stands up in the cursor's hand
+            elif self.rag_want_up and self.rag_rest > 0.2:
                 self.rag_getup()
-            elif self.cfg.get("ragdoll_auto_getup", True) and self.rag_rest > RAG_REST_TIME:
+            elif self.cfg.get("ragdoll_auto_getup", True) and self.rag_may_get_up() \
+                    and self.rag_rest > self.rag_rest_time():
                 self.rag_getup()
             self.rag_accel(dt, v0x, v0y, w0)
         except Exception:
