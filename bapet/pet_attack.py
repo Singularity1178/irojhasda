@@ -303,6 +303,27 @@ class PetAttack:
                 return q, x0 + dx * t, y0 + dy * t
         return None, x1, y1
 
+    def shell_splash(self, bl, wpn, ix, iy, skip, dux=0.0, duy=-1.0):
+        """Explosion damage of a shell (profile bullet with splash on, e.g. Iroha's tank shell).
+
+        Every student whose body box lies within the explosion's drawn shockwave radius of the
+        impact point (ix, iy) is hit as well, and knocked away from the blast centre. `skip` =
+        pets that already took the shell directly, plus the shooter's shield friends."""
+        if not bl or not bl.get("splash", True): return
+        st = vfx.weapon_fx(wpn, bl)
+        if not st.get("explosion"): return
+        R = vfx.explosion_radius(vfx.explosion_size(st)) * float(bl.get("splash_radius", 1.0))
+        for q in self.A.pets:
+            if q is self or q in skip or not self.shoot_target_ok(q): continue
+            fx_, fy_ = q.feet_pos(); ch = q.char_h(); hw = ch * SHOOT_BODY_HALF_W
+            nx, ny = clamp(ix, fx_ - hw, fx_ + hw), clamp(iy, fy_ - ch, fy_)   # nearest point of her body box
+            if math.hypot(ix - nx, iy - ny) > R: continue
+            bx, by = self.shoot_body_pt(q)
+            ux, uy = bx - ix, by - iy; d = math.hypot(ux, uy)
+            if d < 1.0: ux, uy = dux, duy                        # dead centre: push along the shot
+            else: ux, uy = ux / d, uy / d
+            q.shot_landed(self, ux, uy, bl, splash=True)
+
     def shoot_fire(self):
         """One shot: tracer from her hand at the target. It hits whichever student it reaches
         first, which is usually the target but sometimes someone standing in the way."""
@@ -346,13 +367,20 @@ class PetAttack:
         if other is not None:                                    # somebody else got in the way
             bd = math.hypot(bx - mx, by - my) or 1.0
             bux, buy = (bx - mx) / bd, (by - my) / bd
-            fx.fire(mx, my, bx, by, impact="spark", style=bl, weapon=wpn,
-                    cb=lambda o=other, ux=bux, uy=buy: o.shot_landed(self, ux, uy, bl))
+            def land(o=other, ux=bux, uy=buy, ix=bx, iy=by):
+                o.shot_landed(self, ux, uy, bl)
+                self.shell_splash(bl, wpn, ix, iy, (o,) + friends, ux, uy)
+            fx.fire(mx, my, bx, by, impact="spark", style=bl, weapon=wpn, cb=land)
         elif hit:
-            fx.fire(mx, my, ex, ey, impact="spark", style=bl, weapon=wpn,
-                    cb=lambda q=q, ux=ux, uy=uy: q.shot_landed(self, ux, uy, bl))
+            def land(q=q, ux=ux, uy=uy, ix=ex, iy=ey):
+                q.shot_landed(self, ux, uy, bl)
+                self.shell_splash(bl, wpn, ix, iy, (q,) + friends, ux, uy)
+            fx.fire(mx, my, ex, ey, impact="spark", style=bl, weapon=wpn, cb=land)
         else:
-            fx.fire(mx, my, ex, ey, impact="spark", style=bl, weapon=wpn, cb=lambda q=q, sh=self: q.shot_missed(sh))
+            def land(q=q, ux=ux, uy=uy, ix=ex, iy=ey):
+                q.shot_missed(self)
+                self.shell_splash(bl, wpn, ix, iy, friends, ux, uy)   # the blast still goes off where it lands
+            fx.fire(mx, my, ex, ey, impact="spark", style=bl, weapon=wpn, cb=land)
 
     def shot_to_edge(self, x0, y0, x1, y1):
         """Extend the line (x0,y0)->(x1,y1) until it leaves this pet's screen."""
@@ -366,14 +394,16 @@ class PetAttack:
         t = max(1.0, min(ts)) if ts else 1.0
         return x0 + dx * t, y0 + dy * t
 
-    def shot_landed(self, shooter, ux, uy, bullet=None, look=None):
+    def shot_landed(self, shooter, ux, uy, bullet=None, look=None, splash=False):
         """A bullet has reached her. (ux, uy) is the unit direction it was travelling in.
         `bullet` is the shooter's profile bullet (Iroha's tank shell), or None for an ordinary one.
         `look` is the merged weapon look the damage number is rolled from, when the shooter is
         not a character with a weapon of her own - the panel's test gun passes the weapon the
-        player picked there, and None (with shooter None) falls back to the plain bullet look."""
+        player picked there, and None (with shooter None) falls back to the plain bullet look.
+        `splash` = she was caught in the blast of a shell that landed elsewhere (shell_splash);
+        an explosion cannot be dodged by running."""
         if not self.isVisible() or self.ragdoll or self.dragging: return
-        if self.is_running() and random.random() < SHOOT_RUN_DODGE:
+        if not splash and self.is_running() and random.random() < SHOOT_RUN_DODGE:
             self.shot_missed(shooter); return                    # dodged while running
         fighting = self.state in ("shoot", "flee")               # keeps fighting / running when hit
         sa = shooter.atk if shooter is not None else None        # the shooter's fight records that this bullet landed

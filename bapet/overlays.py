@@ -262,7 +262,7 @@ class ShotFX(QtWidgets.QWidget):
                 self._add(kind="hole", x=b["x1"], y=b["y1"], life=2.4)
             big = float(st.get("impact_size", 1.0)) * float(st.get("spark", 1.0))
             if st.get("explosion") and self.fancy:
-                self.explode(b["x1"], b["y1"], clamp(0.55 * float(st.get("impact_size", 1.6)), 0.6, 1.6))
+                self.explode(b["x1"], b["y1"], vfx.explosion_size(st))
             else:
                 nr = int((5 if b["impact"] == "pellet" else 9) * min(2.2, big)) if self.fancy else int(9 * big)
                 self._add(kind="spark", x=b["x1"], y=b["y1"], life=0.3 * min(2.0, max(0.6, big)), size=big,

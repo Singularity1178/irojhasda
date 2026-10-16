@@ -121,6 +121,17 @@ def weapon_fx(weapon=None, style=None):
     return out
 
 
+def explosion_size(wf):
+    """Size multiplier of the explosion a bullet look draws on impact (see overlays.ShotFX.step)."""
+    return max(0.6, min(1.6, 0.55 * float(wf.get("impact_size", 1.6))))
+
+
+def explosion_radius(size):
+    """How far the explosion() shockwave ring reaches, in px: 26 * size at the start, growing by
+    190 * size. Whatever that ring visibly sweeps over is what a splash bullet damages."""
+    return 216.0 * size
+
+
 def roll_damage(wf, crit_chance=0.15, mult=1.0):
     """A cosmetic BA-sized damage number for one bullet: (value, is_crit)."""
     lo, hi = wf.get("dmg", (400, 700))

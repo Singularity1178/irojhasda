@@ -167,5 +167,12 @@ PROFILE = dict(
         # no muzzle bone at all, so an unset value fires the shell out of her fist
         # while she is sitting in a tank. bone_tank_barrel is the gun.
         muzzle_bone="barrel",
+        # Splash: the shell explodes, and every student inside the blast also takes it
+        # (damage number, ragdoll roll, knock away from the centre; a running student
+        # cannot dodge a blast). The reach is the drawn shockwave ring: vfx.explosion_radius
+        # of the explosion size impact_size gives (216 * 1.32 = ~285 px here).
+        # splash_radius multiplies that (1.0 = exactly the ring); splash=False turns it off.
+        splash=True,
+        splash_radius=1.0,
     ),
 )
