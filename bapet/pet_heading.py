@@ -132,8 +132,13 @@ class PetHeading:
         is what the callers want - combat spacing and the speech bubble all
         measure from the floor to the top of what she is standing on. Use
         rag_h() for anything sized against her actual body.
+
+        stand_h(), not H: while she is limp her window is RAG_WINDOW_SCALE
+        times the one her model was measured in, and that extra frame is not
+        her - she is drawn at the same size as ever, so every size read off H
+        has to come from the standing window instead.
         """
-        return self.H * Renderer.FRAC * self.depth_scale()
+        return self.stand_h() * Renderer.FRAC * self.depth_scale()
 
     def rag_h(self):
         """Her own body's height in window px - what the ragdoll is sized against.
@@ -141,7 +146,7 @@ class PetHeading:
         Same as char_h() for every ordinary model; less for one that filled
         its window with a vehicle, so her capsule radii stay limb-sized.
         """
-        return self.H * Renderer.FRAC * self.ch.body_frac * self.depth_scale()
+        return self.stand_h() * Renderer.FRAC * self.ch.body_frac * self.depth_scale()
 
     def walk_depth(self, uz, dt):
         """Move toward / away from the camera. Reaching either end turns her round,

@@ -57,10 +57,23 @@ def rot_z4(a):
 def scale4(x, y, z):
     return np.diag([x, y, z, 1.0])
 
-def perspective(fovy, aspect, n, f):
-    t = 1.0 / math.tan(fovy / 2.0)
+def perspective(fovy, aspect, n, f, zoom=1.0, shift_y=0.0):
+    """Standard perspective.
+
+    `zoom` scales the focal length and `shift_y` is an off-axis (lens) shift, in
+    NDC. Together they open the view up without moving the camera: the projection
+    stays exactly homothetic about the eye, at any depth, so the image is the old
+    one scaled and translated (see Renderer.set_fit).
+
+    The shift goes into the z coefficient rather than the w column on purpose: NDC
+    is clip / w_clip with w_clip = -z, so a term in the w column is divided by the
+    depth again (it would be depth-dependent, i.e. a shear), while one in the z
+    coefficient survives the divide as a true constant.
+    """
+    t = zoom / math.tan(fovy / 2.0)
     M = np.zeros((4, 4))
     M[0, 0] = t / aspect; M[1, 1] = t
+    M[1, 2] = -shift_y                            # after the divide by w_clip: +shift_y in NDC
     M[2, 2] = (f + n) / (n - f); M[2, 3] = 2 * f * n / (n - f); M[3, 2] = -1.0
     return M
 

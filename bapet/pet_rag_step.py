@@ -67,7 +67,10 @@ class PetRagStep:
         self.rg_vy += G * float(self.cfg.get("phys_gravity", 1.0)) * dt
         self.rg_x += self.rg_vx * dt; self.rg_y += self.rg_vy * dt; self.rg_a += self.rg_w * dt
         self.rg_w *= math.exp(-0.15 * dt)
-        lo, hi = gh.left() + self.W * 0.15, max(gh.left() + self.W * 0.15, gh.right() - self.W * 0.15)
+        # stand_w(), not W: the margin is a fraction of HER width, and while she
+        # is limp her window is the standing one times RAG_WINDOW_SCALE.
+        sw = self.stand_w()
+        lo, hi = gh.left() + sw * 0.15, max(gh.left() + sw * 0.15, gh.right() - sw * 0.15)
         if self.rg_x < lo:   self.rg_x = lo; self.rg_vx = abs(self.rg_vx) * 0.5;  self.rg_w *= 0.7
         elif self.rg_x > hi: self.rg_x = hi; self.rg_vx = -abs(self.rg_vx) * 0.5; self.rg_w *= 0.7
         ceil = gh.top() + a

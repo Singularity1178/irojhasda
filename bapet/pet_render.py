@@ -227,7 +227,10 @@ class PetRender:
         self.alpha = np.frombuffer(raw, np.uint8).reshape(h, w, 4)[::-1, :, 3]
         if self.model.head is not None:
             hxp, hyp = R.project(world[self.model.head][:3, 3], M)
-            self.head_px = (hxp / self.dpr * (self.W * self.dpr / w), hyp / self.dpr * (self.H * self.dpr / h) - 0.05 * self.H)
+            # stand_h(), not H: the nudge that lifts her head marker off the
+            # skull is a fraction of HER height, and the limp window is bigger.
+            self.head_px = (hxp / self.dpr * (self.W * self.dpr / w),
+                            hyp / self.dpr * (self.H * self.dpr / h) - 0.05 * self.stand_h())
         if cfg["click_through"] and not A.args.no_mask:
             if sys.platform == "win32":
                 if self.mask_key is not None: self.clearMask(); self.mask_key = None

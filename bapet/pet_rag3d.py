@@ -257,7 +257,7 @@ class PetRag3D:
         K, pmap = self.rag3_build_map(sk, M0)
         self.rag_skel = sk
         self.rag3 = dict(phase="fall", M0=M0, K=K, map=pmap, rots=None, Rr=np.eye(3), z=0.0,
-                         fpx=float(self.ch.renderer.dist) / (self.ch.renderer.world_per_px * max(1e-6, self.dpr)),
+                         fpx=float(self.ch.renderer.lens_px) / max(1e-6, self.dpr),
                          up0=sk.frame_pelvis[1])
         self.ragdoll = True; self.rig.dangle_on = False
         self.grounded = False; self.support = None; self.dragging = False

@@ -53,6 +53,21 @@ RAG_EDGE_SLAM_MAX_T = 9.0  # s she stays down after an edge slam even if ragdoll
 RAG_COM_FRAC = 0.5         # fallback COM height as a fraction of her pixel height
 RAG_COM_PAD = 0.05         # body thickness as a fraction of the window height
 RAG_REST_E, RAG_FRICTION = 0.2, 0.55   # [v2] was 0.35, 0.6; limp tissue barely bounces
+# ---- the window a limp student gets ------------------------------------------
+# A body on the floor is wider and taller than the standing pose its window was
+# sized for, so a tumbling limb or a flung arm used to be cut off by the edge of
+# her own frame. Her window is multiplied by this the moment she goes limp (and
+# by 1.0 again the moment she is back on her feet).
+#
+# A multiplier, not a size: the models differ by a factor of a few, so what she
+# needs is room AROUND her, and a ratio carries over whatever window she already
+# has (profile scale, --scale, a ride window). It is only extra room - the camera
+# inside the window widens by the same factor (Renderer.set_fit), so she is drawn
+# at exactly the same size in exactly the same place and the physics, which all
+# measures real screen px, does not see a different character. 1.0 turns it off.
+#
+# Physics page -> Ragdoll -> "Limp window", cfg `ragdoll_window_scale`.
+RAG_WINDOW_SCALE = 1.5
 # (bone, child bone, joint limit rad, return-to-pose stiffness, damping)
 # The child is only used to measure the limb's on-screen direction and length.
 # The damping numbers are roughly 0.6 * 2 * sqrt(gravity gain + stiffness) for each

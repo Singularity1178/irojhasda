@@ -32,6 +32,10 @@ class AppSettings:
             w3 = getattr(self, "rag_world3d", None)
             if w3 is not None:
                 self.cfg[key] = w3.set_iterations(val)     # store the clamped integer
+        elif key == "ragdoll_window_scale":
+            # Live, even mid-fall: whoever is limp right now takes the new size,
+            # with her feet left exactly where they are.
+            for p in self.pets: p.rag_window(p.ragdoll)
         elif key == "screen":
             # the home screen moved, so the physics walls have to move with it
             self.resolve_screen()

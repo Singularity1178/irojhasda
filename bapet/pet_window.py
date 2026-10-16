@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 
 from .config import BASE_H, BASE_W
 from .mathutil import clamp
+from .ragdoll_config import RAG_WINDOW_SCALE
 
 
 class PetWindow:
@@ -46,15 +47,64 @@ class PetWindow:
         # Her window is the shared --scale one times whatever her own profile
         # asks for (see load_profile). Both numbers move while she is riding, so
         # they are read live off the character rather than cached here.
+        # While she is limp the whole window is multiplied once more by rag_win
+        # (see rag_window): a tumbling body reaches well outside the standing
+        # pose's frame and the window edge clipped it. It is ONLY extra room
+        # around her - the camera inside widens by the same factor (Renderer.
+        # set_fit), so she is drawn at exactly the same size in exactly the same
+        # place, and the physics, which all measures real screen px, does not
+        # see a different character at all.
         s = self.cfg["scale"] * self.ch.window_scale; fx, fy = self.feet_pos()
-        self.W, self.H = int(BASE_W * s * self.ch.window_aspect), int(BASE_H * s)
+        k = self.rag_win
+        self.W, self.H = int(BASE_W * s * self.ch.window_aspect * k), int(BASE_H * s * k)
         scr = self.screen()
         self.dpr = scr.devicePixelRatio() if scr else 1.0
-        self.G = 2600.0 * max(0.6, s)
+        self.G = 2600.0 * max(0.6, s)           # px/s^2: about her, NOT about her window
         self.bfont.setPointSizeF(max(8.0, 9.5 * math.sqrt(s)))
         self.setFixedSize(self.W, self.H)
         self.ch.renderer.set_size(max(32, int(round(self.W * self.dpr))), max(32, int(round(self.H * self.dpr))))
+        self.ch.renderer.set_fit(self.ch.fit, k)
         self.set_feet(fx, fy); self.mask_dirty = True
+
+    # ---------------- the bigger window a limp student gets ----------------
+    def rag_window_scale(self):
+        """How much bigger her window gets while she is limp. 1.0 = never grows.
+
+        A multiplier rather than a fixed size: the models differ by a factor of a
+        few, so what a body needs is room AROUND her, and a ratio scales with
+        whatever window she already has (profile scale, --scale, a ride window).
+        Physics page / cfg `ragdoll_window_scale`.
+        """
+        try:
+            k = float(self.cfg.get("ragdoll_window_scale", RAG_WINDOW_SCALE))
+        except (TypeError, ValueError):
+            k = RAG_WINDOW_SCALE
+        return clamp(k, 1.0, 4.0)
+
+    def rag_window(self, on):
+        """Grow her window while she is limp (or shrink it back). See apply_scale.
+
+        Her feet stay exactly where they were: apply_scale reads feet_pos()
+        before it touches W / H and puts them back after, so the extra room all
+        goes on the far side of her, where a body that has fallen over needs it.
+        """
+        k = self.rag_window_scale() if on else 1.0
+        if abs(k - self.rag_win) < 1e-3: return
+        self.rag_win = k
+        self.apply_scale()
+
+    def stand_w(self):
+        """Her STANDING window width, window px: W without the limp window.
+
+        Anything sized against her rather than against the frame reads this: W is
+        the frame, which is RAG_WINDOW_SCALE times wider than the pose the model
+        is measured from while she is down.
+        """
+        return self.W / max(1e-3, self.rag_win)
+
+    def stand_h(self):
+        """Her STANDING window height, window px. See stand_w."""
+        return self.H / max(1e-3, self.rag_win)
 
     # ---------------- riding a vehicle (profile `ride`, e.g. Iroha's tank) ------
     def set_ride(self, on, fade=True):

@@ -65,6 +65,7 @@ class Cam:
         self.w, self.h = WIN_W, WIN_H
         self.proj = perspective(FOV, WIN_W / WIN_H, max(self.dist - H * 2.0, self.dist * 0.05), self.dist + H * 3.0)
         self.world_per_px = V / self.h
+        self.lens_px = self.dist / self.h      # the camera distance in px (Renderer._project)
         self.PV = self.proj @ self.view
 
     def project(self, p3, M):

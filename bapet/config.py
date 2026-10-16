@@ -104,6 +104,11 @@ DEFAULTS = dict(
                                   # curls into a ball instead of lying flat with her arms
                                   # through her own torso) but roughly doubles the physics
                                   # cost: 4 ragdolls + 10 windows go 1.7 -> 3.5 ms/frame.
+    ragdoll_window_scale=1.5,   # how much bigger a limp student's window gets, as a multiple of her
+                                #   standing one (Physics page). A body on the floor reaches outside the
+                                #   pose her window was sized for and used to be clipped by its edge;
+                                #   the camera widens to match, so this is ONLY extra room around her
+                                #   - she is drawn at the same size in the same place. 1.0 = off.
 )
 
 PRESETS = {

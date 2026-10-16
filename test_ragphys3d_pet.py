@@ -89,6 +89,13 @@ class Pet(PetRagdoll, PetRagStep, PetRagPose, FakePet):        # FakePet brings 
     def feet_pos(self): return self.px + self.W / 2, self.py + self.H * (1 - self.PADB)
     def reset_position(self): self.events.append("reset")
 
+    # The limp window (PetWindow): this harness has a fixed-size stub camera with no
+    # fit to widen, and the window it draws into is not what is under test here, so
+    # growing it is a no-op and the standing size is simply the window size.
+    def rag_window(self, on): self.events.append("rag_window" if on else "rag_window_off")
+    def stand_w(self): return self.W
+    def stand_h(self): return self.H
+
     def render_frame(self, _cur=None):
         post = self.rag_limb_post(1 / 60) if self.ragdoll else []
         world = self.model.pose_world(self.T, self.Q, self.S, post)
@@ -125,6 +132,10 @@ class TestLifecycle(unittest.TestCase):
         fx, fy = pet.feet_pos()
         self.assertAlmostEqual(fy, FLOOR, delta=1.0)
         self.assertNotIn("reset", pet.events, "a failsafe fired")
+        self.assertEqual(pet.events.count("rag_window"), 1,
+                         "she went limp without ever being given the bigger window")
+        self.assertEqual(pet.events.count("rag_window_off"), 1,
+                         "the bigger window was never handed back when she stood up")
         print(f"\n  [pet] shot -> down -> up in {frames / 60:.2f}s, feet back on the floor at y={fy:.1f}, "
               f"{pet.events.count('impact')} dust puffs, phases {sorted(phases)}")
 

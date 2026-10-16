@@ -133,6 +133,7 @@ class Pet(
         self.bfont = QtGui.QFont(); self.bfont.setBold(True)
         # --- ragdoll (see the RAG_* block at the top of this file) ---
         self.ragdoll = False; self.rag_state = "fall"      # "fall" | "getup"
+        self.rag_win = 1.0        # her window while limp, x her standing one (see PetWindow.rag_window)
         self.rag_t = 0.0; self.rag_rest = 0.0; self.rag_hit_t = 0.0
         self.rag_want_up = False          # "Get up" asked for while she was still flying
         self.rag_edge_slam = False        # this ragdoll came from hitting a screen edge

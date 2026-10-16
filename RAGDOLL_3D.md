@@ -31,6 +31,13 @@ The default is still `"pymunk"`. If a rig can't support the 3D engine, that pet 
   moving ragdoll reaching her, a window sliding / resizing / closing under or on her, or the home
   screen changing wakes her. `touching()` stays true and `speed()` is 0 while asleep, so the
   Pet's rest -> auto get-up timing is unchanged.
+- **A bigger window while she is limp** (every engine, not just this one). A body on the floor is
+  wider than the standing pose its window was sized for, and the frame used to clip it. Her window
+  is multiplied by **Physics → Ragdoll → Limp window** (`ragdoll_window_scale`, default `1.5x`) for
+  as long as she is down, and back to `1x` when she is on her feet again. It is a multiplier
+  because the models differ: it is room *around* her, not a size. The camera inside the window
+  widens by the same factor, so she is drawn at exactly the same size in exactly the same place and
+  the physics - which all measures real screen px - sees the same character it always did.
 
 ## Engine
 Position-based dynamics run at 300 Hz (the default 5 iterations; 60-600 Hz via the slider) in small substeps, which is stable by construction.

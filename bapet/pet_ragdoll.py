@@ -40,6 +40,10 @@ class PetRagdoll:
         self.rag3 = None                   # 3D engine: spawn matrix, post map, get-up blend
         self.ragdoll = False; self.rag_state = "fall"; self.rag_want_up = False
         self.rag_edge_slam = False
+        # Back to the standing window. rag_clear is the one place every exit from
+        # the ragdoll goes through - rag_end, the failsafes, hideEvent, a recall -
+        # so this is where the limp window is handed back, feet still planted.
+        self.rag_window(False)
         self.rig.dangle_on = True; self.rig.rag_post = []
         # She is standing again, so the rig animates once more. The clip is NOT
         # chosen here: callers that want a specific one (rag_end's "react", a
@@ -79,7 +83,7 @@ class PetRagdoll:
         `self.rag_com` (measured from her pelvis) puts her rotation pivot on it.
         """
         ch = self.rag_h()                           # her body height in window px
-        rad = RAG_COM_PAD * self.H * self.ch.body_frac   # body "thickness"
+        rad = RAG_COM_PAD * self.stand_h() * self.ch.body_frac   # body "thickness"
         drop = self.rag_com * ch                     # COM -> feet
         return ch, rad, drop, max(1.0, drop - rad)   # ch, rad, drop, half-rod length a
 
@@ -106,6 +110,13 @@ class PetRagdoll:
         # rag_freeze_pose picks its pose out of the clip set - both of which are
         # about to change underneath it anyway.
         self.set_ride(False, fade=False)
+        # Her window grows NOW, before any of the engines measures it: a body on
+        # the floor reaches outside the frame her standing window was sized for,
+        # and the edge of it clipped her. The camera inside widens to match
+        # (Renderer.set_fit), so she is drawn at the same size in the same place
+        # and every measurement below - rag_geom, rag_spec, rag3_spec - still gets
+        # the same character in the same real screen px.
+        self.rag_window(True)
         engine = self.cfg.get("ragdoll_engine", "pymunk")
         if engine == "3d":
             # The fully 3D ragdoll (ragphys3d.py + pet_rag3d.py). If her rig cannot

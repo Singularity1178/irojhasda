@@ -428,6 +428,11 @@ PAGES: list[Page] = [
                    is_("ragdoll_engine", "pymunk")),
             Toggle("ragdoll_edge_slam", "Hard hits on a screen edge knock her over", "Thrown fast enough, she goes limp instead of bouncing."),
             Slider("ragdoll_edge_slam_speed", "Slam speed", 600, 6000, 0.01, "{:.0f} px/s", "Speed at 100% size that counts as a slam.", on("ragdoll_edge_slam")),
+            Slider("ragdoll_window_scale", "Limp window", 1.0, 3.0, 20, "{:.2f}\u00d7",
+                   "How much bigger a student's window gets while she is limp, so a body that has fallen "
+                   "over is not clipped by her own frame. It is only extra room around her: she is drawn "
+                   "at the same size in the same place either way. 1.00\u00d7 turns it off.",
+                   tags="window size frame bigger grow clip clipping margin room space"),
         ], "Right-click a character, or press Ctrl + 1 over her, to go limp."),
         Section("Forces", [
             Slider("phys_gravity", "Gravity", -1.0, 2.0, 100, "{:.0f}%",

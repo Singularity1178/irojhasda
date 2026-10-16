@@ -1,3 +1,39 @@
+# Ragdoll: a bigger window while she is limp
+
+## New: Physics -> Ragdoll -> **Limp window** (`ragdoll_window_scale`, default 1.5x)
+
+A ragdolled body is wider than the standing pose its window was sized for, so a
+tumbling limb or a flung arm was clipped by the edge of her own frame. Her window
+is now multiplied by this factor for as long as she is limp, and by 1.0 again the
+moment she is back on her feet.
+
+It is a **multiplier**, not a size, on purpose: the models differ by a factor of a
+few, so what she needs is room *around* her, and a ratio carries over whatever
+window she already has (profile `window_scale`, `--scale`, a ride window).
+
+Nothing about her changes size:
+
+* The window keeps its feet line, so the extra room goes entirely above and to
+  either side of her (`PetWindow.rag_window` reads `feet_pos()` before it touches
+  `W`/`H` and puts them back after).
+* The camera inside the window widens by the same factor (`Renderer.set_fit(fit,
+  scale)`): view height, camera distance and near/far planes all scale, which
+  leaves `world_per_px` untouched. Same pixels per world unit means she is drawn
+  at exactly the same size in exactly the same place, and the outline width
+  (`outline_px * world_per_px`) does not change either.
+* Sizes read off the window (`char_h`, `rag_h`, the rod's body thickness, the
+  screen-edge margin) go through `stand_w()` / `stand_h()`, which divide the limp
+  factor back out - they measure her, not the frame. The capsule radii, COM,
+  pelvis drop and camera mapping the physics builds are therefore bit-identical
+  to before; the skeleton is still built from the frame on screen right now.
+
+Applies live: whoever is limp right now takes the new size, feet unmoved
+(`AppSettings.set`). `1.00x` turns it off and restores the old behaviour exactly.
+
+Cost: her GL buffer and MSAA renderbuffers are `(1.5x)^2 = 2.25x` the pixels
+while she is down, so several students limp at once is more fill. Lower the
+slider if that shows.
+
 # 3D ragdoll: physics iteration slider, bug fixes, performance
 
 Drop these files over the repo (paths are relative to the repo root). Nothing else changes.

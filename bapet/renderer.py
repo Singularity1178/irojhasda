@@ -55,28 +55,63 @@ class Renderer:
         # default keeps anything that reads it (the ragdoll's limb pendulums) safe
         # before the first resize.
         self.world_per_px = 1.0
+        # how much wider than the fit the current view is, see set_fit(scale)
+        self.fit_scale = 1.0
+        # camera distance in rendered px (the "f" of the 3D ragdoll's f/(f+z)),
+        # filled in by _project(); 1.0 keeps anything that reads it safe first
+        self.lens_px = 1.0
         # 0..1 opacity of the vehicle primitives, written by Pet every frame from
         # the ride transition. 1 = she is riding and it is solid (see Model.ride_prims).
         self.ride_fade = 1.0
         self.PV = np.eye(4)
         self.set_fit(fit)
 
-    def set_fit(self, fit):
+    def set_fit(self, fit, scale=1.0):
         """Frame the camera around a pose. Called again when she mounts a vehicle,
-        whose window is a different size and looks at a different fit (Pet.set_ride)."""
+        whose window is a different size and looks at a different fit (Pet.set_ride).
+
+        `scale` is the window a limp body gets (Pet.rag_window): a tumbling body
+        reaches well outside the standing pose's frame and the window edge clipped
+        it, so the window is multiplied by `scale` and the camera is opened up to
+        match.
+
+        What it must NOT do is move her. The camera (eye, distance) is therefore
+        computed from the fit ALONE and is the same number for every scale; all the
+        scale does is shorten the focal length and shift the lens down (see
+        _project), which together make the projection exactly homothetic about the
+        eye. So her image is the old one, pixel for pixel, with more world around
+        it - no change of size, no change of shape, no change of perspective, and
+        `world_per_px` (world units per rendered pixel) still the world's own
+        number, so the limb pendulums, the outline width and the 3D depth mapping
+        all still measure her rather than the frame.
+
+        Consequence for the rest of the code: she is 58% of her window tall exactly
+        as before, so char_h() / rag_h() must read the STANDING window
+        (PetWindow.stand_h), not H.
+        """
         self.fit = fit
-        H = fit["H"]; V = H / self.FRAC
+        self.fit_scale = k = max(0.05, float(scale))
+        # the world's own numbers from here down: the camera frames V_world of it,
+        # and _project() opens that up by k (the window shows k * this)
+        self.V_world = V = fit["H"] / self.FRAC
         self.dist = V / (2 * math.tan(self.FOV / 2))
         cy = fit["miny"] + V / 2 - self.PADB * V
         self.eye = np.array([fit["cx"], cy, fit["cz"] + self.dist])
         self.view = translate(-self.eye)
-        self.V_world = V
         if self.w: self._project()
 
     def _project(self):
-        d, H = self.dist, self.fit["H"]
-        self.proj = perspective(self.FOV, self.w / self.h, max(d - H * 2.0, d * 0.05), d + H * 3.0)
-        self.world_per_px = self.V_world / self.h
+        k = self.fit_scale
+        d, H = self.dist, self.fit["H"] * k        # the extra world shown also widens the depth range
+        self.proj = perspective(self.FOV, self.w / self.h, max(d - H * 2.0, d * 0.05), d + H * 3.0,
+                                zoom=1.0 / k,
+                                # lens shift: without it the shorter focal would pull her up into
+                                # the new frame. Her feet sit PADB from the bottom of the window,
+                                # which is NDC -(1 - 2*PADB) whatever the window's size, and the
+                                # shorter focal alone puts them at -(1 - 2*PADB) / k.
+                                shift_y=(2.0 * self.PADB - 1.0) * (1.0 - 1.0 / k))
+        self.world_per_px = self.V_world * k / self.h
+        self.lens_px = d / self.h                  # camera distance in px (see pet_rag3d's depth scale)
 
     def set_size(self, w, h):
         if (w, h) == (self.w, self.h): return
