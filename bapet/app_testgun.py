@@ -56,15 +56,31 @@ class AppTestGun:
         """Ctrl + left click anywhere on the desktop, via a low-level mouse hook.
 
         A nicety, not a requirement: the character windows can fire the same shot on
-        their own (gun_window_press). The hook is installed whatever the setting says,
-        but only claims the click while a weapon is picked, so with the gun Off Ctrl +
-        click reaches the app underneath exactly as it did before.
+        their own (gun_window_press).
+
+        Fitted only while a weapon is picked, and removed again on Off (see
+        AppSettings.set). That is not fussiness: Windows calls a low-level mouse hook
+        on the raw input thread for EVERY mouse message, movement included, and a
+        ctypes callback has to take the GIL to get there at all. This app holds the GIL
+        in long unbroken stretches - 60 fps of glReadPixels and full-buffer copies on
+        the GUI thread - so a hook left in for the whole run stalls the raw input
+        thread behind the render loop and the cursor visibly trails the mouse.
+        Installing it permanently costs latency on every mouse move whether or not the
+        feature is in use, which is why it is scoped to the feature.
         """
+        if getattr(self, "mouse_hook", None) is not None: return
         self.mouse_hook = GlobalMouse(self, enabled=lambda: bool(self.test_weapon()))
 
-    def shutdown_mouse_hook(self):
+    def remove_mouse_hook(self):
+        """Unhook the mouse if it is fitted and let the object go. Safe to call twice."""
         hk = getattr(self, "mouse_hook", None)
-        if hk is not None: hk.remove()
+        self.mouse_hook = None
+        if hk is None: return
+        hk.remove()                              # clears _proc, so the callback is unreachable
+        hk.deleteLater()
+
+    def shutdown_mouse_hook(self):
+        self.remove_mouse_hook()
 
     def test_weapon(self):
         """The weapon picked on the Interact tab, or "" while the test gun is off."""

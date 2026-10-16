@@ -20,6 +20,12 @@ class AppSettings:
         elif key == "click_through":
             for p in self.pets: p.mask_dirty = True
         elif key == "perch" and not val: self.tracker.wins = []
+        elif key == "test_weapon":
+            # A WH_MOUSE_LL hook is called on the raw input thread for every mouse move
+            # and has to take the GIL to answer, which is visible as cursor lag on a
+            # render loop this busy. Fit it only while the gun is actually in use.
+            if val: self.setup_mouse_hook()
+            else: self.remove_mouse_hook()
         elif key == "screen":
             # the home screen moved, so the physics walls have to move with it
             self.resolve_screen()

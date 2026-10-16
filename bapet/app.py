@@ -104,7 +104,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
             pet = Pet(self, ch)
             self.pets.append(pet)
         self.active = self.pets[0]
-        self.setup_mouse_hook()              # before the panel: it draws the weapon
+        if self.test_weapon(): self.setup_mouse_hook()   # only while a weapon is picked: see setup_mouse_hook
         self.panel = Panel(self)             # picker and asks the gun how it is doing
         self.setup_tray()
         self.save_timer = QTimer(self); self.save_timer.setSingleShot(True); self.save_timer.timeout.connect(self.save)
