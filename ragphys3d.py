@@ -68,6 +68,7 @@ from __future__ import annotations
 
 import math
 import random
+import time
 from collections import namedtuple
 
 __all__ = ["Impact", "Rag3DWorld", "Rag3DSkeleton", "POINTS", "ORDER",
@@ -77,8 +78,20 @@ Impact = namedtuple("Impact", "owner kind strength point")
 
 # ------------------------------------------------------------------ tunables
 # Every number that decides how she falls, bounces, folds and settles.
-RAG3_SUBSTEP = 1.0 / 300.0       # s per fixed substep (5 per frame at 60 fps)
-RAG3_MAX_SUBSTEPS = 25           # catch-up cap per frame; the rest of a slow frame is dropped
+RAG3_SUBSTEP = 1.0 / 300.0       # s per fixed substep at the DEFAULT iteration count (5 per 60 Hz frame).
+                                 #   Every per-substep constant below was tuned at this rate.
+RAG3_MAX_SUBSTEPS = 25           # catch-up cap per frame at the default rate; the rest of a slow frame is dropped
+RAG3_MAX_CATCHUP = RAG3_MAX_SUBSTEPS * RAG3_SUBSTEP   # s of simulated catch-up per frame, at any rate
+# "Physics iterations" (cfg ragdoll_3d_iters): substeps per 1/60 s. Fewer = less CPU (and less
+# lag on a busy desktop) at the price of softer, slightly stretchier joints; more = stiffer.
+RAG3_BASE_HZ = 60.0
+RAG3_ITERS_DEFAULT = 5           # 5 x 60 Hz = 300 Hz = RAG3_SUBSTEP: exactly the tuned behaviour
+RAG3_ITERS_MIN, RAG3_ITERS_MAX = 1, 10
+# Sleeping: a body that has lain still for a moment costs nothing until something disturbs it
+# (a grab, a shove, a shot, another ragdoll, a window moving / closing / resizing on top of her).
+RAG3_SLEEP_V = 25.0              # px/s (x scale): every particle slower than this, while touching ...
+RAG3_SLEEP_TIME = 0.5            # ... for this long = asleep
+RAG3_WAKE_MARGIN = 4.0           # px of slack when testing whether something reaches a sleeping body
 RAG3_BONE_PASSES = 2             # bone-length passes per substep (one before, one after the limits)
 RAG3_SM_ITERS = 2                # rotation-extraction iterations per cluster per substep (warm-started)
 RAG3_G = 2600.0                  # px/s^2 at scale 1, times max(0.6, scale): the same g as Pet.G
@@ -152,7 +165,21 @@ RAG3_SPINE = (0.86, 1.12)                 # hip <-> shoulder length range, x spa
 RAG3_LIMIT_SLACK = 0.06                   # rad allowed past a spawn pose already outside a limit
 
 _sqrt = math.sqrt
+_atan2 = math.atan2
+_sin = math.sin
+_cos = math.cos
+_asin = math.asin
 _MAXV2 = RAG3_MAX_V * RAG3_MAX_V
+
+
+def iters_to_substep(iters):
+    """cfg ragdoll_3d_iters -> seconds per substep (clamped to the slider's range)."""
+    try:
+        n = int(round(float(iters)))
+    except (TypeError, ValueError):
+        n = RAG3_ITERS_DEFAULT
+    n = max(RAG3_ITERS_MIN, min(RAG3_ITERS_MAX, n))
+    return n, 1.0 / (RAG3_BASE_HZ * n)
 
 
 # ================================================================ small maths
@@ -317,7 +344,7 @@ class Rag3DWorld:
     remove_skeleton / step / pop_impacts), so the App drives both the same way.
     """
 
-    def __init__(self):
+    def __init__(self, iters=RAG3_ITERS_DEFAULT):
         self.rect = None                 # (l, t, r, b) of the home screen, logical px
         self._skels = {}                 # owner -> Rag3DSkeleton
         self._wins = {}                  # hwnd -> dict(rect, target, vel, t, until)
@@ -326,17 +353,34 @@ class Rag3DWorld:
         self._pet_mute = set()           # (owner_a, i, owner_b, j): two ragdolls spawned inside each other
         self._impacts = {}               # owner -> {kind: Impact}
         self._acc = 0.0
-        self._wall = 0.0                 # s of simulated wall time
+        self._wall = 0.0                 # s of simulated wall time (advances even while nobody is limp)
         self._trace = 0
+        self.iters, self.substep = iters_to_substep(iters)
+        self.cost_ms = 0.0               # smoothed wall-clock cost of step(), for the panel's status line
+        self.active = 0                  # awake ragdolls in the last step
+
+    # ------------------------------------------------------------ iterations
+    def set_iterations(self, iters):
+        """cfg ragdoll_3d_iters: substeps per 1/60 s. Safe to change mid-fall (PBD
+        derives velocity from positions, so a new step size needs no conversion)."""
+        self.iters, self.substep = iters_to_substep(iters)
+        self._acc = min(self._acc, self.substep)
+        return self.iters
 
     # ---------------------------------------------------------------- screen
     def set_screen(self, rect):
-        self.rect = tuple(float(v) for v in rect)
+        new = tuple(float(v) for v in rect)
+        if new != self.rect:
+            self.rect = new
+            for s in self._skels.values():                 # the floor moved: everybody falls again
+                s.wake()
 
     # --------------------------------------------------------------- windows
     def sync_windows(self, wins, now, enabled):
         """Diff WinTracker.wins ((hwnd, l, t, r, b) logical px) against our boxes."""
         if not enabled:
+            for w in self._wins.values():
+                self._wake_rect(w["rect"])
             self._wins.clear(); self._mute.clear(); self._win_moving = False
             return
         l, t, r, b = self.rect or (0.0, 0.0, 1.0, 1.0)
@@ -345,10 +389,13 @@ class Rag3DWorld:
             if wr < l or wl > r or wb < t or wt > b:      # another monitor
                 continue
             want[int(h)] = (float(wl), float(wt), float(wr), float(wb))
-        for h in list(self._wins):
-            if h not in want:
-                self._wins.pop(h, None)
-                self._mute = {m for m in self._mute if m[2] != h}
+        gone = [h for h in self._wins if h not in want]
+        if gone:
+            for h in gone:
+                w = self._wins.pop(h)
+                self._wake_rect(w["rect"])                  # she may have been lying on it
+            gs = set(gone)
+            self._mute = {m for m in self._mute if m[2] not in gs}
         for h, rect in want.items():
             w = self._wins.get(h)
             if w is None:
@@ -360,6 +407,7 @@ class Rag3DWorld:
             cur = w["rect"]
             if abs((rect[2] - rect[0]) - (cur[2] - cur[0])) > 0.5 or \
                abs((rect[3] - rect[1]) - (cur[3] - cur[1])) > 0.5:
+                self._wake_rect(cur); self._wake_rect(rect)
                 w["rect"] = list(rect); w["target"] = rect; w["vel"] = (0.0, 0.0)
                 self._mute_window(h)                       # resized: rebuilt, not slid
                 continue
@@ -369,6 +417,7 @@ class Rag3DWorld:
                 w["rect"] = list(rect); w["target"] = rect; w["vel"] = (0.0, 0.0)
                 continue
             if d >= RAG3_WIN_SNAP:                          # teleported: snap and mute
+                self._wake_rect(cur); self._wake_rect(rect)
                 w["rect"] = list(rect); w["target"] = rect; w["vel"] = (0.0, 0.0)
                 self._mute_window(h)
                 continue
@@ -389,10 +438,11 @@ class Rag3DWorld:
         for s in (self._skels.values() if skel is None else (skel,)):
             if s.detached:
                 continue
+            X, Y, R, o = s.X, s.Y, s.R, s.owner
             for i in range(s.n):
-                r = s.R[i] - 0.5
-                if s.X[i] + r > wl and s.X[i] - r < wr and s.Y[i] + r > wt and s.Y[i] - r < wb:
-                    self._mute.add((s.owner, i, h))
+                r = R[i] - 0.5
+                if X[i] + r > wl and X[i] - r < wr and Y[i] + r > wt and Y[i] - r < wb:
+                    self._mute.add((o, i, h))
 
     def _advance_windows(self, h):
         moving = False
@@ -408,6 +458,57 @@ class Rag3DWorld:
             moving = True
         self._win_moving = moving
 
+    def _settle_windows(self):
+        """Nobody awake to push: every sliding window simply arrives at its target.
+        (Before, a window that moved while no one was limp kept its stale slide and
+        replayed it - from its OLD position - the next time someone went down.)"""
+        for w in self._wins.values():
+            if w["vel"] != (0.0, 0.0):
+                w["rect"] = list(w["target"]); w["vel"] = (0.0, 0.0)
+        self._win_moving = False
+
+    # -------------------------------------------------------------- sleeping
+    def _wake_rect(self, rect, margin=RAG3_WAKE_MARGIN):
+        wl, wt, wr, wb = rect
+        for s in self._skels.values():
+            if s.sleeping:
+                bb = s.bb
+                if bb[3] + margin >= wl and bb[0] - margin <= wr and bb[4] + margin >= wt and bb[1] - margin <= wb:
+                    s.wake()
+
+    def _wake_check(self, sleepers, awake, dt):
+        """Wake any sleeping body something is about to reach: a MOVING awake ragdoll
+        (with this frame's travel as slack) or a window that is sliding.
+
+        A quiet awake body (about to fall asleep itself) does not wake its
+        neighbours, or two bodies lying on each other would keep waking each other
+        forever and neither would ever sleep. If it starts moving, it wakes them."""
+        m0 = RAG3_WAKE_MARGIN
+        boxes = []
+        for a in awake:
+            sp = a.speed()
+            if sp < RAG3_SLEEP_V * a._s and a.grab_i < 0:
+                continue
+            bb = a.bounds()
+            m = sp * dt + m0
+            boxes.append((bb[0] - m, bb[1] - m, bb[2] - m, bb[3] + m, bb[4] + m, bb[5] + m))
+        if self._win_moving:
+            for w in self._wins.values():
+                if w["vel"] == (0.0, 0.0):
+                    continue
+                r, tg = w["rect"], w["target"]
+                boxes.append((min(r[0], tg[0]) - m0, min(r[1], tg[1]) - m0, -1e18,
+                              max(r[2], tg[2]) + m0, max(r[3], tg[3]) + m0, 1e18))
+        if not boxes:
+            return
+        for s in sleepers:
+            bb = s.bb
+            for b in boxes:
+                if bb[0] <= b[3] and b[0] <= bb[3] and bb[1] <= b[4] and b[1] <= bb[4] \
+                   and bb[2] <= b[5] and b[2] <= bb[5]:
+                    s.wake()
+                    break
+
     # ------------------------------------------------------------- skeletons
     def add_skeleton(self, owner_id, spec, kick=None, mode="kick", hit=None):
         skel = Rag3DSkeleton(self, owner_id, spec, kick, mode, hit)
@@ -417,9 +518,15 @@ class Rag3DWorld:
         self._skels[owner_id] = skel
         for h in list(self._wins):                         # she is drawn IN FRONT of windows she overlaps
             self._mute_window(h, skel)
+        bs = skel.bounds()
         for o in self._skels.values():                     # two ragdolls born inside each other
             if o is skel or o.detached:
                 continue
+            bo = o.bounds()
+            if bs[0] > bo[3] or bo[0] > bs[3] or bs[1] > bo[4] or bo[1] > bs[4] \
+               or bs[2] > bo[5] or bo[2] > bs[5]:
+                continue                                   # nowhere near each other
+            o.wake()
             for i in range(skel.n):
                 for j in range(o.n):
                     dx = skel.X[i] - o.X[j]; dy = skel.Y[i] - o.Y[j]; dz = skel.Z[i] - o.Z[j]
@@ -434,11 +541,17 @@ class Rag3DWorld:
         if self._skels.get(skel.owner) is skel:
             self._skels.pop(skel.owner, None)
         o = skel.owner
-        self._mute = {m for m in self._mute if m[0] != o}
-        self._pet_mute = {m for m in self._pet_mute if m[0] != o and m[2] != o}
+        if self._mute:
+            self._mute = {m for m in self._mute if m[0] != o}
+        if self._pet_mute:
+            self._pet_mute = {m for m in self._pet_mute if m[0] != o and m[2] != o}
         self._impacts.pop(o, None)
         skel.detached = True
         skel.grab_i = -1
+        # whoever was lying on / under her has lost a support
+        if any(s.sleeping for s in self._skels.values()):
+            bb = skel.bounds()
+            self._wake_rect((bb[0], bb[1], bb[3], bb[4]))
 
     def skel(self, owner_id):
         return self._skels.get(owner_id)
@@ -459,28 +572,45 @@ class Rag3DWorld:
     def step(self, dt):
         """Advance by dt seconds in fixed substeps. Once per App tick, not per pet."""
         self._impacts.clear()
-        skels = [s for s in self._skels.values() if not s.detached]
-        if not skels:
-            self._acc = 0.0
-            return
         dt = min(max(dt, 0.0), 0.25)
-        self._wall += dt
+        self._wall += dt                                   # always: window slides are timed against it
+        if not self._skels:
+            self._acc = 0.0; self.active = 0
+            if self._win_moving:
+                self._settle_windows()
+            self.cost_ms *= 0.9
+            return
+        t0 = time.perf_counter()
+        live = [s for s in self._skels.values() if not s.detached]
+        sleepers = [s for s in live if s.sleeping]
+        awake = [s for s in live if not s.sleeping]
+        if sleepers and (awake or self._win_moving):
+            self._wake_check(sleepers, awake, dt)
+            awake = [s for s in live if not s.sleeping]
+        self.active = len(awake)
+        if not awake:
+            self._acc = 0.0
+            if self._win_moving:
+                self._settle_windows()
+            self.cost_ms *= 0.9
+            return
         self._acc += dt
-        h = RAG3_SUBSTEP
-        budget = min(RAG3_MAX_SUBSTEPS, int(self._acc / h))
-        for s in skels:
+        h = self.substep
+        cap = max(1, int(math.ceil(RAG3_MAX_CATCHUP / h - 1e-9)))
+        budget = min(cap, int(self._acc / h))
+        for s in awake:
             s.begin_frame(budget)
-        multi = len(skels) > 1
+        multi = len(awake) > 1
         n = 0
-        while self._acc >= h and n < RAG3_MAX_SUBSTEPS:
+        while self._acc >= h and n < cap:
             if self._win_moving:
                 self._advance_windows(h)
-            for s in skels:
+            for s in awake:
                 s.predict(h, n)
                 s.solve_internal()
             if multi:
-                self._collide_pets(skels)
-            for s in skels:
+                self._collide_pets(awake)
+            for s in awake:
                 s.solve_env(h)
                 s.update_velocity(h)
             n += 1
@@ -488,21 +618,28 @@ class Rag3DWorld:
         if self._acc > h:                                  # slow frame: drop the backlog
             self._acc = 0.0
         if n:
-            for s in skels:
+            for s in awake:
                 s.post_frame(n * h)
         if self._trace > 0:
             self._trace -= 1
-            for s in skels:
+            for s in live:
                 be, lv = s.joint_error()
                 print(f"  [rag3d] owner={s.owner} pelvis=({s.X[0]:.1f},{s.Y[0]:.1f},{s.Z[0]:.1f}) "
                       f"speed={s.speed():.0f} tone={s.tone:.2f} bone_err={be:.2f}px "
-                      f"limit_err={math.degrees(lv):.1f}deg touching={s.touching()}")
+                      f"limit_err={math.degrees(lv):.1f}deg touching={s.touching()} "
+                      f"asleep={s.sleeping} substeps={n}@{1.0 / h:.0f}Hz")
+        ms = (time.perf_counter() - t0) * 1000.0
+        self.cost_ms += (ms - self.cost_ms) * 0.1
 
     def _collide_pets(self, skels):
-        """Ragdoll vs ragdoll: sphere pairs, mass-weighted, with an AABB early out."""
+        """Ragdoll vs ragdoll: sphere pairs, mass-weighted, with AABB early outs.
+
+        No per-pair allocation: the mute keys are only built while the mute set is
+        non-empty (it is empty unless two bodies were spawned inside each other)."""
         for s in skels:
             s.bounds()
         mute = self._pet_mute
+        fr = RAG3_FRICTION * 0.6
         for ia in range(len(skels)):
             A = skels[ia]
             for ib in range(ia + 1, len(skels)):
@@ -513,17 +650,28 @@ class Rag3DWorld:
                     continue
                 AX, AY, AZ, AR, AW = A.X, A.Y, A.Z, A.R, A.W
                 BX, BY, BZ, BR, BW = B.X, B.Y, B.Z, B.R, B.W
+                oa, ob = A.owner, B.owner
+                nb = B.n
+                bl, bt, bn, br, bbt, bf = bb
                 for i in range(A.n):
-                    for j in range(B.n):
-                        dx = BX[j] - AX[i]; dy = BY[j] - AY[i]; dz = BZ[j] - AZ[i]
-                        rs = AR[i] + BR[j]
+                    ax = AX[i]; ay = AY[i]; az = AZ[i]; ar = AR[i]
+                    if not mute and (ax + ar < bl or ax - ar > br or ay + ar < bt or ay - ar > bbt
+                                     or az + ar < bn or az - ar > bf):
+                        continue                         # this sphere cannot reach B at all
+                    for j in range(nb):
+                        dx = BX[j] - ax; dy = BY[j] - ay; dz = BZ[j] - az
+                        rs = ar + BR[j]
                         d2 = dx * dx + dy * dy + dz * dz
-                        key = (A.owner, i, B.owner, j)
                         if d2 >= rs * rs:
-                            if mute and (key in mute or (B.owner, j, A.owner, i) in mute):
-                                mute.discard(key); mute.discard((B.owner, j, A.owner, i))
+                            if mute:
+                                k1 = (oa, i, ob, j)
+                                if k1 in mute:
+                                    mute.discard(k1)
+                                k2 = (ob, j, oa, i)
+                                if k2 in mute:
+                                    mute.discard(k2)
                             continue
-                        if mute and (key in mute or (B.owner, j, A.owner, i) in mute):
+                        if mute and ((oa, i, ob, j) in mute or (ob, j, oa, i) in mute):
                             continue
                         wa, wb = AW[i], BW[j]
                         ws = wa + wb
@@ -536,11 +684,12 @@ class Rag3DWorld:
                             nx, ny, nz = dx / d, dy / d, dz / d
                         pen = rs - d
                         ka, kb = pen * wa / ws, pen * wb / ws
-                        AX[i] -= nx * ka; AY[i] -= ny * ka; AZ[i] -= nz * ka
+                        ax -= nx * ka; ay -= ny * ka; az -= nz * ka
+                        AX[i] = ax; AY[i] = ay; AZ[i] = az
                         BX[j] += nx * kb; BY[j] += ny * kb; BZ[j] += nz * kb
                         va = (A.VX[i], A.VY[i], A.VZ[i]); vb = (B.VX[j], B.VY[j], B.VZ[j])
-                        A.contact(i, -nx, -ny, -nz, ka, vb, RAG3_FRICTION * 0.6, RAG3_RESTITUTION, "pet")
-                        B.contact(j, nx, ny, nz, kb, va, RAG3_FRICTION * 0.6, RAG3_RESTITUTION, "pet")
+                        A.contact(i, -nx, -ny, -nz, ka, vb, fr, RAG3_RESTITUTION, "pet")
+                        B.contact(j, nx, ny, nz, kb, va, fr, RAG3_RESTITUTION, "pet")
 
 
 # ================================================================ one ragdoll
@@ -580,8 +729,14 @@ class Rag3DSkeleton:
         self._contact_wall = -1e9
         self.contacts = []                 # this substep's contacts, for the velocity pass
         self.bb = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        self.sleeping = False              # lying still: skipped by the world until disturbed
+        self._h = None                     # substep size the per-substep factors were made for
+        self._rate_ratio = 1.0             # that size / RAG3_SUBSTEP
+        self._bone_passes = RAG3_BONE_PASSES
+        self._still = 0.0                  # s she has been below RAG3_SLEEP_V while touching
         self._build(spec)
         self._start_motion(kick, hit)
+        self.bounds()
 
     # ------------------------------------------------------------------ build
     def _build(self, spec):
@@ -722,6 +877,13 @@ class Rag3DSkeleton:
         self._build_limits(P, sub, arm, torso)
         self._build_self_pairs(P)
         self.cl_R = [(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)] * len(self.clusters)
+        self._mmax = max(mass)
+        # Flat copies of the hinge table for the hot loop: the parent cluster index is
+        # resolved once here instead of two dict lookups per hinge per substep.
+        self._hinge_fast = []
+        for bone, j, k, c, h0, (lo, hi), tol in self.hinges:
+            _j, _k, u0, par = self.bone_of[bone]
+            self._hinge_fast.append((self.cl_of[par], j, k, c, u0, h0, lo, hi, tol))
 
     def _cluster(self, name, members):
         idx = [self.idx[m] for m in members]
@@ -829,7 +991,7 @@ class Rag3DSkeleton:
         self.self_mute = set()
         for i, j in sorted(pairs):
             rs = self.R[i] + self.R[j]
-            self.self_pairs.append((i, j, rs))
+            self.self_pairs.append((i, j, rs, rs * rs, (rs + RAG3_SELF_MARGIN) ** 2))
             if math.dist(P(self.names[i]), P(self.names[j])) < rs + RAG3_SELF_MARGIN:
                 self.self_mute.add((i, j))                  # overlapping at spawn: settle in first
 
@@ -906,7 +1068,7 @@ class Rag3DSkeleton:
                     self.VZ[i] += qx * ry - qy * rx
         if hit is not None:
             self.impulse(hit[:2], hit[2:5] if len(hit) >= 5 else (hit[2], hit[3], 0.0))
-        for i in range(self.n):                              # no particle starts above the ceiling
+        for i in range(self.n):                              # no particle starts faster than RAG3_MAX_V
             v2 = self.VX[i] ** 2 + self.VY[i] ** 2 + self.VZ[i] ** 2
             if v2 > _MAXV2:
                 k = RAG3_MAX_V / _sqrt(v2)
@@ -922,6 +1084,8 @@ class Rag3DSkeleton:
         self._grab_n = max(1, int(n))
 
     def predict(self, h, sub_i):
+        if h != self._h:
+            self._set_rate(h)
         g = self.gravity * h
         drag = 1.0 - RAG3_AIR_DRAG * h
         X, Y, Z, VX, VY, VZ, W = self.X, self.Y, self.Z, self.VX, self.VY, self.VZ, self.W
@@ -941,19 +1105,39 @@ class Rag3DSkeleton:
             nx, ny = fx + (tx - fx) * t, fy + (ty - fy) * t
             VX[gi] = (nx - OX[gi]) / h; VY[gi] = (ny - OY[gi]) / h; VZ[gi] = 0.0
             X[gi] = nx; Y[gi] = ny
-        self.contacts = []
+        self.contacts.clear()
+
+    def _set_rate(self, h):
+        """Per-substep factors for a new step size (the iteration slider moved).
+
+        The tone constraint closes a FRACTION of its error per substep, so at a
+        different rate the same fraction would make her stiffer or limper. It is
+        converted so the fraction closed per SECOND matches the tuned 300 Hz feel.
+        Fewer, longer substeps also get an extra bone pass or two, which keeps limb
+        lengths honest for very little cost.
+        """
+        self._h = h
+        ratio = h / RAG3_SUBSTEP
+        self._rate_ratio = ratio
+        self._bone_passes = RAG3_BONE_PASSES + max(0, min(2, int(round((ratio - 1.0) * 0.5))))
+
+    def _tone_k(self):
+        f = self.tone * RAG3_TONE_K
+        return f, self._rate_ratio
 
     def solve_internal(self):
         self._solve_bones()
         for k, cl in enumerate(self.clusters):
             self.cl_R[k] = self._shape_match(cl)
-        self._solve_ranges()
+        if self.ranges:
+            self._solve_ranges()
         if self.tone > 0.01:
             self._solve_tone()
         self._solve_cones()
         self._solve_hinges()
-        self._solve_self()
-        for _ in range(RAG3_BONE_PASSES - 1):
+        if self.self_pairs:
+            self._solve_self()
+        for _ in range(self._bone_passes - 1):
             self._solve_bones()
 
     def _solve_bones(self):
@@ -976,8 +1160,11 @@ class Rag3DSkeleton:
         X, Y, Z, W = self.X, self.Y, self.Z, self.W
         for i, j, lo, hi in self.ranges:
             dx = X[j] - X[i]; dy = Y[j] - Y[i]; dz = Z[j] - Z[i]
-            d = _sqrt(dx * dx + dy * dy + dz * dz)
-            if lo <= d <= hi or d < 1e-9:
+            d2 = dx * dx + dy * dy + dz * dz
+            if lo * lo <= d2 <= hi * hi:
+                continue                                     # inside the range: no sqrt needed
+            d = _sqrt(d2)
+            if d < 1e-9:
                 continue
             ws = W[i] + W[j]
             if ws == 0.0:
@@ -989,7 +1176,8 @@ class Rag3DSkeleton:
 
     def _solve_tone(self):
         X, Y, Z, W = self.X, self.Y, self.Z, self.W
-        f0 = self.tone * RAG3_TONE_K
+        f0, ratio = self._tone_k()
+        same_rate = abs(ratio - 1.0) < 1e-9
         for i, j, rest, wt in self.tone_c:
             dx = X[j] - X[i]; dy = Y[j] - Y[i]; dz = Z[j] - Z[i]
             d = _sqrt(dx * dx + dy * dy + dz * dz)
@@ -997,7 +1185,10 @@ class Rag3DSkeleton:
             if d < 1e-9 or ws == 0.0:
                 continue
             f = f0 * wt
-            k = (f if f < 1.0 else 1.0) * (d - rest) / (d * ws)
+            f = f if f < 1.0 else 1.0
+            if not same_rate:                                # same closure per second at any rate
+                f = 1.0 - (1.0 - f) ** ratio
+            k = f * (d - rest) / (d * ws)
             a = k * W[i]; b = k * W[j]
             X[i] += dx * a; Y[i] += dy * a; Z[i] += dz * a
             X[j] -= dx * b; Y[j] -= dy * b; Z[j] -= dz * b
@@ -1020,13 +1211,14 @@ class Rag3DSkeleton:
         quat = _extract_rotation((a00, a01, a02, a10, a11, a12, a20, a21, a22), cl["quat"], RAG3_SM_ITERS)
         cl["quat"] = quat
         r = quat_to_mat(quat)
+        r0, r1, r2, r3, r4, r5, r6, r7, r8 = r
         for i, q in zip(idx, qs):
             if W[i] == 0.0:
                 continue
             qx, qy, qz = q
-            X[i] = cx + r[0] * qx + r[1] * qy + r[2] * qz
-            Y[i] = cy + r[3] * qx + r[4] * qy + r[5] * qz
-            Z[i] = cz + r[6] * qx + r[7] * qy + r[8] * qz
+            X[i] = cx + r0 * qx + r1 * qy + r2 * qz
+            Y[i] = cy + r3 * qx + r4 * qy + r5 * qz
+            Z[i] = cz + r6 * qx + r7 * qy + r8 * qz
         return r
 
     def _move_pair(self, j, c, gx, gy, gz):
@@ -1042,37 +1234,53 @@ class Rag3DSkeleton:
         self.X[j] -= ex * kj; self.Y[j] -= ey * kj; self.Z[j] -= ez * kj
 
     def _solve_cones(self):
-        X, Y, Z = self.X, self.Y, self.Z
+        # Same maths as before, with the cluster rotation of each axis and the
+        # pair move written out in place: this runs ~5 cones x every substep.
+        X, Y, Z, W = self.X, self.Y, self.Z, self.W
+        clR = self.cl_R
         for ci, j, c, n0, f0, o0, (Lf, Lb, Lo, Li) in self.cones:
-            Rp = self.cl_R[ci]
-            n = _mv(Rp, n0); f = _mv(Rp, f0); o = _mv(Rp, o0)
-            dx = X[c] - X[j]; dy = Y[c] - Y[j]; dz = Z[c] - Z[j]
+            r0, r1, r2, r3, r4, r5, r6, r7, r8 = clR[ci]
+            a, b, e_ = n0
+            nx = r0 * a + r1 * b + r2 * e_; ny = r3 * a + r4 * b + r5 * e_; nz = r6 * a + r7 * b + r8 * e_
+            a, b, e_ = f0
+            fx = r0 * a + r1 * b + r2 * e_; fy = r3 * a + r4 * b + r5 * e_; fz = r6 * a + r7 * b + r8 * e_
+            a, b, e_ = o0
+            ox = r0 * a + r1 * b + r2 * e_; oy = r3 * a + r4 * b + r5 * e_; oz = r6 * a + r7 * b + r8 * e_
+            xj = X[j]; yj = Y[j]; zj = Z[j]
+            dx = X[c] - xj; dy = Y[c] - yj; dz = Z[c] - zj
             d = _sqrt(dx * dx + dy * dy + dz * dz)
             if d < 1e-9:
                 continue
             ux, uy, uz = dx / d, dy / d, dz / d
-            un = ux * n[0] + uy * n[1] + uz * n[2]
-            uf = ux * f[0] + uy * f[1] + uz * f[2]
-            uo = ux * o[0] + uy * o[1] + uz * o[2]
+            un = ux * nx + uy * ny + uz * nz
+            uf = ux * fx + uy * fy + uz * fz
+            uo = ux * ox + uy * oy + uz * oz
             sp = _sqrt(uf * uf + uo * uo)
             if sp < 1e-9:
                 if un > 0.0:
                     continue                                 # dead on the neutral axis: inside
                 uf, sp = 1e-6, 1e-6
-            th = math.atan2(sp, un)
+            th = _atan2(sp, un)
             tf = th * uf / sp; to = th * uo / sp
-            ax = Lf if tf >= 0.0 else Lb
-            ay = Lo if to >= 0.0 else Li
-            e = (tf / ax) ** 2 + (to / ay) ** 2
+            qa = tf / (Lf if tf >= 0.0 else Lb)
+            qb = to / (Lo if to >= 0.0 else Li)
+            e = qa ** 2 + qb ** 2                            # ** (not q*q): bit-identical to the tuned original
             if e <= 1.0:
                 continue
             th2 = th / _sqrt(e)
             cf, co = uf / sp, uo / sp
-            s2, c2 = math.sin(th2), math.cos(th2)
-            tx = c2 * n[0] + s2 * (cf * f[0] + co * o[0])
-            ty = c2 * n[1] + s2 * (cf * f[1] + co * o[1])
-            tz = c2 * n[2] + s2 * (cf * f[2] + co * o[2])
-            self._move_pair(j, c, X[j] + tx * d, Y[j] + ty * d, Z[j] + tz * d)
+            s2, c2 = _sin(th2), _cos(th2)
+            gx = xj + (c2 * nx + s2 * (cf * fx + co * ox)) * d
+            gy = yj + (c2 * ny + s2 * (cf * fy + co * oy)) * d
+            gz = zj + (c2 * nz + s2 * (cf * fz + co * oz)) * d
+            wj, wc = W[j], W[c]
+            ws = wj + wc
+            if ws == 0.0:
+                continue
+            ex = gx - X[c]; ey = gy - Y[c]; ez = gz - Z[c]
+            kc, kj = wc / ws, wj / ws
+            X[c] += ex * kc; Y[c] += ey * kc; Z[c] += ez * kc
+            X[j] = xj - ex * kj; Y[j] = yj - ey * kj; Z[j] = zj - ez * kj
 
     def _bone_frame_axis(self, bone, axis0):
         """axis0 (spawn world) carried along by `bone`'s rotation: parent cluster, then swing."""
@@ -1084,39 +1292,77 @@ class Rag3DSkeleton:
         return _rot_apply(a, u, v), u
 
     def _solve_hinges(self):
-        X, Y, Z = self.X, self.Y, self.Z
-        for bone, j, k, c, h0, (lo, hi), tol in self.hinges:
-            h, d = self._bone_frame_axis(bone, h0)
-            d = _perp_unit(d, h)
-            if d is None:
+        # _bone_frame_axis + _perp_unit + _move_pair, written out in place (no tuples).
+        X, Y, Z, W = self.X, self.Y, self.Z, self.W
+        clR = self.cl_R
+        for ci, j, k, c, u0, h0, lo, hi, tol in self._hinge_fast:
+            r0, r1, r2, r3, r4, r5, r6, r7, r8 = clR[ci]
+            p, q, s_ = u0
+            ax = r0 * p + r1 * q + r2 * s_; ay = r3 * p + r4 * q + r5 * s_; az = r6 * p + r7 * q + r8 * s_
+            p, q, s_ = h0
+            vx = r0 * p + r1 * q + r2 * s_; vy = r3 * p + r4 * q + r5 * s_; vz = r6 * p + r7 * q + r8 * s_
+            xk = X[k]; yk = Y[k]; zk = Z[k]
+            ux = xk - X[j]; uy = yk - Y[j]; uz = zk - Z[j]
+            L0 = _sqrt(ux * ux + uy * uy + uz * uz)
+            if L0 < 1e-12:
+                ux, uy, uz = ax, ay, az
+            else:
+                ux /= L0; uy /= L0; uz /= L0
+            # hinge axis = v turned by the minimal rotation taking a onto u
+            cc = ax * ux + ay * uy + az * uz
+            kx = ay * uz - az * uy; ky = az * ux - ax * uz; kz = ax * uy - ay * ux
+            s = _sqrt(kx * kx + ky * ky + kz * kz)
+            if s >= 1e-9:
+                kx /= s; ky /= s; kz /= s
+                kv = (kx * vx + ky * vy + kz * vz) * (1.0 - cc)
+                hx = vx * cc + (ky * vz - kz * vy) * s + kx * kv
+                hy = vy * cc + (kz * vx - kx * vz) * s + ky * kv
+                hz = vz * cc + (kx * vy - ky * vx) * s + kz * kv
+            elif cc > 0.0:
+                hx, hy, hz = vx, vy, vz
+            else:
+                hx, hy, hz = _rot_apply((ax, ay, az), (ux, uy, uz), (vx, vy, vz))
+            # bend reference = bone direction with its hinge-axis part removed
+            kk = ux * hx + uy * hy + uz * hz
+            dx = ux - kk * hx; dy = uy - kk * hy; dz = uz - kk * hz
+            dn = _sqrt(dx * dx + dy * dy + dz * dz)
+            if dn < 1e-6:
                 continue
-            ux, uy, uz = X[c] - X[k], Y[c] - Y[k], Z[c] - Z[k]
-            L = _sqrt(ux * ux + uy * uy + uz * uz)
+            dx /= dn; dy /= dn; dz /= dn
+            wx = X[c] - xk; wy = Y[c] - yk; wz = Z[c] - zk
+            L = _sqrt(wx * wx + wy * wy + wz * wz)
             if L < 1e-9:
                 continue
-            u = (ux / L, uy / L, uz / L)
-            hd = _cross(h, d)
-            uh = _dot(u, h)
-            a = math.atan2(_dot(u, hd), _dot(u, d))
-            b = math.asin(max(-1.0, min(1.0, uh)))
+            wx /= L; wy /= L; wz /= L
+            hdx = hy * dz - hz * dy; hdy = hz * dx - hx * dz; hdz = hx * dy - hy * dx
+            uh = wx * hx + wy * hy + wz * hz
+            a = _atan2(wx * hdx + wy * hdy + wz * hdz, wx * dx + wy * dy + wz * dz)
+            b = _asin(-1.0 if uh < -1.0 else (1.0 if uh > 1.0 else uh))
             a2 = lo if a < lo else (hi if a > hi else a)
             b2 = -tol if b < -tol else (tol if b > tol else b)
             if a2 == a and b2 == b:
                 continue
-            ca, sa, cb, sb = math.cos(a2), math.sin(a2), math.cos(b2), math.sin(b2)
-            tx = cb * (ca * d[0] + sa * hd[0]) + sb * h[0]
-            ty = cb * (ca * d[1] + sa * hd[1]) + sb * h[1]
-            tz = cb * (ca * d[2] + sa * hd[2]) + sb * h[2]
-            self._move_pair(k, c, X[k] + tx * L, Y[k] + ty * L, Z[k] + tz * L)
+            ca, sa, cb, sb = _cos(a2), _sin(a2), _cos(b2), _sin(b2)
+            gx = xk + (cb * (ca * dx + sa * hdx) + sb * hx) * L
+            gy = yk + (cb * (ca * dy + sa * hdy) + sb * hy) * L
+            gz = zk + (cb * (ca * dz + sa * hdz) + sb * hz) * L
+            wk, wc = W[k], W[c]
+            ws = wk + wc
+            if ws == 0.0:
+                continue
+            ex = gx - X[c]; ey = gy - Y[c]; ez = gz - Z[c]
+            kc, kj = wc / ws, wk / ws
+            X[c] += ex * kc; Y[c] += ey * kc; Z[c] += ez * kc
+            X[k] = xk - ex * kj; Y[k] = yk - ey * kj; Z[k] = zk - ez * kj
 
     def _solve_self(self):
         X, Y, Z, W = self.X, self.Y, self.Z, self.W
         mute = self.self_mute
-        for i, j, rs in self.self_pairs:
+        for i, j, rs, rs2, free2 in self.self_pairs:
             dx = X[j] - X[i]; dy = Y[j] - Y[i]; dz = Z[j] - Z[i]
             d2 = dx * dx + dy * dy + dz * dz
-            if d2 >= rs * rs:
-                if mute and (i, j) in mute and d2 > (rs + RAG3_SELF_MARGIN) ** 2:
+            if d2 >= rs2:
+                if mute and d2 > free2 and (i, j) in mute:
                     mute.discard((i, j))
                 continue
             if mute and (i, j) in mute:
@@ -1147,6 +1393,8 @@ class Rag3DSkeleton:
         X, Y, Z, R = self.X, self.Y, self.Z, self.R
         D = self.depth
         zero = (0.0, 0.0, 0.0)
+        add = self.contacts.append
+        fr, rest = RAG3_FRICTION, RAG3_RESTITUTION
         if rect is not None:
             l, t, r, b = rect
             for i in range(self.n):
@@ -1154,27 +1402,31 @@ class Rag3DSkeleton:
                 y = Y[i]
                 if y + rad > b:
                     pen = y + rad - b; Y[i] = b - rad
-                    self.contact(i, 0.0, -1.0, 0.0, pen, zero, RAG3_FRICTION, RAG3_RESTITUTION, "screen")
+                    add((i, 0.0, -1.0, 0.0, pen, zero, fr, rest, "screen"))
                 elif y - rad < t:
                     pen = t - (y - rad); Y[i] = t + rad
-                    self.contact(i, 0.0, 1.0, 0.0, pen, zero, RAG3_FRICTION, RAG3_RESTITUTION, "screen")
+                    add((i, 0.0, 1.0, 0.0, pen, zero, fr, rest, "screen"))
                 x = X[i]
                 if x - rad < l:
                     pen = l - (x - rad); X[i] = l + rad
-                    self.contact(i, 1.0, 0.0, 0.0, pen, zero, RAG3_FRICTION, RAG3_RESTITUTION, "screen")
+                    add((i, 1.0, 0.0, 0.0, pen, zero, fr, rest, "screen"))
                 elif x + rad > r:
                     pen = x + rad - r; X[i] = r - rad
-                    self.contact(i, -1.0, 0.0, 0.0, pen, zero, RAG3_FRICTION, RAG3_RESTITUTION, "screen")
-                lim = D - rad
-                if lim < 0.0:
-                    lim = 0.0
-                z = Z[i]
-                if z > lim:
-                    self.contact(i, 0.0, 0.0, -1.0, z - lim, zero, RAG3_SLAB_FRICTION, 0.0, "slab")
-                    Z[i] = lim
-                elif z < -lim:
-                    self.contact(i, 0.0, 0.0, 1.0, -lim - z, zero, RAG3_SLAB_FRICTION, 0.0, "slab")
-                    Z[i] = -lim
+                    add((i, -1.0, 0.0, 0.0, pen, zero, fr, rest, "screen"))
+        # The depth slab applies with or without a screen rect (before, a world that
+        # had not been given a screen yet let bodies drift out of the slab forever).
+        sf = RAG3_SLAB_FRICTION
+        for i in range(self.n):
+            lim = D - R[i]
+            if lim < 0.0:
+                lim = 0.0
+            z = Z[i]
+            if z > lim:
+                add((i, 0.0, 0.0, -1.0, z - lim, zero, sf, 0.0, "slab"))
+                Z[i] = lim
+            elif z < -lim:
+                add((i, 0.0, 0.0, 1.0, -lim - z, zero, sf, 0.0, "slab"))
+                Z[i] = -lim
         wins = self.world._wins
         if not wins:
             return
@@ -1216,18 +1468,16 @@ class Rag3DSkeleton:
                     else:
                         nx, ny, pen = 1.0, 0.0, er + rad
                 X[i] = x + nx * pen; Y[i] = y + ny * pen
-                self.contact(i, nx, ny, 0.0, pen, wv, RAG3_FRICTION, RAG3_RESTITUTION, "window")
+                add((i, nx, ny, 0.0, pen, wv, fr, rest, "window"))
 
     def update_velocity(self, h):
         """v from the positions, then friction and restitution per contact."""
         X, Y, Z, OX, OY, OZ = self.X, self.Y, self.Z, self.OX, self.OY, self.OZ
         VX, VY, VZ = self.VX, self.VY, self.VZ
         inv = 1.0 / h
-        pre = {}
-        for c in self.contacts:                              # approach speed BEFORE this substep's solve
-            i = c[0]
-            if i not in pre:
-                pre[i] = (VX[i], VY[i], VZ[i])
+        contacts = self.contacts
+        if contacts:                                         # approach speed BEFORE this substep's solve
+            PX, PY, PZ = VX[:], VY[:], VZ[:]                 # (a C-level copy beats a per-contact dict)
         for i in range(self.n):
             vx = (X[i] - OX[i]) * inv; vy = (Y[i] - OY[i]) * inv; vz = (Z[i] - OZ[i]) * inv
             s2 = vx * vx + vy * vy + vz * vz
@@ -1235,27 +1485,29 @@ class Rag3DSkeleton:
                 k = RAG3_MAX_V / _sqrt(s2)
                 vx *= k; vy *= k; vz *= k
             VX[i] = vx; VY[i] = vy; VZ[i] = vz
-        if not self.contacts:
+        if not contacts:
             return
         s = self._s
         v0, v1 = RAG3_BOUNCE_V0 * s, RAG3_BOUNCE_V1 * s
+        span = max(1.0, v1 - v0)
         wall = self.world._wall
-        mmax = max(self.M)
-        for i, nx, ny, nz, pen, wv, mu, e, kind in self.contacts:
-            if self.W[i] == 0.0:
+        mmax = self._mmax
+        W, M = self.W, self.M
+        for i, nx, ny, nz, pen, wv, mu, e, kind in contacts:
+            if W[i] == 0.0:
                 continue
-            p = pre[i]
-            vpre = (p[0] - wv[0]) * nx + (p[1] - wv[1]) * ny + (p[2] - wv[2]) * nz
-            rx = VX[i] - wv[0]; ry = VY[i] - wv[1]; rz = VZ[i] - wv[2]
+            wvx, wvy, wvz = wv
+            vpre = (PX[i] - wvx) * nx + (PY[i] - wvy) * ny + (PZ[i] - wvz) * nz
+            rx = VX[i] - wvx; ry = VY[i] - wvy; rz = VZ[i] - wvz
             vn = rx * nx + ry * ny + rz * nz
             if vpre < 0.0:
                 ap = -vpre
-                ee = e * _smooth((ap - v0) / max(1.0, v1 - v0)) if ap > v0 else 0.0
+                ee = e * _smooth((ap - v0) / span) if ap > v0 else 0.0
                 vn_new = ee * ap
                 if kind != "slab":
                     self._contact_wall = wall
                     if ap > 60.0:
-                        st = ap / RAG3_IMPACT_DIV * (0.35 + 0.65 * self.M[i] / mmax)
+                        st = ap / RAG3_IMPACT_DIV * (0.35 + 0.65 * M[i] / mmax)
                         self.world._impact(self.owner, kind, st, X[i], Y[i])
             else:
                 vn_new = vn if vn > 0.0 else 0.0
@@ -1274,10 +1526,10 @@ class Rag3DSkeleton:
                     else:
                         k = min(1.0, mu * jn / ts)
                     rx -= tx * k; ry -= ty * k; rz -= tz * k
-            VX[i] = rx + wv[0]; VY[i] = ry + wv[1]; VZ[i] = rz + wv[2]
+            VX[i] = rx + wvx; VY[i] = ry + wvy; VZ[i] = rz + wvz
 
     def post_frame(self, dt):
-        """Once per frame: tone decay, relative damping, blow-up net, safe pose."""
+        """Once per frame: tone decay, relative damping, blow-up net, safe pose, sleep."""
         self.age += dt
         self.tone = self.tone0 * math.exp(-self.age / RAG3_TONE_FADE)
         n = self.n
@@ -1301,10 +1553,20 @@ class Rag3DSkeleton:
                 VX[i] = VY[i] = VZ[i] = 0.0
             return
         self._safe = list(zip(X, Y, Z))
+        touch = self.touching()
+        # ---- sleep: lying still for a moment = skipped until something disturbs her
+        sv = RAG3_SLEEP_V * self._s
+        if self.grab_i < 0 and touch and worst < sv * sv:
+            self._still += dt
+            if self._still >= RAG3_SLEEP_TIME:
+                self.sleep()
+                return
+        else:
+            self._still = 0.0
         # ---- damp motion relative to the rigid-body motion (limp tissue, joint friction)
         damp = self.limp_damp + RAG3_TONE_DAMP * self.tone
         slow = _sqrt(worst) < RAG3_REST_DAMP_V * self._s
-        if slow and self.touching():
+        if slow and touch:
             damp += RAG3_REST_DAMP
         k = 1.0 - math.exp(-damp * dt)
         if k <= 0.0:
@@ -1336,14 +1598,32 @@ class Rag3DSkeleton:
             wz = b02 * Lx + b12 * Ly + b22 * Lz
         else:
             wx = wy = wz = 0.0
+        W = self.W
         for i in range(n):
-            if self.W[i] == 0.0:
+            if W[i] == 0.0:
                 continue
             rx, ry, rz = X[i] - cx, Y[i] - cy, Z[i] - cz
             gx = vcx + wy * rz - wz * ry
             gy = vcy + wz * rx - wx * rz
             gz = vcz + wx * ry - wy * rx
             VX[i] += (gx - VX[i]) * k; VY[i] += (gy - VY[i]) * k; VZ[i] += (gz - VZ[i]) * k
+
+    # --------------------------------------------------------------- sleeping
+    def sleep(self):
+        """Stop simulating her: velocities zeroed, bounding box frozen for wake tests."""
+        self.sleeping = True
+        self._still = 0.0
+        n = self.n
+        self.VX[:] = [0.0] * n; self.VY[:] = [0.0] * n; self.VZ[:] = [0.0] * n
+        self.bounds()
+
+    def wake(self):
+        """Back into the simulation. She is still lying on whatever she slept on."""
+        if not self.sleeping:
+            return
+        self.sleeping = False
+        self._still = 0.0
+        self._contact_wall = self.world._wall
 
     # ------------------------------------------------------------------ pose
     def rotations(self):
@@ -1382,15 +1662,18 @@ class Rag3DSkeleton:
         return max(y + r for y, r in zip(self.Y, self.R))
 
     def speed(self):
+        if self.sleeping:
+            return 0.0
+        VX, VY, VZ = self.VX, self.VY, self.VZ
         best = 0.0
         for i in range(self.n):
-            s2 = self.VX[i] ** 2 + self.VY[i] ** 2 + self.VZ[i] ** 2
+            s2 = VX[i] * VX[i] + VY[i] * VY[i] + VZ[i] * VZ[i]
             if s2 > best:
                 best = s2
         return _sqrt(best)
 
     def touching(self):
-        return (self.world._wall - self._contact_wall) < RAG3_CONTACT_GRACE
+        return self.sleeping or (self.world._wall - self._contact_wall) < RAG3_CONTACT_GRACE
 
     def joint_error(self):
         """(worst bone-length error px, worst cone/hinge overshoot rad) - tests and --rag-trace."""
@@ -1444,6 +1727,7 @@ class Rag3DSkeleton:
         return best, bd
 
     def grab(self, point, target=None):
+        self.wake()
         self.release_grab()
         i, _d = self.nearest(point)
         if i < 0:
@@ -1479,6 +1763,7 @@ class Rag3DSkeleton:
     def impulse(self, point, imp, body=None):
         """Push the body at a screen point: dv spread over nearby particles by mass,
         so the hit limb moves most and the joints carry it into the rest of her."""
+        self.wake()
         ix, iy = float(imp[0]), float(imp[1])
         iz = float(imp[2]) if len(imp) > 2 else 0.0
         px, py = float(point[0]), float(point[1])
@@ -1502,6 +1787,7 @@ class Rag3DSkeleton:
 
     def shove(self, cursor, power=1.0):
         """Click / Launch: push her away from the cursor, the legacy direction and size."""
+        self.wake()
         s = self._s
         i0 = self.idx["pelvis"]
         ix = max(-RAG3_SHOVE_CLAMP, min(RAG3_SHOVE_CLAMP, (self.X[i0] - cursor[0]) * RAG3_SHOVE_SIDE)) * power
@@ -1517,7 +1803,8 @@ class Rag3DSkeleton:
     def explode_guard(self):
         if self.broken:
             return True
-        return not all(math.isfinite(v) for v in self.X + self.Y + self.Z)
+        fin = math.isfinite
+        return not (all(map(fin, self.X)) and all(map(fin, self.Y)) and all(map(fin, self.Z)))
 
     def outside(self, rect, height):
         if not rect:
@@ -1530,6 +1817,7 @@ class Rag3DSkeleton:
     def snap_inside(self, rect, height):
         if not rect:
             return
+        self.wake()
         l, t, r, b = rect
         i = self.idx["pelvis"]
         dx = (l + r) / 2.0 - self.X[i]
@@ -1539,6 +1827,7 @@ class Rag3DSkeleton:
             self.OX[k], self.OY[k], self.OZ[k] = self.X[k], self.Y[k], self.Z[k]
             self.VX[k] = self.VY[k] = self.VZ[k] = 0.0
         self._safe = list(zip(self.X, self.Y, self.Z))
+        self.bounds()
 
     def stop(self):
         for k in range(self.n):

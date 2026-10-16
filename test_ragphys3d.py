@@ -304,6 +304,82 @@ class TestWorld(unittest.TestCase):
               f"{R3.RAG3_SUBSTEP ** -1:.0f} Hz substeps)")
         self.assertLess(per, 6.0, "far too slow for a desktop pet")
 
+    def test_11_iterations_slider(self):
+        """cfg ragdoll_3d_iters: every setting stays contained, settles and keeps her limbs
+        together; fewer iterations cost proportionally less."""
+        rows = []
+        for it in (R3.RAG3_ITERS_MIN, 2, 3, R3.RAG3_ITERS_DEFAULT, R3.RAG3_ITERS_MAX):
+            random.seed(11)
+            w = world()
+            self.assertEqual(w.set_iterations(it), it)
+            sk = w.add_skeleton(1, human(), (2500.0, -600.0, 4.0), "slam")
+            worst = [0.0]
+
+            def cb(f):
+                worst[0] = max(worst[0], sk.joint_error()[0])
+                ok, nm = inside(sk, tol=2.0)
+                self.assertTrue(ok, f"iters={it}: {nm} left the screen")
+            t0 = time.perf_counter()
+            run(w, 2.0, cb)
+            ms = (time.perf_counter() - t0) * 1000.0 / (2.0 * FPS)
+            t = rest_time(w, sk, 6.0)
+            self.assertIsNotNone(t, f"iters={it}: never settled")
+            self.assertFalse(sk.broken, f"iters={it}: blew up")
+            self.assertLess(worst[0], 0.12 * sk.ch, f"iters={it}: limbs pulled apart")
+            rows.append((it, ms, worst[0], t))
+        # out-of-range values clamp instead of breaking the world
+        w = world()
+        self.assertEqual(w.set_iterations(0), R3.RAG3_ITERS_MIN)
+        self.assertEqual(w.set_iterations(99), R3.RAG3_ITERS_MAX)
+        self.assertEqual(w.set_iterations("junk"), R3.RAG3_ITERS_DEFAULT)
+        print("\n  [11] iterations: substeps/frame, ms/frame (incl. joint checks), worst bone stretch, settle s")
+        for it, ms, be, t in rows:
+            print(f"      {it:2d} ({it * 60:3d} Hz)  {ms:5.2f} ms  {be:5.1f}px  {t:.2f}s")
+
+    def test_12_sleep_and_wake(self):
+        """A body lying still falls asleep (costs nothing) and wakes when disturbed:
+        a shove, a grab, the window under her closing, another ragdoll landing on her."""
+        random.seed(12)
+        w = world()
+        w.sync_windows([(7, 800.0, 700.0, 1200.0, 1040.0)], 0.0, True)
+        sk = w.add_skeleton(1, human(x=1000.0, sole=700.0), (0.0, 0.0, 0.0), "crumple")
+        run(w, 4.0)
+        self.assertTrue(sk.sleeping, "never fell asleep on the window")
+        self.assertTrue(sk.touching())
+        self.assertEqual(sk.speed(), 0.0)
+        self.assertEqual(w.active, 0)
+        y0 = sk.Y[sk.idx["pelvis"]]
+        # the window under her closes: she wakes and falls to the floor
+        w.sync_windows([], 0.1, True)
+        self.assertFalse(sk.sleeping, "closing the window under her did not wake her")
+        run(w, 2.0)
+        self.assertGreater(sk.Y[sk.idx["pelvis"]], y0 + 150.0, "she did not fall when her window closed")
+        run(w, 3.0)
+        self.assertTrue(sk.sleeping)
+        # a shove wakes her
+        sk.shove((sk.X[0] - 50.0, sk.Y[0]), 1.0)
+        self.assertFalse(sk.sleeping)
+        run(w, 4.0)
+        self.assertTrue(sk.sleeping)
+        # a grab wakes her
+        self.assertTrue(sk.grab((sk.X[0], sk.Y[0])))
+        self.assertFalse(sk.sleeping)
+        run(w, 0.5)
+        self.assertFalse(sk.sleeping, "fell asleep while held")
+        sk.release_grab()
+        run(w, 4.0)
+        self.assertTrue(sk.sleeping)
+        # another ragdoll dropped onto her wakes her
+        x = sk.X[sk.idx["pelvis"]]
+        sk2 = w.add_skeleton(2, human(x=x, sole=500.0), (0.0, 0.0, 0.0), "throw")
+        woke = [False]
+        run(w, 1.0, lambda f: woke.__setitem__(0, woke[0] or not sk.sleeping))
+        self.assertTrue(woke[0], "a body landing on her did not wake her")
+        run(w, 6.0)
+        self.assertTrue(sk.sleeping and sk2.sleeping, "the pile never went to sleep")
+        print(f"\n  [12] sleep: asleep on a window, woke on close / shove / grab / body landing, "
+              f"pile asleep again, idle step {w.cost_ms:.3f} ms")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

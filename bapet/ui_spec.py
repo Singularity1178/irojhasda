@@ -418,6 +418,11 @@ PAGES: list[Page] = [
             Slider("ragdoll_3d_tone", "Muscle tone", 0.0, 1.0, 100, "{:.0f}%",
                    "0% = limp the instant she goes down. Higher = she sags at the knees first.",
                    is_("ragdoll_engine", "3d"), 100.0),
+            Slider("ragdoll_3d_iters", "Physics iterations", 1, 10, 1, "{:.0f} / frame",
+                   "Solver steps per 1/60 s (5 = the tuned default). Lower it if ragdolls make "
+                   "things lag: 2\u20133 roughly halves the cost, 1 is cheapest but limbs stretch on hard "
+                   "hits. Higher = stiffer and more exact. The live cost shows in the status line.",
+                   is_("ragdoll_engine", "3d"), tags="substeps lag performance speed cpu quality solver"),
             Toggle("ragdoll_auto_getup", "Stand back up by herself", "She gets up after lying still for a few seconds."),
             Toggle("ragdoll_self_collide", "Limbs collide with each other", "Looks better but roughly doubles physics cost.",
                    is_("ragdoll_engine", "pymunk")),

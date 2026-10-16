@@ -26,13 +26,16 @@ class AppSettings:
             # render loop this busy. Fit it only while the gun is actually in use.
             if val: self.setup_mouse_hook()
             else: self.remove_mouse_hook()
+        elif key == "ragdoll_3d_iters":
+            # Physics iterations: live, even mid-fall (the PBD solver derives velocity
+            # from positions, so a new substep size needs no conversion).
+            w3 = getattr(self, "rag_world3d", None)
+            if w3 is not None:
+                self.cfg[key] = w3.set_iterations(val)     # store the clamped integer
         elif key == "screen":
             # the home screen moved, so the physics walls have to move with it
             self.resolve_screen()
-            g = self.home
-            for wld in (self.rag_world, getattr(self, "rag_world3d", None)):
-                if wld is not None:
-                    wld.set_screen((g.left(), g.top(), g.right() + 1, g.bottom() + 1))
+            self.sync_phys_screen()
         if refresh and hasattr(self, "panel"): self.panel.refresh()
 
     def apply_preset(self, name):

@@ -248,13 +248,15 @@ class PetRagStep:
 
     def rag_pm_failsafe(self, sk):
         """Catch the three ways physics can go wrong, and undo all of them."""
-        gh = self.A.resolve_screen()
+        gh = getattr(self.A, "home", None) or self.A.resolve_screen()
+        # Same (l, t, r + 1, b + 1) rect the physics world's walls are built from
+        # (App.sync_phys_screen); QRect.right()/bottom() are inclusive, so without
+        # the +1 she was judged and snapped against a screen one px too small.
+        rect = (gh.left(), gh.top(), gh.right() + 1, gh.bottom() + 1)
         if sk.explode_guard():
             self.rag_pm_drop("non-finite body")
-        elif sk.outside((gh.left(), gh.top(), gh.right(), gh.bottom()),
-                        self.char_h()):
-            sk.snap_inside((gh.left(), gh.top(), gh.right(), gh.bottom()),
-                           self.char_h())
+        elif sk.outside(rect, self.char_h()):
+            sk.snap_inside(rect, self.char_h())
 
     def rag_pm_drop(self, why):
         """Give up on physics for this pet and put her back on her feet."""

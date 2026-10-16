@@ -78,10 +78,11 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         # The fully 3D world (cfg ragdoll_engine="3d"): pure Python, so it always
         # exists. Shared by every pet on the 3D engine, so they collide in depth too.
         self.rag_world3d = Rag3DWorld() if Rag3DWorld is not None else None
-        g = self.home
-        for wld in (self.rag_world, self.rag_world3d):
-            if wld is not None:
-                wld.set_screen((g.left(), g.top(), g.right() + 1, g.bottom() + 1))
+        if self.rag_world3d is not None:
+            # Physics iterations slider (Physics tab): substeps per 1/60 s.
+            self.rag_world3d.set_iterations(self.cfg.get("ragdoll_3d_iters", 5))
+        self.phys_rect = None                             # home rect the physics walls were last built for
+        self.sync_phys_screen()
         self.trk_wins = None                              # last window list we synced
         self.cutin = Cutin()
         self.shotfx = ShotFX()
@@ -129,6 +130,25 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         qapp.aboutToQuit.connect(self.shutdown_hotkey)
         qapp.aboutToQuit.connect(self.shutdown_mouse_hook)
 
+    def sync_phys_screen(self):
+        """Keep both physics worlds' walls on the CURRENT home screen.
+
+        resolve_screen() re-picks self.home on demand - with screen = "cursor" (the
+        default) that is whichever monitor the cursor is on - but the walls used to
+        be set only at start-up and when the "screen" setting itself changed. So on
+        a multi-monitor desktop a limp body was snapped onto the new screen while
+        her floor and walls were still on the old one, and she blew up or was
+        dropped. Cheap: one tuple compare per tick, a rebuild only on change.
+        """
+        g = self.home
+        rect = (g.left(), g.top(), g.right() + 1, g.bottom() + 1)
+        if rect == self.phys_rect:
+            return
+        self.phys_rect = rect
+        for wld in (self.rag_world, getattr(self, "rag_world3d", None)):
+            if wld is not None:
+                wld.set_screen(rect)
+
     # ---- main loop ----
     def tick(self):
         now = time.perf_counter(); dt = min(0.1, now - self.last); self.last = now
@@ -159,6 +179,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
                                          bool(self.cfg["perch"] and self.tracker.enabled))
                     except Exception:
                         traceback.print_exc()
+            self.sync_phys_screen()                            # home may have moved monitors
             if self.rag_world is not None:
                 self.rag_world.step(dt)
             if self.rag_world3d is not None:

@@ -87,6 +87,10 @@ DEFAULTS = dict(
                                 #   half-depth of the slab; standing students always stay in its middle)
     ragdoll_3d_tone=0.5,        # 3D engine: muscle tone as she goes down. 0 = limp at once; higher = she
                                 #   sags at the knees first and keeps a little stiffness a moment longer
+    ragdoll_3d_iters=5,         # 3D engine: physics iterations = solver substeps per 1/60 s (1..10).
+                                #   5 (300 Hz) is the tuned feel. Lower = less CPU / less lag with several
+                                #   students down at once, but softer, slightly stretchier limbs on hard
+                                #   hits. Applies live, even mid-fall.
     ragdoll_debug=False,        # draw the capsules, joints and window colliders over her
     ragdoll_edge_slam=True,     # slamming into a screen edge fast enough knocks her over
     ragdoll_edge_slam_speed=2400.0,   # px/s at scale 1.0 (x her scale) that counts as a slam

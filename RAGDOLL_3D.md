@@ -6,8 +6,14 @@ Two new sliders show up while it's selected:
 
 - **3D depth** (default 35% of her height): how far into the screen a limp body can fall.
 - **Muscle tone** (default 50%): 0% means she goes limp instantly. Higher values make her sag at the knees first.
+- **Physics iterations** (default 5 / frame): solver substeps per 1/60 s. This is the lag knob.
+  Cost scales almost linearly: 3 is ~1.8x cheaper, 2 is ~2.4x, 1 is ~4x. Fewer iterations make
+  joints a little softer (limbs stretch a few px more on hard hits); more make them stiffer. It
+  applies live, even mid-fall, and the panel's status line shows the live cost
+  (`3D physics 0.4 ms (2 active, 5x)`). Muscle tone is rescaled per substep, so it feels the same
+  at every setting.
 
-You can also set `"ragdoll_engine": "3d"` in `multi_single_screen_pet_ba_settings.json`.
+You can also set `"ragdoll_engine": "3d"` (and `"ragdoll_3d_iters": 1..10`) in `multi_single_screen_pet_ba_settings.json`.
 The default is still `"pymunk"`. If a rig can't support the 3D engine, that pet falls back to pymunk, then to the rod, and prints one `[ragdoll3d]` line explaining why.
 
 ## What it does
@@ -20,9 +26,14 @@ The default is still `"pymunk"`. If a rig can't support the 3D engine, that pet 
 - **Joint limits.** Knees and elbows are true hinges that only fold the anatomical way. Hips, shoulders and neck use swing cones with separate front/back/out/in limits. The spine's bend and twist are bounded.
 - **Collisions.** She collides with the floor, walls and ceiling, the real Windows (boxes spanning the full depth), other ragdolled students (who are also 3D), and her own body (hands and knees don't pass through her torso or head).
 - **Grabbing.** You can grab any limb and she hangs from it; let go to throw her.
+- **Sleeping.** A body that has lain still (every particle under 25 px/s while touching
+  something) for 0.5 s is put to sleep and costs nothing per frame. A grab, a shove, a shot, a
+  moving ragdoll reaching her, a window sliding / resizing / closing under or on her, or the home
+  screen changing wakes her. `touching()` stays true and `speed()` is 0 while asleep, so the
+  Pet's rest -> auto get-up timing is unchanged.
 
 ## Engine
-Position-based dynamics run at 300 Hz in small substeps, which is stable by construction.
+Position-based dynamics run at 300 Hz (the default 5 iterations; 60-600 Hz via the slider) in small substeps, which is stable by construction.
 - **Particles:** one per joint, with chibi mass and radius proportions. The skull radius is measured from each character's own head mesh.
 - **Torso:** two rigid clusters (pelvis and Spine1) held together by shape matching. Their rotations drive the root and spine directly.
 - **Damping:** only motion relative to her rigid-body motion is damped, so limbs settle but the body as a whole still tumbles freely.
@@ -51,12 +62,19 @@ The root's 3D rotation goes into the model matrix about the pelvis, which is whe
 | `multi_single_screen_pet_ba.py` | docs only |
 
 ## Verified headless (Linux, Python 3, numpy 2)
-- `test_ragphys3d.py`: all 10 tests pass.
+- `test_ragphys3d.py`: all 12 tests pass.
+  - With sleeping disabled, the optimised solver reproduces the old one **bit for bit** at 5
+    iterations (every printed number in tests 1-10 is identical).
+  - `test_11_iterations_slider`: every setting from 1 to 10 stays inside the screen, settles and
+    keeps her limbs together through a 2500 px/s slam; out-of-range values clamp.
+  - `test_12_sleep_and_wake`: she falls asleep on a window, wakes when it closes / on a shove /
+    on a grab / when another body lands on her, and the pile goes back to sleep.
   - A crumple settles in about 0.9–2.2 s.
   - Nothing tunnels at 5000 px/s into any edge.
   - Bodies rest on window tops, and a window opening on a body doesn't throw her.
   - Torso clusters stay rigid to 0.2 px.
-  - 4 ragdolls plus 10 windows cost about 1.7 ms per frame (about 0.43 ms per ragdoll).
+  - 4 ragdolls plus 10 windows: about 1.5 ms per frame at 5 iterations (was ~1.75-2.1 ms
+    before the hot-loop rewrite), ~1.0 ms at 3, ~0.7 ms at 2, ~0.4 ms at 1; a sleeping body ~0.
 - `test_ragphys3d_map.py`: on Mika, every rendered joint lands within 5.2 px of its physics particle on screen and within 2.5 px in depth. This was checked for a 3/4-view shot, a front-view crumple and a near-profile slam. The remaining error is the camera's 16° perspective on limbs turned out of plane.
 - `test_ragphys3d_pet.py`: shot → down → up in 4.9 s, with her feet back on the floor and no skeleton left behind.
 

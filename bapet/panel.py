@@ -351,8 +351,13 @@ class Panel(QtWidgets.QWidget):
         self.status.setText(f"<b>{html.escape(p.name)}</b> &nbsp;\u00b7&nbsp; " + " \u00b7 ".join(html.escape(b) for b in bits))
         place = "on a window" if p.support is not None else ("on the floor" if p.grounded else "in the air")
         n = sum(1 for q in A.pets if q.isVisible())
+        phys = ""
+        w3 = getattr(A, "rag_world3d", None)
+        if w3 is not None and (w3.active or w3.cost_ms > 0.05):
+            # live cost of the 3D ragdolls, so the Physics iterations slider can be tuned by eye
+            phys = f"  \u00b7  3D physics {w3.cost_ms:.1f} ms ({w3.active} active, {w3.iters}\u00d7)"
         self.status_sub.setText(f"{n} of {len(A.pets)} visible  \u00b7  {A.fps:.0f} fps  \u00b7  "
-                                f"at {int(p.px)}, {int(p.py)}  \u00b7  {place}")
+                                f"at {int(p.px)}, {int(p.py)}  \u00b7  {place}{phys}")
         self._summary()
         for r in self.live_rows:
             if hasattr(r, "refresh_live"): r.refresh_live()

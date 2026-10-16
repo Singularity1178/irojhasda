@@ -322,7 +322,10 @@ class PetRag3D:
         try:
             if sk.detached:
                 self.rag3_drop("her skeleton left the world"); return
-            gh = self.A.resolve_screen()
+            # ragdoll_step() resolved the home screen a moment ago (and App.tick keeps
+            # the physics walls on it), so the cached one is current: resolve_screen()
+            # walks every QScreen and is not free to call again per pet per frame.
+            gh = getattr(self.A, "home", None) or self.A.resolve_screen()
             rect = (gh.left(), gh.top(), gh.right() + 1, gh.bottom() + 1)
             if sk.explode_guard():
                 self.rag3_drop("non-finite or blown-up body"); return
@@ -395,12 +398,23 @@ class PetRag3D:
 
     @staticmethod
     def rag3_posts_from(rots, st):
+        """post_i = K^T (R_root^T R_i R_j^T R_root) K, regrouped as  B R_i R_j^T B^T
+        with B = K^T R_root^T computed once: 2 matmuls per bone instead of 4, and
+        each physics rotation turned into an array once instead of once per use."""
         K = st["K"]
         Rr = _m3(rots["pelvis"])
+        B = K.T @ Rr.T
+        Bt = B.T
+        arr = {}
+
+        def get(name):
+            a = arr.get(name)
+            if a is None:
+                a = arr[name] = _m3(rots[name])
+            return a
         out = []
         for body, node, rig_par in st["map"]:
-            X = Rr.T @ _m3(rots[body]) @ _m3(rots[rig_par]).T @ Rr
-            out.append((node, K.T @ X @ K))
+            out.append((node, B @ (get(body) @ get(rig_par).T) @ Bt))
         return out
 
     def rag3_model_matrix(self, world):
