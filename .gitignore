@@ -14,3 +14,8 @@ Thumbs.db
 # Logs / temp
 *.log
 _diag_*.tmp
+# Scratch 3D models are large binaries - skip any new ones. The models the app
+# already loads are tracked, so this does not affect them.
+*.glb
+# Written by the app at runtime (window positions, toggles); regenerated on first run
+multi_single_screen_pet_ba_settings.json
