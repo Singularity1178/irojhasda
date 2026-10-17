@@ -6,7 +6,7 @@ import random
 import time
 
 from .combat_config import (
-    ACC_FAR, ACC_FAR_MULT, ACC_NEAR, COMBAT_RUN_SPEED, COVER_AIM_MULT, EXPOSURE_SHOTS,
+    ACC_FAR, ACC_FAR_MULT, ACC_NEAR, COMBAT_RUN_SPEED, COVER_AIM_MULT, COVER_WIN_AIM_MULT, EXPOSURE_SHOTS,
     FLEE_MIN_GAIN, FLEE_REPLAN, FLEE_STAMINA, FLINCH_AIM, MOVE_MAX_TIME, MOVE_MIN,
     NO_FLEE_AFTER_TURN, PROVOKE_COOLDOWN, RELOAD_CHASE_FRAC, RELOAD_COVER_CHANCE,
     RELOAD_COVER_FRAC, RELOAD_TACTICAL_CHANCE, SHOOT_LINES, SHOOT_STANCE_WEIGHT, STRESS_TAU
@@ -260,10 +260,10 @@ class PetCombat:
         fx, _ = self.feet_pos(); tx, _ = q.feet_pos()
         mid = a["rng"][1]
         if abs(tx - fx) > 8.0 and (1 if tx >= fx else -1) != mv["side"]: return True   # would be passing them: stop
-        if mv["kind"] == "shield":                                # follow the shield, wherever she wanders
+        if mv["kind"] in ("shield", "wincover"):                  # follow the shield / window, wherever it goes
             cv = a.get("cover")
-            if cv is None or not self.shield_ok(cv["shield"], q, a.get("others", ())): return True
-            mv["goal"] = self.shield_spot(cv["shield"], q)
+            if cv is None or not self.cover_valid(a): return True
+            mv["goal"] = self.cover_spot(a)
         elif mv["kind"] not in ("shift", "cover"):                # follow an opponent who is moving
             lo, hi = self.move_span(); mv["goal"] = clamp(tx - mv["side"] * mid, lo, hi)
         arrived = self.run_to(dt, mv["goal"])
@@ -273,10 +273,10 @@ class PetCombat:
         """The run is over: the stop clip if she has one, then back to shooting."""
         a = self.atk; mv = a["mv"]; a["mv"] = None
         cv = a.get("cover")
-        if mv is not None and mv["kind"] == "shield" and cv is not None:
-            if self.shield_ok(cv["shield"], a["target"], a.get("others", ())):
-                self.cover_settle(a); return                      # arrived behind the shield: drop into the kneel
-            a["cover"] = None                                     # the shield went away on the way: fight from here
+        if mv is not None and mv["kind"] in ("shield", "wincover") and cv is not None:
+            if self.cover_valid(a):
+                self.cover_settle(a); return                      # arrived behind the cover: kneel / stand stance
+            a["cover"] = None                                     # the cover went away on the way: fight from here
         if self.stop_clip() is not None: self.atk_phase("stop")
         else: self.combat_next(allow_move=False)
 
@@ -297,7 +297,8 @@ class PetCombat:
         rs = self.ch.range_scale          # longer firing range = accuracy holds out further
         p *= 1.0 - (1.0 - ACC_FAR_MULT) * clamp((d - ACC_NEAR * rs) / ((ACC_FAR - ACC_NEAR) * rs), 0.0, 1.0)
         if time.monotonic() < self.flinch_until: p *= FLINCH_AIM
-        if q.in_cover(): p *= COVER_AIM_MULT                      # kneeling behind a student: much harder to hit
+        if q.in_cover():                                          # behind a student / a window: harder to hit
+            p *= COVER_WIN_AIM_MULT if q.in_window_cover() else COVER_AIM_MULT
         p *= 1.0 - 0.3 * self.stress_now()
         return clamp(p, 0.02, 0.98)
 

@@ -67,7 +67,7 @@ ENGAGE_BAND = 0.55 * _CDS       # ... and she is content anywhere within +- this
 MIN_ENGAGE = 1.3 * _CDS         # character heights: never prefer to fight closer than this
 MOVE_MIN = 0.35 * _CDS          # character heights: a move shorter than this is not worth making
 MOVE_MAX_TIME = {"advance": 2.5 * _CDS, "retreat": 1.6 * _CDS, "shift": 1.4 * _CDS, "cover": 2.5 * _CDS,
-                 "shield": 3.5 * _CDS}   # s per move before she plants and shoots
+                 "shield": 3.5 * _CDS, "wincover": 3.5 * _CDS}   # s per move before she plants and shoots
 ACC_NEAR, ACC_FAR = 2.0 * _CDS, 6.0 * _CDS    # character heights: full accuracy up to NEAR, ACC_FAR_MULT of it at FAR
 ACC_FAR_MULT = 0.45
 FLINCH_TIME = 0.9               # s after a hit that her aim is spoiled ...
@@ -112,6 +112,36 @@ COVER_SEEK = 6.0 * _CDS         # character heights: how far away a shield may b
 COVER_HOLD = (9.0, 18.0)        # s she stays behind one shield before standing up and fighting in the open
 COVER_DRIFT = 0.55              # character heights the shield may wander before she follows
 COVER_MIN_BEHIND = 0.15         # character heights: her spot must really be behind the shield (not a wall-clamped fake)
+# Taking cover behind a WINDOW (begin_cover / wincover_* in pet_cover.py). The same tactic as the
+# student shield above, but the cover is an open desktop window instead of a student, and she fights
+# from the Stand_Attack_* clips (Move_End_Stand drops her into the stance) instead of the kneel ones.
+# Only for a model that has Stand_Attack_* clips. A window counts as cover when, seen from the floor /
+# window top she stands on:
+#   * its bottom edge is close enough to that ground (COVER_WIN_GROUND_GAP character heights above it
+#     at most - a window that reaches down behind the taskbar / below her window top is fine), so it
+#     reads as a wall standing on her ground and not as something floating over her head;
+#   * the part of it rising above that ground is at least slightly taller than she is
+#     (COVER_WIN_MIN_H x her body height) - a terminal on the taskbar, or a small window sitting on
+#     the window she stands on. There is deliberately NO upper bound: she stands BESIDE the window
+#     (COVER_WIN_GAP past its edge), never behind it, so a window towering over her still reads as a
+#     wall she is hugging - and a taller one earns its keep, because a bullet only crosses the window
+#     rect (seg_rect_t in pet_attack) when its path really passes through it, so more height is more
+#     intercepted rounds, not free protection. Only the lower bound matters: it keeps her from
+#     treating a 40px sliver - a toolbar, a thin notification window - as cover;
+#   * it is not the window she stands on, it is still visible (WinTracker), and it lies between her
+#     spot and her opponent, with her spot on her own side of the opponent.
+# She stands just past the window's edge on the side away from the opponent. While settled there:
+#   * shots at her are less likely to be on target (COVER_WIN_AIM_MULT), and a bullet whose path
+#     crosses the window is stopped by it with COVER_WIN_BLOCK chance (spark on the window, BLOCK);
+#   * she holds the spot, follows the window if it is dragged, and gives it up when it is closed /
+#     covered / moved away from her ground, or after COVER_HOLD seconds.
+COVER_WIN_AIM_MULT = 0.50       # x the shooter's accuracy against a student settled behind a window
+COVER_WIN_BLOCK = 0.60          # chance a bullet whose path crosses her cover window is stopped by it
+COVER_WIN_GAP = 0.22            # character heights past the window's edge she stands
+COVER_WIN_GROUND_GAP = 0.25     # character heights the window's bottom may float above her ground
+COVER_WIN_MIN_H = 0.55          # x her body height: the window must stand at least this far above
+                                #   her ground. No maximum - see the block comment above.
+COVER_WIN_MIN_W = 0.25          # character heights: a narrower visible strip is no cover
 PROVOKE_COOLDOWN = 6.0          # s before the same shooter can trigger another react roll
 CHASE_GIVE_UP = (4.0, 9.0)      # s a shooter keeps after a runner she can't bring down before giving up
 SHOOT_RUN_DODGE = 0.80          # chance a bullet misses a student who is running
@@ -129,6 +159,7 @@ SHOOT_LINES["safe"] = ["Phew...", "Think I lost them.", "That was close..."]
 SHOOT_LINES["reload"] = ["Reloading!", "Changing mags!", "Cover me, reloading!", "Out of ammo!"]
 SHOOT_LINES["rearm"] = ["Reloading...", "Fresh mag.", "Topping up.", "Ready again!"]
 SHOOT_LINES["cover"] = ["Falling back to reload!", "Cover me, I'm low!", "Back off, I need a reload!", "Pulling back!"]
+SHOOT_LINES["wincover"] = ["Taking cover!", "Behind the window!", "This'll stop a few rounds!", "Using this for cover!"]
 SHOOT_LINES["shield"] = ["Stay in front of me!", "Mind if I borrow you?", "Cover me!", "Keep your head up, I'm behind you!"]
 SHOOT_LINES["chase"] = ["Run all you want, reloading!", "Not so fast... reloading.", "Changing mags while you run!"]
 # A student who has been shooting at a target whose profile sets `shot_give_up` (Iroha's tank) stops

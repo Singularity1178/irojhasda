@@ -84,6 +84,10 @@ DEFAULTS = dict(
     shoot_cover_chance=0.55,      # 0..1  a student with Kneel_Attack_* clips, starting a fight with another
                                   #       student standing nearby, kneels behind her and uses her as cover
                                   #       (see the COVER block). Nobody to hide behind = a normal fight.
+    shoot_window_cover_chance=0.55,  # 0..1  a student with Stand_Attack_* clips, starting a fight with a
+                                  #       window about her height standing on her ground between her and the
+                                  #       opponent (a terminal on the taskbar, a small window on the one she
+                                  #       stands on), stands behind it and uses it as cover (Stand_* clips).
     test_weapon="",             # Interact tab: pick a weapon and Ctrl + left click fires one round of it
                                 #   from the middle of the screen at the cursor, holding to keep firing.
                                 #   A bench for the per-weapon VFX; the round hits any student it crosses.
@@ -98,6 +102,9 @@ DEFAULTS = dict(
                                 #   students down at once, but softer, slightly stretchier limbs on hard
                                 #   hits. Applies live, even mid-fall.
     ragdoll_debug=False,        # draw the capsules, joints and window colliders over her
+    anim_debug=False,           # TEST ONLY: write the clip / state / phase playing on each
+                                #   character over her (pet_animdbg.py, --anim-debug,
+                                #   run_anim_debug.bat). Off in normal use.
     ragdoll_edge_slam=True,     # slamming into a screen edge fast enough knocks her over
     ragdoll_edge_slam_speed=2400.0,   # px/s at scale 1.0 (x her scale) that counts as a slam
     ragdoll_self_collide=True,   # [v2] ON  # her own limbs collide with each other. Looks better (she

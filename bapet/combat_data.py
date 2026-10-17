@@ -82,8 +82,8 @@ def weapon_for(glb_path):
 
 
 def move_sets(model):
-    """{"run": Move_Ing clip, "stop": Move_End_Normal clip, "kneel_stop": Move_End_Kneel clip} for one
-    model (any may be missing)."""
+    """{"run": Move_Ing clip, "stop": Move_End_Normal clip, "kneel_stop": Move_End_Kneel clip,
+    "stand_stop": Move_End_Stand clip} for one model (any may be missing)."""
     cached = getattr(model, "_move_sets", None)
     if cached is not None: return cached
     out = {}
@@ -92,6 +92,7 @@ def move_sets(model):
         if base == "moveing": out["run"] = clip
         elif base == "moveendnormal": out["stop"] = clip
         elif base == "moveendkneel": out["kneel_stop"] = clip
+        elif base == "moveendstand": out["stand_stop"] = clip
     model._move_sets = out
     return out
 

@@ -11,11 +11,12 @@ from .combat_config import (
     BURST_SPAN, CHASE_GIVE_UP, COMBAT_DISTANCE_SCALE, ENGAGE_BAND, ENGAGE_RANGE, EXPOSURE_SHOTS,
     FLINCH_TIME, MIN_ENGAGE, RELOAD_TIME, SHOOT_BODY_HALF_W, SHOOT_FIRE_FRAC, SHOOT_KNOCK_LIFT,
     SHOOT_KNOCK_SPEED, SHOOT_KNOCK_SPIN, SHOOT_LINES, SHOOT_MAX_TIME, SHOOT_MOCK_PERIOD,
-    SHOOT_RUN_DODGE, SHOOT_STANCE_WEIGHT, STRESS_HIT, STRESS_NEAR
+    SHOOT_RUN_DODGE, SHOOT_STANCE_WEIGHT, STRESS_HIT, STRESS_NEAR, COVER_WIN_BLOCK
 )
 from . import vfx
 from .combat_data import attack_sets, move_sets, weapon_for
 from .mathutil import clamp
+from .pet_cover import seg_rect_t
 
 
 class PetAttack:
@@ -63,7 +64,7 @@ class PetAttack:
         self.meet_target = None
         self.atk = self.make_atk(target, stance, clips)
         self.enter("shoot")
-        if self.begin_cover(self.atk): pass                   # kneel-behind-a-student tactic: she is running to it
+        if self.begin_cover(self.atk): pass                   # cover tactic (student / window): she is running to it
         else: self.atk_phase("start" if "start" in clips else ("ing" if clips else "mock"))
         self.say_combat(random.choice(SHOOT_LINES["student"]), 2.0, force=True)
         return True
@@ -94,6 +95,8 @@ class PetAttack:
             self.rig.play(self.stop_clip(), False, 1.0, 0.08); return
         if phase == "kneel_in":                                  # Move_End_Kneel: the run ends in a kneel
             self.rig.play(move_sets(self.model)["kneel_stop"], False, 1.0, 0.08); return
+        if phase == "stand_in":                                  # Move_End_Stand: the run ends behind a window
+            self.rig.play(move_sets(self.model)["stand_stop"], False, 1.0, 0.08); return
         if phase == "reload":
             rc = self.reload_clip()                              # Normal_Reload, else stand about in Formation_Idle
             a["reload_anim"] = rc is not None
@@ -231,7 +234,7 @@ class PetAttack:
             elif self.combat_move(dt): self.combat_halt()
         elif ph == "stop":
             if self.rig.done: self.combat_next(allow_move=False)
-        elif ph == "kneel_in":                                     # settled behind the shield: now aim from the kneel
+        elif ph in ("kneel_in", "stand_in"):                       # settled behind the shield / window: now aim
             if self.rig.done:
                 if "start" in clips: self.atk_phase("start")
                 else: self.combat_next(allow_move=False)
@@ -364,6 +367,18 @@ class PetAttack:
             ex, ey = self.shot_to_edge(mx, my, ex, ey)           # unlimited range: it flies on to the screen edge
             skip = (q,) + friends                                # she was missed, someone behind her may not be
         other, bx, by = self.shot_blocker(mx, my, ex, ey, skip)
+        wrect = q.cover_window_rect() if hasattr(q, "cover_window_rect") else None
+        if wrect is not None:                                    # she is behind a window: it may stop the round
+            lx, ly = (bx, by) if other is not None else (ex, ey)
+            wt = seg_rect_t(mx, my, lx, ly, wrect)
+            if wt is not None and random.random() < COVER_WIN_BLOCK:
+                wt = min(1.0, wt + 0.01)
+                wx, wy = mx + (lx - mx) * wt, my + (ly - my) * wt
+                def land(q=q, ix=wx, iy=wy, ux=ux, uy=uy):
+                    q.window_blocked(self)
+                    self.shell_splash(bl, wpn, ix, iy, friends, ux, uy)   # a shell still goes off on the window
+                fx.fire(mx, my, wx, wy, impact="spark", style=bl, weapon=wpn, cb=land)
+                return
         if other is not None:                                    # somebody else got in the way
             bd = math.hypot(bx - mx, by - my) or 1.0
             bux, buy = (bx - mx) / bd, (by - my) / bd
@@ -447,6 +462,14 @@ class PetAttack:
         self.say_combat(random.choice(self.ch.hit_lines or SHOOT_LINES["hit"]), 1.8)
         if shooter is not None and shooter is not self:
             self.provoked(shooter)                               # a stray bullet counts too: retaliate / run / nothing
+
+    def window_blocked(self, shooter=None):
+        """A round meant for her was stopped by the window she is taking cover behind: BLOCK text, a
+        little stress, and it still counts as being shot at (she may return fire / provoke)."""
+        if not self.isVisible() or self.ragdoll: return
+        who = shooter if (shooter is not None and shooter is not self) else None
+        if who is not None: self.combat_popup("BLOCK", "block"); self.add_stress(STRESS_NEAR)
+        if who is not None: self.provoked(who)
 
     def shot_missed(self, shooter=None):
         """A bullet went past her. It still counts as being shot at: it rattles her a little, and she

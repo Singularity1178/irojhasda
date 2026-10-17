@@ -294,9 +294,11 @@ class PetRender:
         packed = np.packbits(m, axis=1, bitorder="little").tobytes()
         bg = self.bubble_geom()
         eg = self.emote_geom(); rf = self.reload_frac()
+        ad = self.anim_debug_panel()[1] if self.cfg.get("anim_debug") else None
         key = (hash(packed), self.grounded, None if bg is None else (int(bg[0].x()), int(bg[0].y()), int(bg[0].width()), int(bg[0].height())),
                tuple((int(q["x"]), int(q["y"]), q["kind"]) for q in self.parts if q["life"] >= 0),
-               None if eg is None else (int(eg.x()), int(eg.y())), rf is not None)
+               None if eg is None else (int(eg.x()), int(eg.y())), rf is not None,
+               None if ad is None else (int(ad.x()), int(ad.y()), int(ad.width()), int(ad.height())))
         if key == self.mask_key: return
         self.mask_key = key
         try:
@@ -308,6 +310,7 @@ class PetRender:
                                                      QtGui.QRegion.RegionType.Ellipse))
             if bg is not None: region = region.united(QtGui.QRegion(bg[0].toAlignedRect().adjusted(-2, -2, 2, 14)))
             if eg is not None: region = region.united(QtGui.QRegion(eg.toAlignedRect()))
+            if ad is not None: region = region.united(QtGui.QRegion(ad.toAlignedRect()))
             if rf is not None:
                 rx, ry, rs = self.reload_pos(); rr = int(24 * rs)
                 region = region.united(QtGui.QRegion(QtCore.QRect(int(rx - rr), int(ry - rr), rr * 2, int(rr * 2 + 18 * rs))))
@@ -385,6 +388,8 @@ class PetRender:
             p.restore()
         if self.cfg.get("ragdoll_debug"):
             self.rag_debug_draw(p)
+        if self.cfg.get("anim_debug"):
+            self.anim_debug_draw(p)
         p.end()
 
     # ---------------- Blue Archive VFX painting ----------------

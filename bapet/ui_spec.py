@@ -369,6 +369,7 @@ PAGES: list[Page] = [
             pct("shoot_retaliate_chance", "Shoot back", "Base odds that an armed student returns fire."),
             pct("shoot_flee_chance", "Run away", "Base odds that she runs instead."),
             pct("shoot_cover_chance", "Take cover behind a student", "Kneel behind a nearby student and use her as a shield."),
+            pct("shoot_window_cover_chance", "Take cover behind a window", "Stand behind a nearby window about her height (e.g. a terminal on the taskbar) and use it as cover."),
             Info(_react_note, live=True),
         ], collapsed=False),
         Section("Weapon test gun", [Custom("gun")]),
@@ -457,6 +458,9 @@ PAGES: list[Page] = [
         ]),
         Section("Debug", [
             Toggle("ragdoll_debug", "Draw ragdoll colliders", "Capsules, joints and window colliders over each character."),
+            Toggle("anim_debug", "Label the animation",
+                   "TEST ONLY: writes the clip, time, state and phase playing on each character over her, "
+                   "one colour per state. Off in normal use; run_anim_debug.bat starts the app with it on."),
         ], collapsed=True),
     ]),
 

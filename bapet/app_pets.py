@@ -37,7 +37,8 @@ class AppPets:
         self.z_order.append(pet)
 
     def shield_pairs(self):
-        """(user, shield) for every student currently hiding behind another one."""
+        """(user, shield) for every student currently hiding behind another one (window cover has no
+        shield student, so it never reorders anybody)."""
         out = []
         for p in self.pets:
             if not p.isVisible(): continue

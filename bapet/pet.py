@@ -15,6 +15,7 @@ from dialogue import Conversation, ConversationField
 from .combat_config import MAG_SIZE, NERVE_RANGE
 from .config import BASE_H, BASE_W
 from .mathutil import clamp
+from .pet_animdbg import PetAnimDebug
 from .pet_attack import PetAttack
 from .pet_behavior import PetBehavior
 from .pet_combat import PetCombat
@@ -38,7 +39,7 @@ from .rig import Rig
 class Pet(
         PetRagSkeleton, PetHeading, PetWindow, PetSpeech, PetState, PetAttack, PetCombat,
         PetCover, PetRagdoll, PetRagStep, PetRagPose, PetRag3D, PetBehavior, PetInput, PetRender,
-        QtWidgets.QWidget
+        PetAnimDebug, QtWidgets.QWidget
 ):
     PADB = Renderer.PADB
     LOOPS = ("idle", "walk", "alert")

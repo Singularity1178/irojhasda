@@ -178,6 +178,9 @@ def main():
                          "(console only - window titles are never written to a file)")
     ap.add_argument("--rag-debug", action="store_true",
                     help="draw the ragdoll capsules, joints and window colliders over each character")
+    ap.add_argument("--anim-debug", action="store_true",
+                    help="TEST ONLY: write the exact animation playing on each character over her - "
+                         "clip name, time, state, phase, cross-fade (run_anim_debug.bat does this for you)")
     ap.add_argument("--rag-trace", type=int, nargs="?", const=60, default=0, metavar="N",
                     help="print per-frame ragdoll physics for the first N frames (default 60)")
     ap.add_argument("--rag-diag", type=int, nargs="?", const=180, default=0, metavar="N",

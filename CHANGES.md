@@ -1,3 +1,89 @@
+# Perching / window colliders: the window list came back empty
+
+## Fixed: students walked and fell straight through every window on screen
+
+`WinTracker.refresh` could return an **empty** list, so there were no perches to
+stand on and no colliders for either physics world. Two separate reasons, both
+confirmed against a live desktop:
+
+* **Ordinary windows near the top of the screen were thrown away.** The
+  usability test read `t < top_limit + 60.0`, where `top_limit` is the top of the
+  screen the pets are locked to. Anything with its title bar within 60 px of that
+  was dropped - which is *every maximised window*, since a maximised title bar sits
+  exactly at the screen top, plus any ordinary window parked high up. The rule is
+  now what it was trying to say: a window is a surface only if there is screen
+  **above** its title bar for a student to stand on, so the test is
+  `t <= top_limit + TOP_SLACK` (`TOP_SLACK = 4`, slack for the DWM frame sitting a
+  pixel proud of the title bar).
+
+  A maximised window is therefore ignored outright - `WinTracker.keep()` rejects
+  it, so it is never a perch and never a collider, exactly as if there were no
+  window there. That is right twice over: a student on it would be drawn off the
+  top of the screen, and a maximised window covers the whole screen, so as a
+  collider it would only repeat the screen walls the physics world already has.
+  **Un-maximise a window** and students can stand on it and land on it again.
+* **One see-through overlay in front emptied the list.** Since the window-occlusion
+  pass, *every* visible window was appended to the occluder list, including
+  overlay chrome: a cursor follower or a layered always-on-top tool window sized
+  to the whole desktop. Being in front, it "covered" everything, so
+  `_uncovered_area` returned 0 for every real window and all of them were dropped
+  as buried. Such windows are now recognised by their extended style
+  (`WS_EX_TRANSPARENT`, or `WS_EX_LAYERED` + `WS_EX_TOOLWINDOW`) and dropped
+  before the list is built - they are neither a perch nor an occluder. A plain
+  layered application window is still solid and still occludes.
+
+The two rules are now `WinTracker.keep()` and `WinTracker.ghost()`, so the tests
+drive the same code the app does. `test_ragphys3d.py` test 13 gained the
+overlay-chrome case and asserts the new top-edge rule (level with the screen ->
+ignored, 120 px below -> kept); its old case A, which asserted that a maximised
+window is dropped, is kept because that is still true - but now for the stated
+reason. Test 14 drives the whole pipeline over a mixed desktop: an overlay, a
+maximised window and an ordinary one, and checks that only the ordinary window
+becomes a perch and a collider.
+
+The 3D engine itself was never at fault: bodies already rested on window tops
+correctly, and test 5's window test is unchanged.
+
+# Combat: taking cover behind a window (Stand_* clips)
+
+## New: Combat -> When shot at -> **Take cover behind a window** (`shoot_window_cover_chance`, default 55%)
+
+The kneel-behind-a-student tactic now has a window version. A student with
+`Stand_Attack_*` clips who starts a fight (as attacker or retaliator) may run to a
+desktop window and fight from behind it, using the **Stand** clips
+(`Stand_Attack_Start / Ing / End`, `Move_End_Stand` to settle) instead of the
+Kneel ones.
+
+A window counts as cover (`PetCover.window_ok`) when, seen from the ground she
+stands on (the floor / taskbar, or the window top she is perched on):
+
+* it is still visible (WinTracker list) and is not the window she stands on;
+* its bottom edge is no more than `COVER_WIN_GROUND_GAP` character heights above
+  her ground - it may reach down behind the taskbar / below her window top;
+* the part rising above her ground is at least `COVER_WIN_MIN_H` (0.55) x her
+  body height (`rag_h`), i.e. slightly taller than a student. **There is no
+  upper bound** - she stands *beside* the window, not behind it, so a window
+  towering over her still reads as a wall she is hugging, and a taller one
+  earns its keep: a bullet is only stopped when its path really crosses the
+  window rect, so more height is more intercepted rounds, not free protection.
+  The lower bound is what still matters: it keeps her from treating a 40 px
+  sliver (a toolbar, a thin notification window) as cover;
+* it stands between her spot and her opponent, her spot is on her side of the
+  opponent, inside her floor span, and (on a window top) on a visible part of it.
+
+Examples: a terminal sitting on the taskbar; students standing on a big window
+with a small window sitting on top of it next to them.
+
+While settled behind it: shots at her use `COVER_WIN_AIM_MULT`, and a round whose
+path crosses the window is stopped by it with `COVER_WIN_BLOCK` chance (spark on
+the window + BLOCK). She follows the window if it is dragged, picks new cover (a
+student or another window) when it is closed / covered / moved off her ground, and
+steps out after `COVER_HOLD` seconds, like the student shield.
+
+Files: `bapet/pet_cover.py`, `bapet/pet_attack.py`, `bapet/pet_combat.py`,
+`bapet/combat_config.py`, `bapet/combat_data.py`, `bapet/config.py`,
+`bapet/ui_spec.py`, `bapet/app_pets.py` (docstring only).
+
 # Ragdoll: a bigger window while she is limp
 
 ## New: Physics -> Ragdoll -> **Limp window** (`ragdoll_window_scale`, default 1.5x)

@@ -17,9 +17,20 @@ worlds - gets the corrected rects at once, and WinTracker.surface_visible()
 re-checks a window a character is standing on every frame so covering her
 mid-walk drops her instead of leaving her on nothing.
 
-Occluders are ALL visible windows in front, including ones too small or too
-high (a maximised window's top sits above the screen top) to be perches
-themselves.
+Occluders are ALL visible SOLID windows in front, including ones too small or
+too high (a maximised window's top sits above the screen top) to be perches
+themselves. Overlay chrome - a see-through pass-through window, a layered
+always-on-top tool window, a cursor follower - is not a window as far as a
+student is concerned and is dropped before the list is even built: it must
+neither be a perch nor count as hiding whatever is behind it, or one of them
+in front empties the list and students walk through every window on screen.
+
+A window whose top edge is level with the top of the pets' screen - every
+MAXIMISED window, and anything dragged up past the screen edge - is treated as
+no window at all: there is no screen above its title bar for a student to stand
+on (she would be drawn off the top of the screen), and as a collider it covers
+that screen, so it would only repeat the screen walls the physics world already
+has.
 """
 from __future__ import annotations
 
@@ -36,6 +47,28 @@ TITLE_BAND_H = 28.0
 # Under this fraction of its area still visible a window stops being a perch,
 # no matter how big it is: a 5% sliver of a window is not somewhere to stand.
 MIN_VISIBLE_FRAC = 0.25
+# A window is only somewhere to stand if there is screen ABOVE its title bar for a
+# student to be standing on. A window whose top edge is level with the top of the
+# screen the pets live on - which is exactly what a MAXIMISED window is - has none,
+# so it is ignored: a student on it would be drawn off the top of the screen. It is
+# equally useless as a collider, because it covers that screen and so only repeats
+# the screen walls the physics world already has. Slack for the DWM frame sitting a
+# pixel or two proud of the title bar.
+#
+# (The old rule was "60 px below the screen top", which is the same idea mangled: it
+# quietly threw away ordinary windows whose title bar happens to sit near the top, and
+# said nothing about why.)
+TOP_SLACK = 4.0
+
+# Window ex-styles that mark OVERLAY CHROME rather than a real window: a
+# see-through pass-through window, or a layered always-on-top tool window (a
+# palette, an overlay). They have no title bar to perch on, and - being
+# see-through - they must not be counted as hiding whatever is behind them
+# either. One full-screen cursor follower in front used to empty the whole list.
+GWL_EXSTYLE = -20
+WS_EX_TRANSPARENT = 0x00000020
+WS_EX_TOOLWINDOW = 0x00000080
+WS_EX_LAYERED = 0x00080000
 
 
 def _uncovered_area(l, t, r, b, above, clip=None, eps=0.0, max_pieces=256):
@@ -116,12 +149,35 @@ class WinTracker:
                 self.u32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
                 self.u32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
                 self.u32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+                self.u32.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
+                self.u32.GetWindowLongW.restype = ctypes.c_long   # LONG, sign-extended on x64
                 self.u32.GetSystemMetrics.argtypes = [ctypes.c_int]
                 self.dwm.DwmGetWindowAttribute.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
                 self.proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
                 self.pid = os.getpid()
             except Exception:
                 self.enabled = False
+
+    @staticmethod
+    def keep(rect, top_limit):
+        """Is this window somewhere a student can be, on the screen they live on?
+
+        No, if it is too small, or if its top edge is level with (or above) the top
+        of that screen. The second case is every maximised window, plus anything
+        dragged up past the screen edge: there is no screen above the title bar to
+        stand on, so a student who landed there would be drawn off the top of the
+        screen, and as a collider it would only repeat the screen walls. Both are
+        therefore treated as no window at all.
+        """
+        l, t, r, b = rect
+        return not (r - l < MIN_WIN_W or b - t < MIN_WIN_H or t <= top_limit + TOP_SLACK)
+
+    @staticmethod
+    def ghost(exstyle):
+        """Overlay chrome (a pass-through window, a layered tool window): not a perch,
+        and - being see-through - not something that hides what is behind it."""
+        return bool(exstyle & WS_EX_TRANSPARENT) or \
+            bool(exstyle & WS_EX_LAYERED and exstyle & WS_EX_TOOLWINDOW)
 
     def refresh(self, dpr, top_limit):
         """Rebuild self.wins: the still-visible part of every window, Z order front to back.
@@ -148,13 +204,15 @@ class WinTracker:
                 cloaked = ctypes.c_int(0)
                 self.dwm.DwmGetWindowAttribute(hwnd, 14, ctypes.byref(cloaked), 4)
                 if cloaked.value: return True
+                if self.ghost(self.u32.GetWindowLongW(hwnd, GWL_EXSTYLE) & 0xFFFFFFFF):
+                    return True                             # see-through overlay: neither perch nor occluder
                 r = wt.RECT()
                 if self.dwm.DwmGetWindowAttribute(hwnd, 9, ctypes.byref(r), ctypes.sizeof(r)) != 0:
                     self.u32.GetWindowRect(hwnd, ctypes.byref(r))
                 l, t, rr, b = r.left / dpr, r.top / dpr, r.right / dpr, r.bottom / dpr
                 if rr - l < 1 or b - t < 1: return True
-                usable = not (rr - l < MIN_WIN_W or b - t < MIN_WIN_H or t < top_limit + 60.0)
-                cands.append((int(hwnd) if hwnd else 0, l, t, rr, b, usable))
+                cands.append((int(hwnd) if hwnd else 0, l, t, rr, b,
+                              self.keep((l, t, rr, b), top_limit)))
             except Exception:
                 pass
             return True
@@ -171,9 +229,10 @@ class WinTracker:
                 if v is not None:
                     occ_before[h] = list(above)
                     out.append((h, v[0], v[1], v[2], v[3]))
-            # Every window occludes whatever is behind it, whether or not it is
-            # big enough to be a perch itself, and whether or not it is visible
-            # in its own right - it blocks whatever is behind it either way.
+            # Every SOLID window occludes whatever is behind it, whether or not it
+            # is big enough to be a perch itself and whether or not it survived as
+            # one - it blocks whatever is behind it either way. Overlay chrome has
+            # already been dropped above, so it cannot wipe out the list.
             above.append((l, t, rr, b))
         self.wins = out
         self._occ_before = occ_before

@@ -42,6 +42,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         if args.scale: self.cfg["scale"] = args.scale
         if args.fps: self.cfg["fps"] = args.fps
         if getattr(args, "rag_debug", False): self.cfg["ragdoll_debug"] = True
+        if getattr(args, "anim_debug", False): self.cfg["anim_debug"] = True
         self.rag_trace = int(getattr(args, "rag_trace", 0) or 0)
         self.rag_diag = int(getattr(args, "rag_diag", 0) or 0)
         if self.rag_diag:

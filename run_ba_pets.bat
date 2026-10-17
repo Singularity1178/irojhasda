@@ -9,6 +9,9 @@ REM    run_ba_pets.bat --dump
 REM    run_ba_pets.bat --screen primary
 REM    run_ba_pets.bat --model model\Iroha.glb --scale 1.2 --fps 60
 REM    run_ba_pets.bat --debug-tags      (what the system watcher sees)
+REM
+REM  run_anim_debug.bat is the same app with --anim-debug: the animation playing on
+REM  each character written over her. Test bench, not normal use.
 REM ------------------------------------------------------------------
 setlocal
 title Desktop Pets - Blue Archive

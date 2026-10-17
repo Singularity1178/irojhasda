@@ -17,7 +17,7 @@ class AppSettings:
         elif key == "always_on_top":
             for p in self.pets: p.apply_flags()
         elif key == "fps": self.timer.setInterval(int(1000 / max(1, val)))
-        elif key == "click_through":
+        elif key in ("click_through", "anim_debug"):
             for p in self.pets: p.mask_dirty = True
         elif key == "perch" and not val: self.tracker.wins = []
         elif key == "test_weapon":

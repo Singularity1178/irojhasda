@@ -381,9 +381,17 @@ class TestWorld(unittest.TestCase):
               f"pile asleep again, idle step {w.cost_ms:.3f} ms")
 
     def test_13_occluded_windows_clipped_not_just_dropped(self):
-        """A window hidden behind another one (including a maximised window whose own top is
-        above the screen) must not act as a perch or a collider. Fully hidden windows are
-        dropped; half hidden ones are clipped to the part you can actually see."""
+        """What a student may stand on / a limp body may hit is what is really VISIBLE.
+
+        Fully hidden windows are dropped; half hidden ones are clipped to the part
+        you can actually see; a window whose title bar is hidden is dropped for
+        lack of a top edge. A MAXIMISED window is dropped too - it is level with the
+        top of the screen, so there is nothing above it to stand on and it would only
+        repeat the screen walls - and overlay chrome (a see-through cursor follower,
+        a layered tool window) is neither a perch nor an occluder, because it hides
+        nothing. The filter is the production one, WT.keep, so this cannot drift away
+        from what refresh() actually does.
+        """
         import importlib.util
         from pathlib import Path
         spec = importlib.util.spec_from_file_location(
@@ -395,11 +403,16 @@ class TestWorld(unittest.TestCase):
         TOP_LIMIT = 0.0
 
         def kept(cands):
-            """Drive the real refresh() filtering over a front-to-back candidate list."""
+            """Drive the real refresh() filtering over a front-to-back candidate list.
+
+            A candidate is (hwnd, l, t, r, b), or (hwnd, l, t, r, b, ghost) for the
+            overlay chrome refresh() drops before any of this happens."""
             out, above, occ = [], [], {}
-            for h, l, t, r, b in cands:
-                usable = not (r - l < wt_mod.MIN_WIN_W or b - t < wt_mod.MIN_WIN_H or t < TOP_LIMIT + 60.0)
-                if usable:
+            for c in cands:
+                h, l, t, r, b = c[:5]
+                if len(c) > 5 and c[5]:
+                    continue
+                if WT.keep((l, t, r, b), TOP_LIMIT):
                     v = WT._visible_rect((l, t, r, b), above, SCREEN)
                     if v is not None:
                         occ[h] = list(above)
@@ -407,9 +420,12 @@ class TestWorld(unittest.TestCase):
                 above.append((l, t, r, b))
             return out, occ
 
-        # A: terminal completely behind a maximised Edge window -> gone
+        # A: a MAXIMISED window is level with the screen top, so it is no window at
+        #    all - and it hides the terminal behind it, which is gone too
         out, _ = kept([(1, 0.0, 0.0, 1920.0, 1040.0), (2, 300.0, 220.0, 1100.0, 750.0)])
-        self.assertEqual(out, [], f"terminal behind a maximised window was kept: {out}")
+        self.assertEqual(out, [], f"maximised window treated as a surface: {out}")
+        self.assertFalse(WT.keep((0.0, 0.0, 1920.0, 1040.0), TOP_LIMIT),
+                         "a maximised window was offered to stand on")
 
         # B: terminal completely inside a normal Edge window -> gone
         out, _ = kept([(1, 150.0, 120.0, 1600.0, 920.0), (2, 300.0, 220.0, 1100.0, 750.0)])
@@ -431,6 +447,29 @@ class TestWorld(unittest.TestCase):
         out, _ = kept([(1, 200.0, 220.0, 1100.0, 750.0), (2, 200.0, 220.0, 300.0, 750.0)])
         self.assertEqual([h for h, _ in out], [1], f"a 100px sliver of a window was kept: {out}")
 
+        # F: a full-screen see-through overlay in FRONT hides nothing, so the window
+        #    behind it survives. One cursor follower used to empty the whole list,
+        #    and then no student could stand on anything and no limp body hit anything.
+        out, _ = kept([(9, 0.0, -7.0, 3840.0, 1079.0, True), (1, 200.0, 200.0, 1200.0, 900.0)])
+        self.assertEqual([h for h, _ in out], [1], f"an overlay hid the window behind it: {out}")
+
+        # G: a title bar at or above the screen top has no visible top edge -> gone,
+        #    while one a little below it is a normal perch
+        self.assertFalse(WT.keep((0.0, -40.0, 900.0, 700.0), TOP_LIMIT),
+                         "a window whose title bar is off the top of the screen was kept")
+        self.assertFalse(WT.keep((0.0, 2.0, 900.0, 700.0), TOP_LIMIT),
+                         "a window level with the screen top was kept")
+        self.assertTrue(WT.keep((0.0, 120.0, 900.0, 700.0), TOP_LIMIT),
+                        "an ordinary window was dropped")
+
+        # the ghost test itself: see-through / layered tool chrome, nothing else
+        self.assertTrue(WT.ghost(wt_mod.WS_EX_TRANSPARENT), "pass-through window not seen as chrome")
+        self.assertTrue(WT.ghost(wt_mod.WS_EX_LAYERED | wt_mod.WS_EX_TOOLWINDOW),
+                        "layered tool window not seen as chrome")
+        self.assertFalse(WT.ghost(0), "an ordinary window was seen as chrome")
+        self.assertFalse(WT.ghost(wt_mod.WS_EX_LAYERED),
+                         "a plain layered app window is solid and must still occlude")
+
         # the live re-check a standing student relies on: what surfaces() offers at each x
         tr = WT()
         tr.wins, tr._occ_before = [(2, 200.0, 250.0, 800.0, 800.0)], {2: [(800.0, 120.0, 1700.0, 920.0)]}
@@ -438,8 +477,67 @@ class TestWorld(unittest.TestCase):
         self.assertFalse(tr.surface_visible(2, 900.0), "covered half reported as a perch")
         self.assertEqual(tr.surfaces(500.0), [(250.0, 2)])
         self.assertEqual(tr.surfaces(900.0), [])
-        print("\n  [13] occlusion: fully hidden dropped, half hidden clipped to (200, 250, 800, 800), "
-              "hidden title bar dropped, sliver dropped; surface_visible tracks the covered half")
+        print("\n  [13] occlusion: maximised / screen-level ignored, fully hidden dropped, half "
+              "hidden clipped to (200, 250, 800, 800), hidden title bar dropped, sliver "
+              "dropped, overlay chrome hides nothing; surface_visible tracks the covered half")
+
+    def test_14_only_real_windows_reach_the_physics_world(self):
+        """End to end over a whole front-to-back desktop, driving the production rules.
+
+        A screen-level window (every maximised one) is no window at all: it is not a
+        perch, it is not a collider, and it does hide whatever is behind it - which is
+        what makes "a desktop of maximised windows" behave like a bare desktop. Overlay
+        chrome is no window either, but it hides nothing. Only an ordinary window that
+        is really visible may become a perch and a collider.
+        """
+        import importlib.util
+        from pathlib import Path
+        spec = importlib.util.spec_from_file_location(
+            "wintracker", Path(__file__).resolve().parent / "bapet" / "wintracker.py")
+        wt_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(wt_mod)
+        WT = wt_mod.WinTracker
+        SCREEN = (0.0, 0.0, 1920.0, 1040.0)
+        CHROME = 0x20 | 0x80000 | 0x80                # WS_EX_TRANSPARENT | LAYERED | TOOLWINDOW
+
+        def build(cands):
+            """The refresh() pipeline: drop chrome, keep what is usable and still visible."""
+            out, above = [], []
+            for c in cands:
+                h, l, t, r, b = c[:5]
+                if len(c) > 5 and WT.ghost(c[5]):
+                    continue                            # overlay chrome: not a window at all
+                if WT.keep((l, t, r, b), SCREEN[1]):
+                    v = WT._visible_rect((l, t, r, b), above, SCREEN)
+                    if v is not None:
+                        out.append((h, v))
+                above.append((l, t, r, b))              # every solid window occludes
+            return out
+
+        # a cursor follower in front, an ordinary window behind it -> the window survives
+        out = build([(12, 0.0, -7.0, 3840.0, 1079.0, CHROME), (13, 200.0, 600.0, 1200.0, 980.0)])
+        self.assertEqual([h for h, _ in out], [13], f"an overlay hid a real window: {out}")
+
+        tr = WT()
+        tr.wins = [(h, v[0], v[1], v[2], v[3]) for h, v in out]
+        tr._occ_before = {13: []}
+        self.assertEqual(tr.surfaces(700.0), [(600.0, 13)], "the perch offered is wrong")
+
+        w = world(SCREEN)
+        w.sync_windows(tr.wins, 0.0, True)
+        self.assertEqual(w._wins[13]["rect"], list(out[0][1]),
+                         "the 3D world got the wrong collider")
+        # ... and the box survives the next poll, which is where the empty list bit before
+        w.sync_windows(tr.wins, 0.2, True)
+        self.assertIn(13, w._wins, "the collider was dropped on the next poll")
+
+        # a maximised window in front is a real, solid, opaque window: it is not a perch
+        # or a collider itself, but it DOES hide what is behind it
+        out = build([(11, 0.0, 0.0, 1920.0, 1040.0), (13, 200.0, 600.0, 1200.0, 980.0)])
+        self.assertEqual(out, [], f"a maximised window left a perch behind it: {out}")
+
+        print(f"\n  [14] ordinary window: perch at y=600, 3D collider {w._wins[13]['rect']}; "
+              "a maximised window is no perch, no collider, and hides what is behind it")
 
 
 if __name__ == "__main__":
