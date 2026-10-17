@@ -143,6 +143,10 @@ ACTIONS: list[Action] = [
     # --- world -------------------------------------------------------------
     Action("gust", "Gust at cursor", "\u224b", "world", lambda a, p: a.spawn_gust(),
            "Blow hair and clothes away from the pointer.", scope="app"),
+    # --- desktop (app level) -----------------------------------------------
+    Action("student_select", "Student Select", "\u2605", "desktop", lambda a, p: a.picker_from_panel(),
+           "Open the formation screen and pick which students are on the desktop.",
+           scope="app"),
 ] + _anim_actions()
 
 ACTION = {a.key: a for a in ACTIONS}
@@ -290,18 +294,23 @@ PAGES: list[Page] = [
         Section("Screen", [Custom("screen")],
                 "All characters live on one monitor: they spawn, walk and jump there."),
         Section("Cast", [
-            Custom("hidden_banner"),
-            Custom("cast"),
             Buttons([
-                Btn("Show all", lambda P: P.A.set_all_visible(True), "primary"),
+                Btn("Student Select\u2026", lambda P: P.A.picker_from_panel(), "primary",
+                    "Open the formation screen: pick which students are on the desktop. "
+                    "Same as clicking the tray icon."),
+                Btn("Show all", lambda P: P.A.set_all_visible(True)),
                 Btn("Hide all", lambda P: P.A.set_all_visible(False)),
                 Btn("Summon everyone", lambda P: [P.A.summon(p) for p in P.A.pets], hint="Bring every character to the cursor."),
                 Btn("Reset positions", lambda P: [p.reset_position() for p in P.A.pets], hint="Put everyone back at the right edge."),
             ], columns=2),
+            Custom("hidden_banner"),
+            Custom("cast"),
         ], "Click a character's target button to aim the Actions page at just that one."),
     ]),
 
     Page("actions", "Actions", "\u26a1", [
+        Section("Desktop", [Actions("desktop")],
+                "Not about a particular character - it works on the whole formation."),
         Section("React", [Actions("react")], "Quick reactions. They run on whoever is chosen in \u201cActions apply to\u201d above."),
         Section("Move & physics", [Actions("move", columns=2)]),
         Section("Play an animation", [Actions("anim", ("anim_idle", "anim_walk", "anim_alert", "anim_pickup", "anim_reload"))]),
@@ -477,7 +486,7 @@ PAGES: list[Page] = [
             Buttons([
                 Btn("Hide to tray", lambda P: P.A.toggle_pet(), "alt", "Hide every character; bring them back from the tray icon."),
                 Btn("Reset all settings", lambda P: P.reset_defaults(), "danger", "Restore every option to its default. Screen, positions and hidden characters are kept."),
-                Btn("Quit", lambda P: P.A.qapp.quit(), "danger"),
+                Btn("Quit", lambda P: P.A.quit_app(), "danger"),
             ]),
         ]),
     ]),

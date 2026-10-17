@@ -52,6 +52,7 @@ GROUP_COLORS = dict(
     combat="#ff7a45",    # shooting
     social="#2fb36b",    # conversations
     world="#14b8c4",     # wind
+    desktop="#f5a524",   # student select / who is on the desktop
     settings="#6b7f9e",  # quick settings, size, presets
     people="#f5a524",    # other characters
     danger="#e5484d",    # hide / quit

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import traceback
 
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 from .config import ANIM_KEYS, PRESETS
@@ -128,6 +128,22 @@ def _action_entry(menu, app, pet, action, text=None):
                   tip=action.hint, enabled=reason is None)
 
 
+def _quit_entry(menu, app):
+    """Put a Quit entry that actually quits.
+
+    A menu runs its own nested event loop, and a quit raised from inside one only unwinds
+    that loop - the menu closed and the app carried on, so Quit looked like it needed a
+    second press. Closing the menu first puts us back on the main loop, and the quit is
+    taken from there. app.quit_app() then puts Student Select away, which is the other half
+    of it (a visible formation screen also stops quit() from leaving the loop).
+    """
+    def run():
+        menu.close()
+        QtCore.QTimer.singleShot(0, app.quit_app)
+
+    return _entry(menu, "Quit", run, "\u2715", GROUP_COLORS["danger"])
+
+
 def _initial_icon(pet):
     """A badge with the character's first letter; grey while she is hidden."""
     color = GROUP_COLORS["people"] if pet.isVisible() else "#b4c4da"
@@ -180,7 +196,7 @@ def build_pet_menu(app, pet) -> StayOpenMenu:
     _entry(m, f"Hide {pet.name}", lambda: app.set_pet_visible(pet, False), "\u25cc", GROUP_COLORS["danger"],
            tip="She comes back from the tray menu or the panel's Characters page.")
     _entry(m, "Hide all to tray", app.toggle_pet, "\u25cc", GROUP_COLORS["danger"])
-    _entry(m, "Quit", app.qapp.quit, "\u2715", GROUP_COLORS["danger"])
+    _quit_entry(m, app)
     return m
 
 
@@ -266,7 +282,7 @@ def _fill_tray_menu(menu, app):
         _entry(sub, "Make active", lambda pp=p: app.set_active(pp), "\u25ce", GROUP_COLORS["settings"])
         _visible_entry(sub, app, p)
     menu.addSeparator()
-    _entry(menu, "Quit", app.qapp.quit, "\u2715", GROUP_COLORS["danger"])
+    _quit_entry(menu, app)
 
 
 def build_tray_menu(app) -> StayOpenMenu:
