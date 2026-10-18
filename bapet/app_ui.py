@@ -61,10 +61,49 @@ class AppUI:
         return pk is not None and pk.isVisible() and not pk.closing()
 
     def show_picker(self, team=None, startup=False):
+        arena = getattr(self, "arena", None)
+        if arena is not None and arena.battle_active():
+            arena.pause_menu()               # mid-battle the tray / menus open the pause menu instead
+            return
         try:
             self.picker().open(team=team, startup=startup)
         except Exception:
             traceback.print_exc()
+
+    # ------------------------------------------------------------------
+    #  Title screen / Battle Arena (babattlearena)
+    # ------------------------------------------------------------------
+    def show_title(self):
+        arena = getattr(self, "arena", None)
+        if arena is None:
+            self.show_picker(); return
+        try:
+            arena.show_title()
+        except Exception:
+            traceback.print_exc()
+
+    def show_arena(self):
+        arena = getattr(self, "arena", None)
+        if arena is None: return
+        try:
+            if arena.battle_active(): arena.pause_menu()
+            else: arena.open_lobby()
+        except Exception:
+            traceback.print_exc()
+
+    def start_with_title(self):
+        """Startup: hold every student back and open the title screen (Desktop Pets / Battle Arena).
+
+        The students that would have come up are remembered, so picking Desktop Pets opens
+        Student Select with last session's team already in the formation."""
+        if getattr(self, "arena", None) is None:
+            self.start_with_picker(); return
+        self._startup_team = [p for p in self.pets if p.isVisible()]
+        for p in self.pets:
+            try: p.hide()
+            except Exception: traceback.print_exc()
+        if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
+        self.show_title()
 
     def hide_picker(self):
         pk = getattr(self, "_picker", None)
@@ -182,6 +221,7 @@ class AppUI:
                 m.addAction(a)
             self._tray_src = src
             m.addSeparator()
+            self._arena_entries(m)
             m.addMenu(self.tray_menu)
             return
         # Nobody on the desktop: there is no student to right-click, so this is the way in / out.
@@ -196,10 +236,20 @@ class AppUI:
         self._tray_entry(m, "Deploy everyone", lambda: self.picker().quick_deploy(None), "\u25b2",
                          GROUP_COLORS.get("people", PICKER_COLOR))
         m.addSeparator()
+        self._arena_entries(m)
         self._tray_entry(m, "Control Panel\u2026", self.show_panel, "\u2699", GROUP_COLORS.get("settings", "#6a7f9e"))
         m.addMenu(self.tray_menu)
         m.addSeparator()
         self._tray_entry(m, "Quit", self.quit_app, "\u2715", GROUP_COLORS.get("danger", "#ff5468"))
+
+    def _arena_entries(self, m):
+        """Title Screen... / Battle Arena... (only when babattlearena is installed)."""
+        arena = getattr(self, "arena", None)
+        if arena is None: return
+        self._tray_entry(m, "Title Screen\u2026", self.show_title, "\u2302", "#1ea1ff")
+        label = "Battle Arena: pause menu\u2026" if arena.battle_active() else "Battle Arena\u2026"
+        self._tray_entry(m, label, self.show_arena, "\u2694", "#ff4c68")
+        m.addSeparator()
 
     @staticmethod
     def _tray_entry(menu, text, fn, glyph, color):

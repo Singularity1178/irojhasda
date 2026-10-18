@@ -14,7 +14,17 @@ shader, and shows them in transparent always-on-top PySide6 windows.
 
     pip install PySide6 moderngl numpy "pymunk>=7"
 
-Start-up (NEW)
+Start-up: the TITLE SCREEN (babattlearena/title.py)
+    Two choices:
+        Desktop Pets   -> Student Select (below) and the desktop pets as before
+        Battle Arena   -> the arena lobby: build two teams from avatar cards, change the rules
+                          (gear button), BEGIN BATTLE. The students fight top-down with your
+                          screen as the floor - real 3D models, real ragdolls (one life lost per
+                          ragdoll, 3 lives by default), props and your actual windows as cover.
+                          Pause / stop any time from the bar at the top or the tray icon.
+        --arena       go straight to the Battle Arena lobby
+
+Desktop Pets / Student Select
     The app no longer throws everybody onto the desktop at once. It opens the
     Student Select screen (bapet/picker.py): a Blue Archive style formation
     screen with every model in model/ shown live, playing Formation_Idle.
@@ -54,6 +64,7 @@ from pathlib import Path
 from PySide6 import QtWidgets
 
 from bapet.app import App
+from babattlearena import install as install_arena
 from bapet.config import MODEL_DIR
 from bapet.panel import QSS
 from bapet.picker import LoadingSplash
@@ -107,7 +118,9 @@ def main():
     ap.add_argument("--no-picker", action="store_true",
                     help="skip the Student Select screen this run (the last team comes straight back)")
     ap.add_argument("--picker", action="store_true",
-                    help="show the Student Select screen even if 'Open at startup' is switched off")
+                    help="show the start screen even if 'Open at startup' is switched off")
+    ap.add_argument("--arena", action="store_true",
+                    help="skip the title screen and open the Battle Arena lobby")
     args = ap.parse_args()
 
     qapp = QtWidgets.QApplication(sys.argv)
@@ -139,13 +152,23 @@ def main():
         return 1
     if splash is not None: splash.close()
 
-    # Student Select first: everybody is held back until a formation is deployed.
-    want_picker = args.picker or (not args.no_picker and bool(app.cfg.get("picker_on_start", True)))
+    # The Battle Arena (babattlearena/) hangs off the App; a failure there never blocks the pets.
+    try:
+        install_arena(app)
+    except Exception:
+        traceback.print_exc()
+
+    # Title screen first (Desktop Pets / Battle Arena): everybody is held back until a choice is made.
+    want_picker = args.picker or args.arena or (not args.no_picker and bool(app.cfg.get("picker_on_start", True)))
     if want_picker:
         try:
-            app.start_with_picker()
+            if args.arena and getattr(app, "arena", None) is not None:
+                app.start_with_title()
+                app.arena.open_lobby()
+            else:
+                app.start_with_title()
         except Exception:
-            traceback.print_exc()        # never block the pets because of the picker
+            traceback.print_exc()        # never block the pets because of the start screens
 
     code = qapp.exec()
     app.watcher.stop()                   # the polling thread is a daemon,

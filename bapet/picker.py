@@ -1349,7 +1349,11 @@ class StudentPicker(QtWidgets.QWidget):
 
     def _click(self, key):
         kind = key[0]
-        if kind in ("close", "back"): self.close_animated()
+        if kind == "back" and getattr(self.app, "arena", None) is not None:
+            # the back arrow returns to the title screen (Desktop Pets / Battle Arena)
+            self.close_animated()
+            QTimer.singleShot(200, self.app.show_title)
+        elif kind in ("close", "back"): self.close_animated()
         elif kind == "card": self.toggle(key[1])
         elif kind == "tab":
             self.filter = key[1]; self.scroll_target = 0.0

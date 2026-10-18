@@ -22,3 +22,4 @@ _diag_*.tmp
 !model/*.glb
 # Written by the app at runtime (window positions, toggles); regenerated on first run
 multi_single_screen_pet_ba_settings.json
+battle_arena_settings.json
