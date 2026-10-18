@@ -8,6 +8,11 @@ States
 
 Every ragdoll costs exactly one life (HP hitting zero is what ragdolls her). After getting up she
 is invulnerable for a moment (blinking + a shield ring).
+
+Iroha's tank (tank.py): her EX calls mount_tank(). While `self.tank` is set she is invulnerable,
+drives with tank kinematics (tank_move), crushes whoever the hull runs over (tank_crush), fires
+shells (tank_act -> Battle.fire_shell) and is drawn with the vehicle (render). dismount_tank()
+puts her back on foot when the timer runs out.
 """
 from __future__ import annotations
 
@@ -21,6 +26,7 @@ from bapet.combat_data import attack_sets, move_sets
 from bapet.rig import Rig
 from .physics import build_spec, posts_and_root, ragdoll_matrix
 from .stats import CombatProfile
+from .tank import TANK, crush_dist, find_clip as tank_clip, tank_fit
 from .topdown import project, standing_matrix
 
 _QI = (1.0, 0.0, 0.0, 0.0)
@@ -46,6 +52,9 @@ class Fighter:
         fit = self.ch.fit
         self.s = self.size / max(float(fit["H"]) * float(getattr(self.ch, "body_frac", 1.0) or 1.0), 1e-6)
         self.radius = self.size * 0.17
+        self.base_radius = self.radius
+        self.tank = None            # dict while she rides her tank (Iroha), see mount_tank
+        self.target_box = None      # a breakable prop she is deliberately shooting (ai 'breach')
         self.rig = Rig(self.ch.model)
         self.binding = battle.binding(self.ch)
         self.x, self.y = float(x), float(y)
@@ -77,6 +86,7 @@ class Fighter:
         self.cover = None           # the CoverSpot she is using / heading to
         self.suppression = 0.0
         self.ex = random.uniform(0.0, 0.35)
+        if self.st.ex == "tank": self.ex = min(self.ex, TANK["ex_start_max"])
         self.ex_cast = None         # (t_left, payload)
         self.want_ex = None
         self.buff_until = self.mark_until = self.shield_until = 0.0
@@ -109,7 +119,16 @@ class Fighter:
         return max(0.0, self.hp) / max(1.0, self.hp_max)
 
     def invulnerable(self):
-        return self.state != "alive" or self.B.t < self.invuln_until
+        return self.state != "alive" or self.B.t < self.invuln_until or self.tank is not None
+
+    @property
+    def riding(self):
+        """In her tank and actually driving (not still deploying / stowing)."""
+        return self.tank is not None and self.tank["phase"] == "drive"
+
+    def block_radius(self):
+        """How wide a body she is to bullets aimed past her (the tank is a wall)."""
+        return self.size * TANK["block_r"] if self.tank is not None else self.radius * 1.15
 
     def power(self):
         """Rough fighting value left in her (for the team commanders and time-outs)."""
@@ -126,12 +145,16 @@ class Fighter:
 
     def dps_threat(self):
         st = self.st
+        if self.tank is not None: return 6.0
         if not st.attacks: return 0.3
         return (sum(st.dmg) / 2.0) * st.pellets * st.burst / max(0.2, st.rof * st.burst + st.gap) / 1000.0
 
     # ------------------------------------------------------------------ animation
     def clip(self, key):
         c = self.ch.clips
+        if self.tank is not None:
+            tk = self.tank_clip(key)
+            if tk is not None: return tk
         if key == "run":
             rc = move_sets(self.ch.model).get("run")
             return (rc, 1.0) if rc is not None else (c.get("walk"), 1.7)
@@ -151,6 +174,18 @@ class Fighter:
             return s.get(ph) or s.get("ing"), 1.0
         return c.get(key) or c.get("alert"), 1.0
 
+    def tank_clip(self, key):
+        """(clip, speed) while riding, or None to fall through to the on-foot lookup."""
+        m = {"run": "move", "walk": "move", "alert": "idle", "idle": "idle", "reload": "reload",
+             "tank_appear": "appear", "tank_end": "end", "atk_start": "atk_start", "atk_ing": "atk_ing",
+             "atk_end": "atk_end", "victory": "idle", "ex": "idle"}
+        k = m.get(key)
+        if k is None: return None
+        c = tank_clip(self.ch, k)
+        if c is None and k.startswith("atk_"):
+            c = tank_clip(self.ch, "idle")
+        return (c, 1.0) if c is not None else None
+
     def play(self, key, loop, speed=1.0, fade=0.15, restart=False):
         if self.anim == key and not restart:
             self.rig.speed = speed * self.clip(key)[1]
@@ -167,7 +202,9 @@ class Fighter:
         self.flash_t = max(0.0, self.flash_t - dt)
         if self.state == "alive":
             gain = dt / self.st.ex_cost * (1.0 + 0.5 * (self.suppression > 0.3))
+            if self.tank is not None: gain = 0.0            # the gauge waits while she rides
             if B.settings["ex_skills"]: self.ex = min(1.0, self.ex + gain)
+            if self.tank is not None: self.tank_update(dt)
             if self.brain is not None: self.brain.update(dt)
             self.act(dt)
         elif self.state == "down" or self.state == "out":
@@ -183,6 +220,9 @@ class Fighter:
     # ------------------------------------------------------------------ acting
     def act(self, dt):
         B = self.B
+        if self.tank is not None:
+            self.tank_act(dt)
+            return
         if self.ex_cast is not None:
             t_left, payload = self.ex_cast
             t_left -= dt
@@ -221,6 +261,40 @@ class Fighter:
                 self.play("alert", True)
             return
         tgt = self.target
+        bx = self.target_box
+        if bx is not None and (not bx.alive or bx.hp is None):
+            self.target_box = bx = None
+            if self.brain is not None: self.brain.think_t = 0.0      # it broke: look again at once
+        if bx is not None and self.want_fire:
+            # deliberately shooting a prop apart (ai 'breach'): aim at the point of it nearest to her
+            ax = min(max(self.x, bx.l), bx.r); ay = min(max(self.y, bx.t), bx.b)
+            cx, cy = bx.cx(), bx.cy()
+            ax, ay = (ax + cx) * 0.5, (ay + cy) * 0.5
+            self.turn_to(ax, ay, dt, 9)
+            aligned = abs(wrap(math.atan2(ay - self.y, ax - self.x) - self.heading)) < 0.25
+            self.atk_t += dt
+            if self.atk_phase is None:
+                self.atk_phase = "start"; self.aim_t = 0.0; self.atk_t = 0.0
+                self.play("atk_start", False, fade=0.1, restart=True)
+            elif self.atk_phase == "start":
+                if self.rig.done or self.atk_t > 0.4:
+                    self.atk_phase = "ing"; self.play("atk_ing", True, fade=0.06, restart=True)
+            if self.atk_phase in ("start", "ing"):
+                self.aim_t += dt
+            if self.atk_phase == "ing" and aligned:
+                self.fire_cd -= dt
+                if self.fire_cd <= 0 and self.aim_t >= self.st.aim_time:
+                    B.fire_box(self, bx, ax, ay)
+                    self.ammo -= 1
+                    self.burst_left -= 1
+                    if self.burst_left > 0:
+                        self.fire_cd = self.st.rof
+                    else:
+                        self.burst_left = self.st.burst
+                        self.fire_cd = self.st.rof + self.st.gap * random.uniform(0.8, 1.25)
+                    if self.ammo <= 0:
+                        self.start_reload()
+            return
         if tgt is not None and self.want_fire and (tgt.alive or (self.st.healer and tgt.team == self.team)):
             self.turn_to(tgt.x, tgt.y, dt, 9)
             ang = math.atan2(tgt.y - self.y, tgt.x - self.x)
@@ -297,6 +371,8 @@ class Fighter:
     def move(self, dt):
         """Follow the path. True while she is travelling."""
         B = self.B
+        if self.tank is not None:
+            return self.tank_move(dt)
         speed = self.st.speed * self.size * (0.75 if self.suppression > 0.6 else 1.0)
         if self.path:
             wx, wy = self.path[0]
@@ -318,15 +394,15 @@ class Fighter:
         k = 1.0 - math.exp(-dt * 10.0)
         self.vx += (tvx - self.vx) * k
         self.vy += (tvy - self.vy) * k
-        # separation from the others on their feet
+        # separation from the others on their feet (a tank shoves her the whole way: it does not move)
         for o in B.fighters:
             if o is self or o.state not in ("alive", "getup"): continue
             dx, dy = self.x - o.x, self.y - o.y
-            rr = self.radius + o.radius
+            rr = self.radius + (o.size * TANK["push_r"] if o.tank is not None else o.radius)
             d2 = dx * dx + dy * dy
             if d2 < rr * rr:
                 d = math.sqrt(d2) or 0.01
-                push = (rr - d) * 0.5
+                push = (rr - d) * (1.0 if o.tank is not None else 0.5)
                 self.x += dx / d * push; self.y += dy / d * push
         self.x += self.vx * dt
         self.y += self.vy * dt
@@ -349,14 +425,20 @@ class Fighter:
             return True
         return False
 
-    def collide(self):
+    def collide(self, dt=0.0):
         B = self.B
         for bx in B.boxes:
             if not bx.alive: continue
             r = bx.push_circle(self.x, self.y, self.radius)
             if r is not None:
                 nx, ny, pen = r
-                if pen > self.radius * 2.5:                  # a window landed on her: hop out
+                if self.tank is not None and bx.hp is not None and bx.kind != "window":
+                    # the hull grinds crates and barrels flat (barrels blow up - on everyone)
+                    B.damage_box(bx, TANK["prop_dps"] * max(dt, 1 / 60) * B.settings["damage"], self)
+                    if not bx.alive: continue
+                    self.x += nx * pen * 0.5; self.y += ny * pen * 0.5
+                    continue
+                if pen > self.radius * 2.5 and self.tank is None:   # a window landed on her: hop out
                     self.x, self.y = B.nav.nearest_free(self.x, self.y)
                     self.path = []; self.goal = None
                 else:
@@ -390,6 +472,24 @@ class Fighter:
             self.knockdown(dirx, diry, power, src, explosive)
         return dmg, "crit" if crit else "hit"
 
+    def force_down(self, src, dirx, diry, power, explosive=False, credit=0.0):
+        """A crush or a tank shell: she goes down no matter what her HP says (unless she is immune).
+        -> (damage credited, text kind)."""
+        B = self.B
+        if self.state != "alive": return 0.0, "none"
+        if self.invulnerable(): return 0.0, "immune"
+        dealt = max(self.hp, 0.0)
+        self.hp = 0.0
+        self.last_hit_by = src
+        self.last_hurt = B.t
+        self.flash_t = 0.15
+        if src is not None and src is not self:
+            src.rec["dmg"] += max(dealt, credit)
+            src.rec["hits"] += 1
+        if self.brain is not None: self.brain.on_hurt(src)
+        self.knockdown(dirx, diry, power * max(0.6, self.size / 120.0), src, explosive)
+        return max(dealt, credit), "crush"
+
     def heal_by(self, amount):
         if self.state != "alive": return 0.0
         got = min(amount, self.hp_max - self.hp)
@@ -404,7 +504,9 @@ class Fighter:
         self.down_t = 0.0
         self.path = []; self.goal = None; self.target = None; self.atk_phase = None
         self.ex_cast = None; self.want_ex = None; self.reload_t = 0.0
+        self.target_box = None
         self.vx = self.vy = 0.0
+        if self.tank is not None: self.dismount_tank(instant=True)
         if killer is not None and killer is not self:
             killer.rec["kills"] += 1
         B.on_knockdown(self, killer)
@@ -528,6 +630,202 @@ class Fighter:
         B.fx.ring(x, y, self.size * 0.6, (111, 224, 255))
         if self.brain is not None: self.brain.on_getup()
 
+    # ------------------------------------------------------------------ Iroha's tank (tank.py)
+    def mount_tank(self):
+        """Her EX: the tank deploys around her. Until dismount_tank() she is a vehicle."""
+        B = self.B
+        if self.tank is not None or self.state != "alive": return
+        self.tank = dict(phase="deploy", t=0.0, until=B.t + TANK["duration"], fade=0.0,
+                         mag=TANK["shell_mag"], reload_t=0.0, fire_cd=TANK["shell_aim"], aim_t=0.0,
+                         speed=0.0, atk=None, atk_t=0.0, crushed=0, shells=0)
+        self.radius = self.size * TANK["push_r"]
+        self.path = []; self.goal = None; self.atk_phase = None; self.target_box = None
+        self.reload_t = 0.0; self.suppression = 0.0; self.want_fire = False
+        self.anim = None
+        self.play("tank_appear", False, fade=0.0, restart=True)
+        B.fx.ring(self.x, self.y, self.size * 1.4, (255, 150, 60), 0.7)
+        B.fx.dust(self.x, self.y, 14)
+        B.fx.shake = getattr(B.fx, "shake", 0) + 8
+        for o in B.fighters:                              # whoever stands where it lands is shoved clear
+            if o is self or o.state != "alive": continue
+            dx, dy = o.x - self.x, o.y - self.y
+            d = math.hypot(dx, dy)
+            rr = self.radius + o.radius
+            if d < rr:
+                d = d or 0.01
+                o.x, o.y = B.nav.nearest_free(self.x + dx / d * rr * 1.05, self.y + dy / d * rr * 1.05, 10)
+        if self.brain is not None: self.brain.on_mount()
+        B.on_tank(self, True)
+
+    def dismount_tank(self, instant=False):
+        B = self.B
+        if self.tank is None: return
+        if not instant and self.tank["phase"] != "stow":
+            self.tank["phase"] = "stow"; self.tank["t"] = 0.0
+            self.path = []; self.goal = None; self.want_fire = False
+            self.play("tank_end", False, fade=0.0, restart=True)
+            return
+        self.tank = None
+        self.radius = self.base_radius
+        self.anim = None
+        self.vx = self.vy = 0.0
+        self.ammo = self.st.mag; self.reload_t = 0.0; self.atk_phase = None
+        self.x, self.y = B.nav.nearest_free(self.x, self.y, 12)
+        if self.state == "alive":
+            self.invuln_until = max(self.invuln_until, B.t + 0.8)
+            self.play("alert", True, fade=0.0, restart=True)
+        B.fx.dust(self.x, self.y, 10)
+        if self.brain is not None: self.brain.on_dismount()
+        B.on_tank(self, False)
+
+    def tank_update(self, dt):
+        tk = self.tank
+        tk["t"] += dt
+        if tk["phase"] == "deploy":
+            tk["fade"] = min(1.0, tk["t"] / max(0.05, TANK["deploy"] * 0.7))
+            if tk["t"] >= TANK["deploy"]:
+                tk["phase"] = "drive"; tk["t"] = 0.0
+                self.play("alert", True, fade=0.0, restart=True)
+        elif tk["phase"] == "drive":
+            tk["fade"] = 1.0
+            if self.B.t >= tk["until"]:
+                self.dismount_tank()
+        elif tk["phase"] == "stow":
+            tk["fade"] = max(0.0, 1.0 - tk["t"] / max(0.05, TANK["stow"]))
+            if tk["t"] >= TANK["stow"]:
+                self.dismount_tank(instant=True)
+
+    def tank_time_left(self):
+        if self.tank is None: return 0.0
+        return max(0.0, self.tank["until"] - self.B.t)
+
+    def tank_act(self, dt):
+        """Drive, crush, reload, shell. The brain (ai.Brain.think_tank) sets goal / target."""
+        B = self.B
+        tk = self.tank
+        if tk["phase"] != "drive":
+            self.vx *= 0.7; self.vy *= 0.7
+            return
+        moving = self.tank_move(dt)
+        self.tank_crush(dt)
+        if tk["reload_t"] > 0:
+            tk["reload_t"] -= dt
+            if not moving: self.play("reload", False)
+            if tk["reload_t"] <= 0:
+                tk["mag"] = TANK["shell_mag"]
+                self.play("alert", True)
+            return
+        tgt = self.target
+        if tgt is not None and self.want_fire and tgt.alive:
+            if not moving:
+                self.turn_to(tgt.x, tgt.y, dt, TANK["shell_turn"])
+            ang = math.atan2(tgt.y - self.y, tgt.x - self.x)
+            aligned = abs(wrap(ang - self.heading)) < 0.2
+            d = math.hypot(tgt.x - self.x, tgt.y - self.y)
+            tk["atk_t"] += dt
+            if tk["atk"] is None:
+                tk["atk"] = "start"; tk["aim_t"] = 0.0; tk["atk_t"] = 0.0
+                if not moving: self.play("atk_start", False, fade=0.1, restart=True)
+            elif tk["atk"] == "start" and (self.rig.done or tk["atk_t"] > 0.4):
+                tk["atk"] = "ing"
+                if not moving: self.play("atk_ing", True, fade=0.06, restart=True)
+            tk["aim_t"] += dt if aligned else 0.0
+            tk["fire_cd"] -= dt
+            r_bl = TANK["shell_radius"] * TANK["splash_pad"] * self.size
+            ally_in = TANK["shell_ally_block"] and any(
+                a.team == self.team and a is not self and a.alive and math.hypot(a.x - tgt.x, a.y - tgt.y) < r_bl
+                for a in B.fighters)
+            if (tk["atk"] == "ing" and aligned and tk["fire_cd"] <= 0 and tk["aim_t"] >= TANK["shell_aim"]
+                    and d >= TANK["shell_min"] * self.size and not ally_in):
+                B.fire_shell(self, tgt)
+                tk["mag"] -= 1; tk["shells"] += 1
+                tk["fire_cd"] = TANK["shell_rof"]
+                tk["aim_t"] = TANK["shell_aim"] * 0.5
+                if tk["mag"] <= 0:
+                    tk["reload_t"] = TANK["shell_reload"]; tk["atk"] = None
+                    if not moving: self.play("reload", False, restart=True)
+            return
+        if tk["atk"] is not None:
+            tk["atk"] = None
+        if not moving:
+            self.play("alert", True)
+            if self.face_to is not None:
+                self.turn_to(self.face_to[0], self.face_to[1], dt, TANK["shell_turn"])
+
+    def tank_move(self, dt):
+        """Car-like: she turns toward the next waypoint and drives along her heading."""
+        B = self.B
+        tk = self.tank
+        top = TANK["speed"] * self.size
+        want = 0.0
+        if self.path:
+            wx, wy = self.path[0]
+            dx, dy = wx - self.x, wy - self.y
+            d = math.hypot(dx, dy)
+            if d < max(6.0, top * dt * 1.4):
+                self.path.pop(0)
+                if not self.path: self.goal = None
+            if self.path:
+                wx, wy = self.path[0]
+                a = math.atan2(wy - self.y, wx - self.x)
+                diff = wrap(a - self.heading)
+                rate = TANK["turn"] * dt
+                self.heading = wrap(self.heading + max(-rate, min(rate, diff)))
+                want = top * max(0.0, math.cos(diff)) if abs(diff) < 1.5 else 0.0
+                if abs(diff) > 2.2: want = -TANK["reverse"] * self.size        # back up and come round
+        k = 1.0 - math.exp(-dt * TANK["accel"])
+        tk["speed"] += (want - tk["speed"]) * k
+        c, s_ = math.cos(self.heading), math.sin(self.heading)
+        self.vx, self.vy = c * tk["speed"], s_ * tk["speed"]
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.collide(dt)
+        moving = abs(tk["speed"]) > top * 0.12 and bool(self.path)
+        if moving:
+            self.play("run", True, speed=max(0.6, min(1.4, abs(tk["speed"]) / top)))
+            self.stuck_t += dt
+            if self.stuck_t > 1.2:
+                px, py = self.last_prog
+                if math.hypot(self.x - px, self.y - py) < self.size * 0.15:
+                    g = self.goal
+                    self.path = []; self.goal = None
+                    tk["speed"] = -TANK["reverse"] * self.size * 0.5
+                    if g is not None:
+                        self.set_goal(g[0] + random.uniform(-0.6, 0.6) * self.size,
+                                      g[1] + random.uniform(-0.6, 0.6) * self.size)
+                self.stuck_t = 0.0; self.last_prog = (self.x, self.y)
+        else:
+            self.stuck_t = 0.0; self.last_prog = (self.x, self.y)
+        return moving
+
+    def tank_crush(self, dt):
+        """Anyone on her feet inside the hull capsule while the tank is rolling goes down. Allies too."""
+        B = self.B
+        tk = self.tank
+        top = TANK["speed"] * self.size
+        if abs(tk["speed"]) < top * TANK["crush_min_speed"]: return
+        r = TANK["crush_r"] * self.size
+        c, s_ = math.cos(self.heading), math.sin(self.heading)
+        for o in B.fighters:
+            if o is self or o.state != "alive": continue
+            if crush_dist(self, o.x, o.y) > r + o.radius * 0.6: continue
+            dx, dy = o.x - self.x, o.y - self.y
+            d = math.hypot(dx, dy) or 1.0
+            # flung forward-and-sideways off the hull, in the direction she is driving
+            fx, fy = c * 0.75 + dx / d * 0.55, s_ * 0.75 + dy / d * 0.55
+            if tk["speed"] < 0: fx, fy = -fx, -fy
+            got, kind = o.force_down(self, fx, fy, TANK["crush_knock"], explosive=False,
+                                     credit=TANK["crush_dmg"] * B.settings["damage"])
+            if kind == "crush":
+                tk["crushed"] += 1
+                B.fx.dust(o.x, o.y, 10)
+                B.fx.sparks(o.x, o.y, self.size * 0.3, (255, 200, 120), 8)
+                B.sound_thud(3.0)
+                if B.settings["damage_numbers"]:
+                    B.fx.number(o.x, o.y - o.size * 1.05, "CRUSHED", (255, 140, 60), 17, True)
+            elif kind == "immune" and B.settings["damage_numbers"] and random.random() < 0.1:
+                B.fx.number(o.x, o.y - o.size * 1.05, "IMMUNE", (150, 230, 255), 12)
+
     # ------------------------------------------------------------------ drawing
     def matrix_standing(self):
         return standing_matrix(self.ch, self.x, self.y, self.heading, self.s)
@@ -566,11 +864,19 @@ class Fighter:
                     Tp = np.eye(4); Tp[:3, 3] = [self.x, 0, self.y]
                     Tm = np.eye(4); Tm[:3, 3] = [-self.x, 0, -self.y]
                     M = Tp @ R4 @ Tm @ M
+        ride = 0.0
+        if self.tank is not None and self.state == "alive":
+            # the riding pose with the vehicle: framed on the tank, not on her pelvis
+            M = standing_matrix(self.ch, self.x, self.y, self.heading, self.s, fit=tank_fit(self.ch))
+            ride = self.tank["fade"]
         self.last_W, self.last_M = W, M
         pel = self.binding.rag3_tokens()["pelvis"] if self.binding.ok else self.ch.model.pelvis
         g = M @ np.append(W[pel][:3, 3], 1.0)
         cx, cy = project(g)
         half = self.size * 1.15
-        img = B.tdr.render(self.ch, W, M, cx, cy, half, B.app.cfg) if B.tdr is not None else None
+        if ride > 0.0:
+            cx, cy = project(np.array([self.x, self.size * 0.55, self.y, 1.0]))
+            half = self.size * (1.15 + 1.45 * ride)
+        img = B.tdr.render(self.ch, W, M, cx, cy, half, B.app.cfg, ride_fade=ride) if B.tdr is not None else None
         self.img = img
         self.img_rect = (cx - half, cy - half, half * 2, half * 2)

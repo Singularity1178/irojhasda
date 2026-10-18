@@ -26,6 +26,7 @@ from .fighter import Fighter
 from .geometry import Box, NavGrid, point_seg_dist, seg_box, seg_circle
 from .obstacles import KINDS, generate, spawn_points
 from .physics import ArenaWorld, binding_for
+from .tank import TANK
 from .topdown import TopDownRenderer
 
 GRAV = 1500.0
@@ -223,14 +224,26 @@ class Battle(QtCore.QObject):
             if v > best:
                 best = v
                 if best >= 1.0: return 1.0
-        if best < 0.65:
+        if best < 0.85:
             for a in self.fighters:
                 if a is tf or a.state not in ("alive", "getup"): continue
                 if math.hypot(a.x - sx, a.y - sy) < a.radius * 1.5: continue
-                t = seg_circle(sx, sy, tx, ty, a.x, a.y, a.radius * 1.1)
+                t = seg_circle(sx, sy, tx, ty, a.x, a.y, a.block_radius() * 0.96)
                 if t is not None and 0.04 < t < 0.97:
-                    best = max(best, 0.65)
-                    break
+                    # a standing student stops some shots; Iroha's tank hull stops nearly all of them
+                    best = max(best, 0.85 if a.tank is not None else 0.65)
+                    if best >= 0.85: break
+        return best
+
+    def blocking_box(self, x0, y0, x1, y1, ign_r=0.0):
+        """The first prop / window a shot from (x0, y0) to (x1, y1) would hit, or None."""
+        best, bt = None, 2.0
+        for bx in self.boxes:
+            if not bx.alive: continue
+            if ign_r > 0 and bx.dist(x0, y0) < ign_r: continue
+            t = seg_box(x0, y0, x1, y1, bx)
+            if t is not None and t < bt:
+                best, bt = bx, t
         return best
 
     # ------------------------------------------------------------------ shooting
@@ -266,7 +279,7 @@ class Battle(QtCore.QObject):
                        width=look.get("width", 2.6) if isinstance(look, dict) else 2.6, quiet=st.flame)
 
     def trace(self, f, mx, my, mh, ang, length, dmg, aimed, color, beam=False, pierce=False, width=2.6, quiet=False,
-              crit_chance=0.12):
+              crit_chance=0.12, box_mul=None):
         S = self.settings
         ex, ey = mx + math.cos(ang) * length, my + math.sin(ang) * length
         hits = []
@@ -277,7 +290,7 @@ class Battle(QtCore.QObject):
             if t is not None: hits.append((t, 0, bx))
         for o in self.fighters:
             if o is f or o.state not in ("alive", "getup"): continue
-            t = seg_circle(mx, my, ex, ey, o.x, o.y, o.radius * 1.15)
+            t = seg_circle(mx, my, ex, ey, o.x, o.y, o.block_radius())
             if t is not None: hits.append((t, 1, o))
         hits.sort(key=lambda h: h[0])
         end_t = 1.0
@@ -295,13 +308,15 @@ class Battle(QtCore.QObject):
                     p_block = (0.45 if peeking else 0.7) if near_target else 0.15
                 if beam and pierce and bx.kind != "window" and bx.cover == "half":
                     p_block = 0.0
+                if box_mul is not None: p_block = 1.0 if bx.cover == "full" or bx.kind == "window" else 0.7
                 if random.random() < p_block:
                     end_t = t
                     px, py = mx + (ex - mx) * t, my + (ey - my) * t
                     h = min(mh, bx.height * 0.7)
                     self.fx.sparks(px, py, h, (255, 230, 170), 4)
                     if bx.hp is not None:
-                        self.damage_box(bx, dmg * (0.6 if bx.kind == "barrel" else 0.35), f)
+                        mul = box_mul if box_mul is not None else (0.6 if bx.kind == "barrel" else 0.35)
+                        self.damage_box(bx, dmg * mul, f)
                     break
             else:
                 o = obj
@@ -325,7 +340,10 @@ class Battle(QtCore.QObject):
                         self.fx.number(o.x, o.y - o.size * 1.05, f"{int(d)}", (255, 236, 120) if crit else (255, 255, 255),
                                        16, crit)
                 elif kind_txt == "immune" and S["damage_numbers"]:
-                    self.fx.number(o.x, o.y - o.size * 1.05, "IMMUNE", (150, 230, 255), 12)
+                    if o.tank is None or random.random() < 0.25:
+                        self.fx.number(o.x, o.y - o.size * 1.05, "IMMUNE", (150, 230, 255), 12)
+                    if o.tank is not None:
+                        self.fx.sparks(px, py, mh, (255, 240, 200), 5)      # ricochet off the armour
                 if not (beam and pierce):
                     end_t = t
                     break
@@ -334,12 +352,37 @@ class Battle(QtCore.QObject):
             self.fx.tracer(mx, my, mh, px, py, mh * 0.9, color, width, beam=beam)
         # near misses keep heads down
         for o in self.fighters:
-            if o.team == f.team or not o.alive: continue
+            if o.team == f.team or not o.alive or o.tank is not None: continue
             d, u = point_seg_dist(o.x, o.y, mx, my, px, py)
             if d < self.size * 0.55 and u > 0.05:
                 o.suppression = min(1.0, o.suppression + (0.09 if not hit_any else 0.04))
                 if o.brain is not None:
                     o.brain.memory[f] = (f.x, f.y, self.t)
+
+    def fire_box(self, f, bx, ax, ay):
+        """Deliberately shooting a breakable prop apart (ai 'breach'). Same gun, full damage to the prop."""
+        st = f.st
+        S = self.settings
+        mx, my, mh = f.muzzle()
+        base = math.atan2(ay - my, ax - mx)
+        dist = math.hypot(ax - mx, ay - my)
+        spread = st.spread * self.diff["spread"] * 0.8
+        look = weapon_fx(st.weapon, getattr(f.ch, "bullet", None)) if weapon_fx else {}
+        color = tuple(look.get("color", (255, 210, 120))) if isinstance(look, dict) else (255, 210, 120)
+        f.rec["shots"] += 1
+        self.fx.muzzle(mx, my, mh, base, (look.get("flash", 1.0) if isinstance(look, dict) else 1.0), color)
+        dmg_mul = S["damage"] * st.dmg_mul * (1.25 if self.t < f.buff_until else 1.0)
+        if st.proj:
+            self.launch(f, st.proj, bx.cx() + random.gauss(0, spread * dist), bx.cy() + random.gauss(0, spread * dist),
+                        random.uniform(*st.dmg) * dmg_mul, st.radius * self.size)
+            return
+        if st.flame:
+            self.fx.flame(mx, my, mh, base, st.range * self.size * 0.5)
+        for _ in range(st.pellets):
+            ang = base + random.gauss(0.0, spread)
+            self.trace(f, mx, my, mh, ang, max(dist * 1.3, self.size), random.uniform(*st.dmg) * dmg_mul, None, color,
+                       beam=st.beam, pierce=False, width=look.get("width", 2.6) if isinstance(look, dict) else 2.6,
+                       quiet=st.flame, box_mul=1.0)
 
     def damage_box(self, bx, dmg, src):
         if bx.hp is None or not bx.alive: return
@@ -354,8 +397,9 @@ class Battle(QtCore.QObject):
                 self.fx.sparks(bx.cx(), bx.cy(), bx.height * 0.5, (220, 180, 120), 10)
 
     # ------------------------------------------------------------------ projectiles & explosions
-    def launch(self, f, kind, tx, ty, dmg, radius, delay=0.0, lob=None):
+    def launch(self, f, kind, tx, ty, dmg, radius, delay=0.0, lob=None, speed=None, h=None):
         mx, my, mh = f.muzzle()
+        if h is not None: mh = h
         d = math.hypot(tx - mx, ty - my)
         if lob is None: lob = kind in ("grenade", "mortar", "frag", "shell")
         if lob:
@@ -363,7 +407,7 @@ class Battle(QtCore.QObject):
             T = max(0.35, d / v)
             vh = GRAV * T / 2.0 - mh / T
         else:
-            v = self.size * 9.0
+            v = self.size * (speed if speed else 9.0)
             T = max(0.05, d / v)
             vh = 0.0
         pr = dict(kind=kind, owner=f, x=mx, y=my, h=mh, vx=(tx - mx) / T, vy=(ty - my) / T, vh=vh, lob=lob,
@@ -386,17 +430,21 @@ class Battle(QtCore.QObject):
             l, t, r, b = self.rect
             if not (l <= pr["x"] <= r and t <= pr["y"] <= b):
                 boom = True
+            shell = pr["kind"] == "tank_shell"
             if not boom:
                 for bx in self.boxes:
-                    if bx.alive and bx.contains(pr["x"], pr["y"]) and pr["h"] < bx.height:
+                    if bx.alive and bx.contains(pr["x"], pr["y"]) and (shell or pr["h"] < bx.height):
                         boom = True; break
             if not boom and not pr["lob"]:
                 for o in self.fighters:
-                    if o.team != pr["owner"].team and o.alive and math.hypot(o.x - pr["x"], o.y - pr["y"]) < o.radius * 1.2:
+                    if o is pr["owner"] or not o.alive: continue
+                    if not shell and o.team == pr["owner"].team: continue      # a tank shell hits anyone
+                    if math.hypot(o.x - pr["x"], o.y - pr["y"]) < o.block_radius() * (1.0 if shell else 1.05):
                         boom = True; break
                 if pr["t"] > pr["T"] * 1.05: boom = True
             if boom:
-                self.explode(pr["x"], pr["y"], pr["radius"], pr["dmg"], pr["owner"])
+                if shell: self.tank_blast(pr["x"], pr["y"], pr["radius"], pr["dmg"], pr["owner"])
+                else: self.explode(pr["x"], pr["y"], pr["radius"], pr["dmg"], pr["owner"])
             else:
                 keep.append(pr)
         self.projectiles = keep
@@ -418,11 +466,67 @@ class Battle(QtCore.QObject):
                 if src is not None and src is not o: src.rec["dmg"] += got
                 if S["damage_numbers"]:
                     self.fx.number(o.x, o.y - o.size * 1.05, f"{int(got)}", (255, 170, 90), 18, got > 1500)
-            o.suppression = 1.0
+            if o.tank is None: o.suppression = 1.0
         for bx in list(self.boxes):
             if bx.alive and bx.hp is not None and bx.dist(x, y) < radius:
                 self.damage_box(bx, dmg * 0.8, src)
         self.world.blast(x, y, radius * 1.6, 900.0 * max(0.6, self.size / 120.0))
+
+    def tank_blast(self, x, y, radius, dmg, src):
+        """A tank shell lands: EVERY student in the radius is ragdolled, both teams, friendly fire always.
+        Props in the blast take damage, lying bodies are shoved."""
+        S = self.settings
+        self.fx.explosion(x, y, radius * 1.1)
+        self.fx.shake = getattr(self.fx, "shake", 0) + 7
+        self.sound_thud(3.0)
+        for o in self.fighters:
+            if o.state != "alive" or o is src: continue
+            d = math.hypot(o.x - x, o.y - y)
+            if d > radius + o.radius * 0.5: continue
+            dx, dy = (o.x - x, o.y - y) if d > 1 else (random.uniform(-1, 1), random.uniform(-1, 1))
+            got, kind = o.force_down(src, dx, dy, TANK["shell_knock"] * (1.0 - 0.35 * min(1.0, d / max(1.0, radius))),
+                                     explosive=True, credit=dmg)
+            if kind == "crush" and S["damage_numbers"]:
+                self.fx.number(o.x, o.y - o.size * 1.05, f"{int(got)}", (255, 150, 70), 18, True)
+            elif kind == "immune" and S["damage_numbers"]:
+                self.fx.number(o.x, o.y - o.size * 1.05, "IMMUNE", (150, 230, 255), 12)
+            if o.brain is not None and src is not None: o.brain.memory[src] = (src.x, src.y, self.t)
+        for bx in list(self.boxes):
+            if bx.alive and bx.hp is not None and bx.dist(x, y) < radius:
+                self.damage_box(bx, dmg * 1.2, src)
+        self.world.blast(x, y, radius * 1.7, 1100.0 * max(0.6, self.size / 120.0))
+
+    def fire_shell(self, f, tgt):
+        """The tank's main gun: a flat, visible, dodgeable shell toward the target's current position."""
+        sz = self.size
+        c, s_ = math.cos(f.heading), math.sin(f.heading)
+        mx, my = f.x + c * sz * 0.9, f.y + s_ * sz * 0.9
+        tx, ty = tgt.x, tgt.y
+        lead = 0.35                                        # she leads a running target a little
+        tx += tgt.vx * lead; ty += tgt.vy * lead
+        err = sz * 0.12 * self.diff["spread"]
+        tx += random.gauss(0, err); ty += random.gauss(0, err)
+        f.rec["shots"] += 1
+        self.fx.muzzle(mx, my, sz * 0.9, f.heading, 2.2, (255, 170, 80))
+        self.fx.muzzle(mx, my, sz * 0.9, f.heading, 1.4, (255, 230, 160))
+        self.fx.dust(f.x - c * sz * 0.3, f.y - s_ * sz * 0.3, 4)
+        self.fx.shake = getattr(self.fx, "shake", 0) + 3
+        pr = self.launch(f, "tank_shell", tx, ty, TANK["shell_dmg"] * self.settings["damage"], TANK["shell_radius"] * sz,
+                         lob=False, speed=TANK["shell_speed"], h=sz * 0.9)
+        pr["x"], pr["y"] = mx, my
+        d = math.hypot(tx - mx, ty - my) or 1.0
+        v = TANK["shell_speed"] * sz
+        pr["vx"], pr["vy"] = (tx - mx) / d * v, (ty - my) / d * v
+        pr["T"] = d / v
+        return pr
+
+    def on_tank(self, f, on):
+        """Iroha mounted / dismounted: everybody takes a fresh look at the field."""
+        for o in self.fighters:
+            if o.brain is not None and o is not f:
+                o.brain.think_t = min(o.brain.think_t, 0.12)
+        if on:
+            self.banners.append(dict(kind="tank", f=f, t=0.0, life=1.6))
 
     # ------------------------------------------------------------------ support
     def heal(self, h, a):
@@ -493,6 +597,8 @@ class Battle(QtCore.QObject):
                     if got > 0 and S["damage_numbers"]:
                         self.fx.number(a.x, a.y - a.size * 1.05, f"+{int(got)}", (110, 240, 160), 16)
             self.fx.ring(f.x, f.y, sz * 3.0, (110, 240, 160), 0.8)
+        elif kind == "tank":
+            f.mount_tank()
         elif kind == "buff":
             for a in self.fighters:
                 if a.team == f.team and a.alive and math.hypot(a.x - f.x, a.y - f.y) < sz * 6.5:
@@ -599,7 +705,8 @@ class Battle(QtCore.QObject):
                 continue
             f.update(dt)
         self.update_projectiles(dt)
-        self.world.set_pillars([(f.x, self.world.CZ - f.y, f.radius, f.size * 0.85)
+        self.world.set_pillars([(f.x, self.world.CZ - f.y, f.radius,
+                                 f.size * (TANK["height"] if f.tank is not None else 0.85))
                                 for f in self.fighters if f.state in ("alive", "getup")])
         self.world.step(dt)
         if self.phase == "fight":
@@ -626,7 +733,7 @@ class Battle(QtCore.QObject):
             self.slowmo = 0.35
             self.banners.append(dict(kind="end", t=0.0, life=99.0))
             for f in self.fighters:
-                f.want_fire = False; f.path = []
+                f.want_fire = False; f.path = []; f.target_box = None
 
     def time_left(self):
         tl = self.settings["time_limit"]

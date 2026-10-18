@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from bapet.combat_data import load_combat_index
+from .tank import TANK, TANK_EX_NAME, has_tank
 
 # per weapon: damage per bullet, seconds between bullets, bullets per burst, pause between bursts,
 # aim spread (rad, 1 sigma), reload (s), pellets, projectile kind, move speed factor, range factor
@@ -52,6 +53,7 @@ EX_NAMES = {
     "mass_heal": ("Field Medic", "\u5168\u4f53\u56de\u5fa9"),
     "buff": ("Tactical Command", "\u6226\u8853\u6307\u63ee"),
     "strike": ("Artillery Strike", "\u7832\u6483\u652f\u63f4"),
+    "tank": TANK_EX_NAME,
 }
 
 
@@ -102,11 +104,15 @@ class CombatProfile:
         self.dmg_mul = 1.0 if self.attacks else 0.35      # non-attackers only have a sidearm
         self.heal = 950.0 if self.healer else 0.0
         self.heal_cd = 1.5
+        self.has_tank = has_tank(ch)
         self.ex = self._ex_kind()
         self.ex_cost = {"grenade": 14.0, "pierce": 16.0, "barrage": 16.0, "charge": 14.0, "shield": 15.0,
-                        "mass_heal": 17.0, "buff": 16.0, "strike": 18.0}[self.ex]
+                        "mass_heal": 17.0, "buff": 16.0, "strike": 18.0, "tank": TANK["ex_cost"]}[self.ex]
+        # how fast her normal fire breaks a prop, in HP/s (deliberate breaching, see ai.Brain.breach_score)
+        self.box_dps = (sum(self.dmg) / 2.0) * self.pellets * self.burst * self.dmg_mul / max(0.2, self.rof * self.burst + self.gap)
 
     def _ex_kind(self):
+        if self.has_tank: return "tank"            # Iroha: she summons and drives her tank
         if self.healer: return "mass_heal"
         if self.role == "Tank": return "shield"
         if self.support: return "buff"

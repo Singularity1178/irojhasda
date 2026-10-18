@@ -20,6 +20,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 
 from bapet.picker import StudentPicker
 from .obstacles import OBLIQUE, paint_box, paint_shadow, paint_window_base
+from .tank import TANK
 from .theme import (AF, BLUE, BLUE_D, CYAN, GREEN, GREY, NAVY, NAVY_D, NOPEN, ORANGE, PINK, RED, RED_T, SKY,
                     TEAM_COL, TEAM_COL_D, TEAM_NAME, TEAM_SUB, WHITE, YELLOW, YELLOW_D, BAWindow, W_BLACK, W_BOLD,
                     W_DEMI, clamp, col, ease_back, ease_out, font, glyph_icon, para, rounded, text)
@@ -118,6 +119,16 @@ class ArenaOverlay(QtWidgets.QWidget):
                 c = TEAM_COL[f.team]
                 p.setPen(QtGui.QPen(col(c, 200), 2.2)); p.setBrush(col(c, 40))
                 p.drawEllipse(QPointF(f.x, f.y), f.radius * 1.35, f.radius * 0.68)
+                if f.tank is not None:
+                    # the hull: a hazard ring everyone keeps clear of, pointing the way she drives
+                    pen = QtGui.QPen(col(ORANGE, 200), 2.5); pen.setDashPattern([5, 4]); pen.setDashOffset(-now * 25)
+                    p.setPen(pen); p.setBrush(col(ORANGE, 22))
+                    p.drawEllipse(QPointF(f.x, f.y), f.radius * 1.7, f.radius * 0.85)
+                    a = f.heading
+                    p.setPen(NOPEN); p.setBrush(col(ORANGE, 150))
+                    p.drawPolygon(QtGui.QPolygonF([QPointF(f.x + math.cos(a) * f.radius * 2.4, f.y + math.sin(a) * f.radius * 1.2),
+                                                   QPointF(f.x + math.cos(a + 0.35) * f.radius * 1.7, f.y + math.sin(a + 0.35) * f.radius * 0.85),
+                                                   QPointF(f.x + math.cos(a - 0.35) * f.radius * 1.7, f.y + math.sin(a - 0.35) * f.radius * 0.85)]))
                 if f.target is not None and f.want_fire and B.phase == "fight":
                     a = math.atan2(f.target.y - f.y, f.target.x - f.x)
                     tip = QPointF(f.x + math.cos(a) * f.radius * 2.0, f.y + math.sin(a) * f.radius * 1.0)
@@ -181,6 +192,19 @@ class ArenaOverlay(QtWidgets.QWidget):
     def paint_projectile(self, p, pr):
         if pr["t"] < 0: return
         x, y, h = pr["x"], pr["y"], max(0.0, pr["h"])
+        if pr["kind"] == "tank_shell":
+            rr = pr["radius"]
+            # where it will land - everyone inside goes down, so it is drawn loud
+            p.setPen(QtGui.QPen(QtGui.QColor(255, 120, 40, 150), 2)); p.setBrush(QtGui.QColor(255, 120, 40, 45))
+            p.drawEllipse(QPointF(pr["tx"], pr["ty"]), rr, rr * 0.55)
+            pts = [QPointF(tx, ty - th * OBLIQUE) for tx, ty, th in pr["trail"]]
+            if len(pts) > 1:
+                p.setPen(QtGui.QPen(QtGui.QColor(255, 160, 60, 150), 6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+                p.drawPolyline(QtGui.QPolygonF(pts))
+            p.setPen(NOPEN); p.setBrush(QtGui.QColor(10, 20, 40, 70)); p.drawEllipse(QPointF(x, y), 8, 4)
+            p.setPen(QtGui.QPen(QtGui.QColor(60, 30, 10), 1.5)); p.setBrush(QtGui.QColor(255, 190, 90))
+            p.drawEllipse(QPointF(x, y - h * OBLIQUE), 8, 8)
+            return
         p.setPen(NOPEN); p.setBrush(QtGui.QColor(10, 20, 40, 70))
         p.drawEllipse(QPointF(x, y), 5, 2.5)
         if pr["lob"]:
@@ -221,6 +245,16 @@ class ArenaOverlay(QtWidgets.QWidget):
             p.drawArc(QRectF(cr.x() - 13, cr.y() - 13, 26, 26), 90 * 16, int(-360 * 16 * k))
             text(p, QRectF(cr.x() - 40, cr.y() + 14, 80, 16), "DOWN", 10, WHITE, W_BLACK, True)
             return
+        if f.tank is not None:
+            top -= f.size * OBLIQUE * 0.55
+            r = QRectF(f.x - w / 2, top - 10, w, 7)
+            k = clamp(f.tank_time_left() / max(0.1, TANK["duration"]), 0, 1)
+            cr = QPointF(f.x, top - 34)
+            p.setPen(QtGui.QPen(col(NAVY_D, 140), 4)); p.setBrush(Qt.BrushStyle.NoBrush); p.drawEllipse(cr, 12, 12)
+            p.setPen(QtGui.QPen(ORANGE, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            p.drawArc(QRectF(cr.x() - 12, cr.y() - 12, 24, 24), 90 * 16, int(-360 * 16 * k))
+            text(p, QRectF(cr.x() - 40, cr.y() - 8, 80, 16), f"{f.tank_time_left():.0f}", 10, WHITE, W_BLACK, True)
+            text(p, QRectF(cr.x() - 50, cr.y() + 13, 100, 14), "TANK", 9, ORANGE, W_BLACK, True)
         p.setPen(NOPEN); p.setBrush(col(NAVY_D, 170)); p.drawRoundedRect(r.adjusted(-1.5, -1.5, 1.5, 1.5), 3, 3)
         hpf = f.hp_frac()
         fill = QRectF(r.left(), r.top(), r.width() * hpf, r.height())
@@ -241,6 +275,7 @@ class ArenaOverlay(QtWidgets.QWidget):
         icon = None
         if f.reload_t > 0: icon = ("retry", GREY)
         elif f.ex_cast is not None: icon = ("flag", YELLOW_D)
+        elif f.target_box is not None and f.want_fire: icon = ("target", ORANGE)
         elif f.suppression > 0.6: icon = ("shield", ORANGE)
         if icon:
             glyph_icon(p, QPointF(r.right() + 9, r.center().y()), 6, icon[0], icon[1], 2)
@@ -364,6 +399,14 @@ class ArenaOverlay(QtWidgets.QWidget):
                     self.strip_banner(p, g, t, 99, "DRAW", "\u5f15\u304d\u5206\u3051", GREY, hold=True)
             elif k == "ex":
                 self.ex_cutin(p, g, bn)
+            elif k == "tank":
+                f = bn["f"]
+                a = clamp(min(t * 5, (bn["life"] - t) * 3), 0, 1)
+                r = QRectF(cx - 190, g.top() + 166, 380, 34)
+                p.save(); p.setOpacity(a)
+                p.setPen(NOPEN); p.setBrush(col(ORANGE, 225)); p.drawPolygon(para(r, 10))
+                text(p, r, f"TANK ON THE FIELD  \u00b7  {f.name}", 15, WHITE, W_BLACK, True, AF.AlignCenter, 1.5)
+                p.restore()
             elif k == "out":
                 f = bn["f"]
                 a = clamp(min(t * 5, (bn["life"] - t) * 3), 0, 1)

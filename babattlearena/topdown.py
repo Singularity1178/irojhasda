@@ -32,9 +32,10 @@ def T(v):
     M = np.eye(4); M[:3, 3] = v; return M
 
 
-def standing_matrix(ch, x, y, heading, s, lift=0.0):
-    """Model -> G px. heading: screen angle she faces (0 = right, pi/2 = down the screen)."""
-    fit = ch.fit
+def standing_matrix(ch, x, y, heading, s, lift=0.0, fit=None):
+    """Model -> G px. heading: screen angle she faces (0 = right, pi/2 = down the screen).
+    `fit`: a bounding fit other than her on-foot one (the riding pose with the tank in it)."""
+    fit = fit if fit is not None else ch.fit
     a = math.pi / 2 - heading + float(getattr(ch.model, "face_yaw", 0.0) or 0.0)
     return (T([x, lift, y]) @ m4(rot_y(a)) @ np.diag([s, s, s, 1.0])
             @ T([-float(fit["cx"]), -float(fit["miny"]), -float(fit["cz"])]))
@@ -74,8 +75,9 @@ class TopDownRenderer:
         self.fbo = self.rs = None
         self.ok = False
 
-    def render(self, ch, W, M, cx, cy, half, cfg):
+    def render(self, ch, W, M, cx, cy, half, cfg, ride_fade=0.0):
         """Draw pose W with model matrix M, centred on screen point (cx, cy), `half` px each way.
+        `ride_fade`: opacity of her vehicle (Iroha's tank), 0 = hidden (on foot), 1 = riding.
         Returns a premultiplied QImage of side x side px (or None)."""
         if not self.ok or ch.renderer is None:
             return None
@@ -98,7 +100,7 @@ class TopDownRenderer:
             r.eye = np.array([cx, a * 1.0e5, cy + b * 1.0e5])
             r.world_per_px = 2.0 * half / self.side
             if hasattr(r, "ride_fade") and getattr(ch, "ride_win", None) is not None:
-                r.ride_fade = 0.0
+                r.ride_fade = max(0.0, min(1.0, float(ride_fade)))
             data = r.draw(W, M, LIGHT, cfg)
             arr = np.frombuffer(data, np.uint8).reshape(self.side, self.side, 4)[::-1]
             arr = np.ascontiguousarray(arr)
