@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sora's Shop</title>
+<style>
+html,body{margin:0;height:100%;background:#cfe6f7;overflow:hidden;user-select:none;-webkit-user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#back{position:fixed;left:18px;top:18px;width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.85);
+ background:#10306a;box-shadow:0 3px 10px rgba(5,20,60,.45);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+ transition:transform .12s,background .12s;z-index:5}
+#back:hover{background:#1a47a0;transform:scale(1.07)}
+#back:active{transform:scale(.95)}
+#back svg{width:30px;height:30px;display:block}
+#msg{position:fixed;left:0;right:0;bottom:16px;text-align:center;font:600 14px system-ui,"Segoe UI",sans-serif;color:#10306a;pointer-events:none;
+ text-shadow:0 0 6px #fff,0 0 6px #fff}
+#err{display:none;position:fixed;left:90px;right:20px;top:20px;padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #d92d20;
+ color:#d92d20;font:13px system-ui,sans-serif;z-index:6}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<button id="back" title="Back to main menu" aria-label="Back to main menu">
+ <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5"/><path d="M11.5 5.5 5 12l6.5 6.5"/></svg>
+</button>
+<div id="msg">Loading Sora's shop…</div>
+<div id="err"></div>
+<script src="/spine-webgl.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const canvas=$("c"),msg=$("msg"),errEl=$("err");
+const SHOP="/sora_shop/";
+// the scene is the Frontdesk layer (x -1801..1581); the view keeps that width and crops top/bottom around Sora
+const VIEW={x0:-1801,x1:1581,cy:1050,minH:1500};
+const HEAD_R=250;                                  // pat area around the Touch_Point bone
+const BODY={x0:-1100,x1:-120,y0:-200,y1:1750};     // Sora's body: tapping it makes her talk
+const EYE_MAX=60,HEAD_MAX=30;                      // ranges used by the game's own Dev_Look / Dev_Pat clips
+
+const back=()=>{try{fetch("/__back",{method:"POST"})}catch(e){}};
+$("back").addEventListener("click",back);
+$("back").addEventListener("pointerdown",e=>e.stopPropagation());
+addEventListener("keydown",e=>{if(e.key==="Escape")back()});
+
+const ctx=new spine.webgl.ManagedWebGLRenderingContext(canvas,{alpha:true,premultipliedAlpha:true});
+const gl=ctx.gl;
+{const bf=gl.blendFunc.bind(gl);   // keep the premultiplied framebuffer correct (same fix as the viewer)
+ gl.blendFunc=(s,d)=>{if(s===gl.DST_COLOR)gl.blendFuncSeparate(s,d,gl.ZERO,gl.ONE);else gl.blendFuncSeparate(s,d,gl.ONE,gl.ONE_MINUS_SRC_ALPHA)}}
+const batcher=new spine.webgl.PolygonBatcher(ctx);
+const renderer=new spine.webgl.SkeletonRenderer(ctx);renderer.premultipliedAlpha=false;
+const shader=spine.webgl.Shader.newTwoColoredTextured(ctx);
+const mvp=new spine.webgl.Matrix4();
+
+let skeleton=null,state=null,data=null,ready=false,paused=false;
+let boneEye,boneEyeKey,boneHead,boneHeadKey;
+const audio=new Set();
+
+function loadImg(url){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error("missing "+url));i.src=url})}
+
+async function init(){
+ try{
+  const [atlasText,skelBuf,list]=await Promise.all([
+   fetch(SHOP+"sora_shop.atlas").then(r=>r.text()),
+   fetch(SHOP+"sora_shop.skel").then(r=>r.arrayBuffer()),
+   fetch("/__audio").then(r=>r.json()).catch(()=>[])]);
+  list.forEach(n=>audio.add(n.toLowerCase()));
+  const pages=[...atlasText.matchAll(/^(\S+\.png)\s*$/gm)].map(m=>m[1]),imgs={};
+  for(const p of pages)imgs[p]=await loadImg(SHOP+p);
+  const atlas=new spine.TextureAtlas(atlasText,p=>new spine.webgl.GLTexture(ctx,imgs[p.trim()]));
+  data=new spine.SkeletonBinary(new spine.AtlasAttachmentLoader(atlas)).readSkeletonData(new Uint8Array(skelBuf));
+  skeleton=new spine.Skeleton(data);
+  const sd=new spine.AnimationStateData(data);sd.defaultMix=0.2;
+  state=new spine.AnimationState(sd);
+  state.addListener({event:(t,ev)=>onEvent(ev)});
+  boneEye=skeleton.findBone("Touch_Eye");boneEyeKey=skeleton.findBone("Touch_Eye_Key");
+  boneHead=skeleton.findBone("Touch_Point");boneHeadKey=skeleton.findBone("Touch_Point_Key");
+  skeleton.setToSetupPose();skeleton.updateWorldTransform();
+  ready=true;msg.textContent="";
+  enter();
+  requestAnimationFrame(frame);
+ }catch(e){console.error(e);msg.textContent="";errEl.style.display="block";errEl.textContent="Could not load Sora's shop: "+(e&&e.message||e)}
+}
+
+// ---------- animation logic ----------
+const has=n=>!!data.findAnimation(n);
+function enter(){                                 // plays one of her two arrival clips, then settles into Idle_01
+ if(!ready)return;
+ state.clearTracks();skeleton.setToSetupPose();
+ const intro=["Start01_Idle_01","Start02_Idle_01"].filter(has);
+ if(intro.length)state.setAnimation(0,intro[Math.floor(Math.random()*intro.length)],false);
+ const e=state.addAnimation(0,"Idle_01",true,0);
+ if(!intro.length)state.setAnimation(0,"Idle_01",true);
+ talkEnd=0;petting=false;looking=false;ek.x=ek.y=hk.x=hk.y=0;paused=false;
+}
+function leave(){paused=true;document.querySelectorAll("audio").forEach(a=>a.pause())}
+window.shopEnter=enter;window.shopLeave=leave;
+
+let talkEnd=0,lastTalk=0,petting=false,looking=false;
+function startTalk(){
+ const now=performance.now();if(now<talkEnd||petting)return;
+ const opts=[1,2,3,4,5,6,7].filter(i=>i!==lastTalk&&has("Talk_0"+i+"_M"));if(!opts.length)return;
+ const n=opts[Math.floor(Math.random()*opts.length)];lastTalk=n;
+ const m="Talk_0"+n+"_M",a="Talk_0"+n+"_A";
+ state.setAnimation(2,m,false);state.addEmptyAnimation(2,0.25,0);
+ if(has(a)){state.setAnimation(3,a,false);state.addEmptyAnimation(3,0.25,0)}
+ talkEnd=now+data.findAnimation(m).duration*1000;
+}
+function startPat(){
+ petting=true;talkEnd=0;
+ state.setAnimation(2,"Pat_01_M",true);
+ if(has("Pat_01_A"))state.setAnimation(3,"Pat_01_A",true);
+}
+function endPat(){
+ if(!petting)return;petting=false;
+ if(has("PatEnd_01_M")){state.setAnimation(2,"PatEnd_01_M",false);state.addEmptyAnimation(2,0.2,0)}else state.clearTrack(2);
+ if(has("PatEnd_01_A")){state.setAnimation(3,"PatEnd_01_A",false);state.addEmptyAnimation(3,0.2,0)}else state.clearTrack(3);
+}
+function setLook(on){                             // Look_01 is a zero-length hold pose, released by LookEnd_01
+ if(on===looking||!ready)return;looking=on;
+ if(on){if(has("Look_01_M"))state.setAnimation(1,"Look_01_M",false)}
+ else{
+  if(has("LookEnd_01_M")){state.setAnimation(1,"LookEnd_01_M",false);state.addEmptyAnimation(1,0.2,0)}else state.clearTrack(1);
+  if(has("LookEnd_01_A")){state.setAnimation(4,"LookEnd_01_A",false);state.addEmptyAnimation(4,0.2,0)}
+ }
+}
+function onEvent(ev){
+ const p=ev.data.audioPath;if(!p||p==="null")return;
+ const f=p.split(/[\\/]/).pop();if(!audio.has(f.toLowerCase()))return;
+ const a=new Audio(SHOP+encodeURIComponent(f));a.volume=Math.max(0,Math.min(1,ev.data.volume||1));a.play().catch(()=>{});
+}
+
+// ---------- camera + input ----------
+let cx=0,cy=0,u=1;
+function layout(){
+ const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
+ canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));
+ u=Math.max(canvas.width/(VIEW.x1-VIEW.x0),canvas.height/2500);   // cover: never show past the background
+ cx=(VIEW.x0+VIEW.x1)/2;cy=VIEW.cy;
+}
+addEventListener("resize",layout);layout();
+const toWorld=e=>{const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
+ return {x:cx+((e.clientX-r.left)*d-canvas.width/2)/u,y:cy+(canvas.height/2-(e.clientY-r.top)*d)/u}};
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const overHead=p=>ready&&dist(p,{x:boneHead.worldX,y:boneHead.worldY})<=HEAD_R;
+const overBody=p=>p.x>=BODY.x0&&p.x<=BODY.x1&&p.y>=BODY.y0&&p.y<=BODY.y1;
+
+const ptr={x:0,y:0,in:false},ek={x:0,y:0},hk={x:0,y:0};let patStart=null,patLocal0=null;
+const loc=(bone,p)=>{const v=new spine.Vector2(p.x,p.y);bone.worldToLocal(v);return v};
+canvas.addEventListener("pointerdown",e=>{
+ if(!ready||e.button!==0)return;
+ const p=toWorld(e);ptr.x=p.x;ptr.y=p.y;ptr.in=true;
+ if(overHead(p)){canvas.setPointerCapture(e.pointerId);patStart=p;patLocal0=loc(boneHead,p);startPat()}
+ else if(overBody(p))startTalk();
+});
+const release=e=>{if(petting){endPat();patStart=null}try{canvas.releasePointerCapture(e.pointerId)}catch(_){}};
+canvas.addEventListener("pointerup",release);canvas.addEventListener("pointercancel",release);
+canvas.addEventListener("pointermove",e=>{
+ if(!ready)return;const p=toWorld(e);ptr.x=p.x;ptr.y=p.y;ptr.in=true;setLook(true);
+ canvas.style.cursor=petting?"grabbing":overHead(p)?"grab":overBody(p)?"pointer":"default";
+});
+canvas.addEventListener("pointerenter",()=>{ptr.in=true;setLook(true)});
+canvas.addEventListener("pointerleave",()=>{if(petting)return;ptr.in=false;setLook(false)});
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+
+// ---------- frame ----------
+let last=performance.now();
+function frame(now){
+ requestAnimationFrame(frame);
+ const dt=Math.min(0.1,(now-last)/1000);last=now;
+ if(paused||!ready)return;
+ const w=canvas.width,h=canvas.height;
+ gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+ state.update(dt);state.apply(skeleton);
+ // cursor-driven bones (the game moves these keys; the skeleton's constraints do the rest)
+ let ex=0,ey=0,hx=0,hy=0;
+ if(ptr.in){
+  const v=loc(boneEye,ptr),len=Math.hypot(v.x,v.y);
+  if(len>1){const k=EYE_MAX*Math.min(1,len/700)/len;ex=v.x*k;ey=v.y*k}
+ }
+ if(petting){
+  const v=loc(boneHead,ptr);
+  hx=Math.max(-HEAD_MAX,Math.min(HEAD_MAX,(v.x-patLocal0.x)*0.15));
+  hy=Math.max(-HEAD_MAX,Math.min(HEAD_MAX,(v.y-patLocal0.y)*0.15+Math.sin(now/90)*6));
+  ex=ey=0;
+ }else if(ptr.in){
+  const v=loc(boneHead,ptr),len=Math.hypot(v.x,v.y);
+  if(len>1){const k=14*Math.min(1,len/900)/len;hx=v.x*k;hy=v.y*k}
+ }
+ const s=1-Math.exp(-dt*12);
+ ek.x+=(ex-ek.x)*s;ek.y+=(ey-ek.y)*s;hk.x+=(hx-hk.x)*s;hk.y+=(hy-hk.y)*s;
+ boneEyeKey.x=boneEyeKey.data.x+ek.x;boneEyeKey.y=boneEyeKey.data.y+ek.y;
+ boneHeadKey.x=boneHeadKey.data.x+hk.x;boneHeadKey.y=boneHeadKey.data.y+hk.y;
+ skeleton.updateWorldTransform();
+ mvp.ortho2d(cx-w/u/2,cy-h/u/2,w/u,h/u);
+ shader.bind();shader.setUniform4x4f(spine.webgl.Shader.MVP_MATRIX,mvp.values);
+ batcher.begin(shader);renderer.draw(batcher,skeleton);batcher.end();
+}
+init();
+</script></body></html>

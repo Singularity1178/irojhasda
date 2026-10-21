@@ -23,7 +23,7 @@ class ArenaManager:
         self.battle = None
         self.last_teams = None
         self.saved_visible = None
-        self._title = self._lobby = self._settings_win = self._pause = self._results = None
+        self._title = self._lobby = self._settings_win = self._pause = self._results = self._shop = None
 
     # ------------------------------------------------------------------ screens
     def title(self):
@@ -38,6 +38,12 @@ class ArenaManager:
             self._lobby = ArenaLobby(self)
         return self._lobby
 
+    def shop(self):
+        if self._shop is None:
+            from .shop import SoraShop
+            self._shop = SoraShop(self)
+        return self._shop
+
     def _hide(self, w):
         if w is not None and w.isVisible():
             try: w.close_animated()
@@ -48,6 +54,7 @@ class ArenaManager:
             self.end_battle()
             self.restore_pets()
         self._hide(self._lobby)
+        if self._shop is not None: self._shop.hide()
         try: self.app.hide_picker()
         except Exception: pass
         self.title().open()
@@ -70,6 +77,25 @@ class ArenaManager:
         try: self.app.hide_picker()
         except Exception: pass
         self.lobby().open()
+
+    def open_shop(self):
+        """Main menu -> Sora's shop (the scene opens where the title screen was)."""
+        try:
+            shop = self.shop()
+        except Exception:
+            traceback.print_exc()
+            print("Sora's shop needs QtWebEngine:  pip install PySide6   (the full package, not PySide6-Essentials)")
+            return
+        t = self._title
+        center = t.frameGeometry().center() if t is not None and t.isVisible() else None
+        shop.open(center)
+        self._hide(self._title)
+
+    def close_shop(self):
+        """Back arrow in the shop -> main menu."""
+        if self._shop is not None:
+            self._shop.hide()
+        self.title().open()
 
     def open_settings(self):
         if self._settings_win is None:

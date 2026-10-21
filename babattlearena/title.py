@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 from PySide6 import QtGui
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -10,7 +11,12 @@ from .theme import (AF, BLUE, BLUE_D, CYAN, GREY, NAVY, NAVY_D, NOPEN, ORANGE, P
                     W_BLACK, W_BOLD, clamp, col, ease_back, ease_out, glyph_icon, para, poly_path, rounded, text)
 
 
+SHOP_ICON = Path(__file__).resolve().parent / "assets" / "MP_Shop.png"
+
+
 class TitleScreen(BAWindow):
+    _shop_pix = None
+
     def __init__(self, mgr):
         super().__init__(mgr, 1000, 600, "Blue Archive - Desktop")
 
@@ -83,10 +89,32 @@ class TitleScreen(BAWindow):
         text(p, QRectF(R.left(), fy, R.width(), 38), "TAP TO START", 13,
              col(NAVY, 120 + 100 * (0.5 + 0.5 * math.sin(now * 3))), W_BLACK, True, AF.AlignCenter, 4)
         self.hits.append((QRectF(R.left(), R.top(), R.width(), 230), ("drag",)))
+        self.shop_button(p, R, now)
+
+    def shop_button(self, p, R, now):
+        """Sora's shop icon, top left. Added to the hit list last so it wins over the drag strip."""
+        if TitleScreen._shop_pix is None:
+            TitleScreen._shop_pix = QtGui.QPixmap(str(SHOP_ICON))
+        pix = TitleScreen._shop_pix
+        if pix.isNull():
+            return
+        w = 108.0
+        r = QRectF(R.left() + 26, R.top() + 22, w, w * pix.height() / pix.width())
+        hov = self.hover == ("shop",)
+        if hov: r = r.translated(0, -3)
+        a = ease_out((now - self.t_open - 0.05) / 0.35)
+        p.save(); p.setOpacity(a)
+        if hov:
+            p.setPen(NOPEN); p.setBrush(col(YELLOW, 60)); p.drawEllipse(r.center(), r.width() * 0.62, r.height() * 0.62)
+        p.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
+        p.drawPixmap(r, pix, QRectF(pix.rect()))
+        p.restore()
+        self.hits.append((QRectF(r), ("shop",)))
 
     def on_click(self, key, right=False):
         k = key[0]
-        if k == "pets": self.mgr.open_desktop_pets()
+        if k == "shop": self.mgr.open_shop()
+        elif k == "pets": self.mgr.open_desktop_pets()
         elif k == "arena": self.mgr.open_lobby()
         elif k == "panel":
             self.close_animated()

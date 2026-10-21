@@ -9,6 +9,8 @@ Startup now opens a **title screen** with two options:
   * Gear button opens the arena settings.
   * **BEGIN BATTLE** starts the match.
 
+The **shop icon** in the top left corner of the title screen opens **Sora's shop** (`babattlearena/shop.py`): the Spine 3.8 lobby scene from `assets/sora_shop/` (`.skel`, `.atlas`, two pages; the `localize/` folder is not used), drawn by the Spine WebGL runtime in `assets/spine-webgl.js` inside a QtWebEngine view (full `pip install PySide6`). She plays her arrival clip then `Idle_01`; her eyes follow the cursor; hold the left button on her head to pat her (`Pat_01_M`, then `PatEnd_01`); tap her to make her talk (`Talk_01`-`07`). The round dark-blue arrow in the top left corner (or Esc) returns to the title screen. Voice lines play if the `Sora_Shop_*.wav` files are put next to the `.skel`.
+
 `run_battle_arena.bat` (or `--arena`) goes straight to the lobby. The tray menu also has *Title Screen…* and *Battle Arena…* entries.
 
 ## The match

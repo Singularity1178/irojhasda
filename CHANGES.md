@@ -1,3 +1,10 @@
+# Sora's shop on the main menu
+
+* The title screen (main menu) has a new icon button in its top left corner (`babattlearena/assets/MP_Shop.png`). It opens **Sora's shop**, the Spine 3.8 lobby scene, fully rigged and animated: arrival clip then idle, eyes that follow the cursor, head pats (hold the left button on her head) and talk clips (tap her).
+* A round dark-blue back button with a left arrow sits in the shop's top left corner (Esc works too) and returns to the main menu.
+* New: `babattlearena/shop.py`, `babattlearena/assets/{sora_shop.html, spine-webgl.js, MP_Shop.png, sora_shop/}`. The `localize/` folder of the export is not used. The Spine runtime is the one from `spine_viewer.py`.
+* `bapet/deps.py` imports QtWebEngineWidgets before the QApplication exists (needed by Qt). It is optional: without it the shop icon only prints a hint.
+
 # Perching / window colliders: the window list came back empty
 
 ## Fixed: students walked and fell straight through every window on screen

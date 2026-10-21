@@ -20,6 +20,16 @@ except ImportError as _e:                           # pragma: no cover
     print('Run:  pip install PySide6 moderngl numpy "pymunk>=7,<8"')
     sys.exit(1)
 
+# Sora's shop (babattlearena/shop.py) shows the Spine scene in a QtWebEngine view. QtWebEngineWidgets has to
+# be imported before the QApplication exists, so it is done here. Optional: without it the shop icon on
+# the main menu just prints a hint and the rest of the app is unaffected.
+try:
+    from PySide6 import QtWebEngineWidgets  # noqa: F401
+    HAVE_WEBENGINE = True
+except ImportError as _e:                           # pragma: no cover
+    HAVE_WEBENGINE = False
+    print("QtWebEngine not available, Sora's shop is disabled:", _e)
+
 # The articulated ragdoll is optional: without pymunk every pet falls back to the
 # legacy rod ragdoll, so the app still runs (cfg ragdoll_engine="legacy").
 try:

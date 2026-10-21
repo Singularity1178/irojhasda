@@ -9,7 +9,8 @@ them mid-fight and everybody re-plans.
 
 Modules
     manager    screen flow (title / lobby / battle / pause / results), pets put away during a match
-    title      the title screen: Desktop Pets or Battle Arena
+    title      the title screen: Desktop Pets or Battle Arena, plus the Sora's shop icon (top left)
+    shop       Sora's shop: the Spine 3.8 lobby scene (assets/sora_shop) in a QtWebEngine view
     lobby      team builder with avatar cards, settings, BEGIN BATTLE
     settings   arena rules + the settings screen (battle_arena_settings.json)
     battle     one match: rules, ballistics, explosions, EX skills, windows, match flow
