@@ -190,6 +190,11 @@ $("#filter",stage).addEventListener("click",()=>{
  grid.scrollTop=0;renderGrid();
 });
 stage.addEventListener("pointerdown",e=>e.stopPropagation());
+// the top bar is the drag handle of the (frameless) window: Qt moves it while the left button stays down
+$("#topbar",stage).addEventListener("pointerdown",e=>{
+ if(e.button!==0||e.target.closest(".hit,#back"))return;
+ e.preventDefault();try{fetch("/__drag",{method:"POST"})}catch(_){}
+});
 addEventListener("keydown",e=>{if(e.key==="Escape")goBack()});
 
 // ------------------------------------------------------------------ reset timer (placeholder: 27 days 16 hours from opening)

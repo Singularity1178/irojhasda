@@ -93,9 +93,18 @@ class ArenaManager:
 
     def close_shop(self):
         """Back arrow in the shop -> main menu."""
+        center = None
         if self._shop is not None:
+            if self._shop.isVisible():
+                center = self._shop.frameGeometry().center()
             self._shop.hide()
-        self.title().open()
+        t = self.title()
+        t.open()
+        if center is not None:                  # reopen the menu where the (draggable) shop was, kept on screen
+            g = t.home()
+            x = min(max(center.x() - t.width() // 2, g.left()), g.right() - t.width() + 1)
+            y = min(max(center.y() - t.height() // 2, g.top()), g.bottom() - t.height() + 1)
+            t.move(x, y)
 
     def open_settings(self):
         if self._settings_win is None:

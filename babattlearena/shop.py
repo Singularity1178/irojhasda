@@ -12,7 +12,7 @@ babattlearena/assets/ (the localize/ folder of the original export is deliberate
       are dropped into assets/sora_shop/ (they are not part of the repo's copy of the export)
     * the Blue Archive shop screen (top bar, category tabs, item grid, filter, footer) is drawn over the scene by
       assets/shop_ui.css + assets/shop_ui.js; its currencies, items and prices are placeholders and nothing is saved
-    * the round dark-blue arrow in the top left corner (or Esc) goes back to the main menu
+    * the round dark-blue arrow in the top left corner (or Esc) goes back to the main menu; the top bar drags the window
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from PySide6 import QtGui, QtWidgets
-from PySide6.QtCore import QObject, Qt, QUrl, Signal
+from PySide6.QtCore import QObject, QTimer, Qt, QUrl, Signal
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 SHOP_DIR = ASSETS / "sora_shop"
@@ -37,6 +37,7 @@ mimetypes.add_type("text/plain", ".atlas")
 
 class _Bridge(QObject):
     back = Signal()
+    drag = Signal()
 
 
 def _make_handler(bridge):
@@ -61,8 +62,12 @@ def _make_handler(bridge):
             n = int(self.headers.get("Content-Length") or 0)
             if n:
                 self.rfile.read(n)
-            if urlparse(self.path).path == "/__back":
+            route = urlparse(self.path).path
+            if route == "/__back":
                 bridge.back.emit()
+                self._send(204)
+            elif route == "/__drag":
+                bridge.drag.emit()
                 self._send(204)
             else:
                 self._send(404)
@@ -108,6 +113,11 @@ class SoraShop(QtWidgets.QWidget):
         from PySide6.QtWebEngineWidgets import QWebEngineView
         self._bridge = _Bridge()
         self._bridge.back.connect(self.go_back)
+        self._bridge.drag.connect(self._start_drag)
+        self._drag_off = None
+        self._drag_timer = QTimer(self)
+        self._drag_timer.setInterval(8)
+        self._drag_timer.timeout.connect(self._drag_tick)
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), _make_handler(self._bridge))
         self._server.daemon_threads = True
         threading.Thread(target=self._server.serve_forever, name="sora-shop-http", daemon=True).start()
@@ -149,7 +159,26 @@ class SoraShop(QtWidgets.QWidget):
         if self.isVisible():
             self.mgr.close_shop()
 
+    # ------------------------------------------------------------------ drag by the top bar
+    # The page cannot move a frameless window, and mouse events inside the web view never reach this widget, so the
+    # page reports "left button pressed on the top bar" and the window follows the global cursor until it is released
+    # (the same cursor-offset approach the title screen uses for its drag strip).
+    def _start_drag(self):
+        if not self.isVisible() or not (QtGui.QGuiApplication.mouseButtons() & Qt.MouseButton.LeftButton):
+            return
+        self._drag_off = QtGui.QCursor.pos() - self.frameGeometry().topLeft()
+        self._drag_timer.start()
+
+    def _drag_tick(self):
+        if self._drag_off is None or not (QtGui.QGuiApplication.mouseButtons() & Qt.MouseButton.LeftButton):
+            self._drag_timer.stop()
+            self._drag_off = None
+            return
+        self.move(QtGui.QCursor.pos() - self._drag_off)
+
     def hideEvent(self, ev):
+        self._drag_timer.stop()
+        self._drag_off = None
         try:
             self.view.page().runJavaScript("window.shopLeave && window.shopLeave()")
         except Exception:
