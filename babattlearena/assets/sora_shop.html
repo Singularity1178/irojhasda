@@ -142,12 +142,19 @@ canvas.addEventListener("pointerdown",e=>{
 });
 const release=e=>{if(petting){endPat();patStart=null}try{canvas.releasePointerCapture(e.pointerId)}catch(_){}};
 canvas.addEventListener("pointerup",release);canvas.addEventListener("pointercancel",release);
-canvas.addEventListener("pointermove",e=>{
- if(!ready)return;const p=toWorld(e);ptr.x=p.x;ptr.y=p.y;ptr.in=true;setLook(true);
- canvas.style.cursor=petting?"grabbing":overHead(p)?"grab":overBody(p)?"pointer":"default";
+// The shop UI (buttons, item grid) sits on top of the canvas, so the canvas's own pointerenter/leave fire every time the
+// cursor crosses a card or tab; each one used to restart Look_01 / LookEnd_01 and snap her eyes back (flicker bursts).
+// So the cursor is tracked at window level instead: she keeps looking at it over the UI, and only lets go when it
+// really leaves the window (after a short grace period, so a quick exit and re-entry does nothing).
+let lookOff=0;
+const lookOn=()=>{clearTimeout(lookOff);lookOff=0;ptr.in=true;setLook(true)};
+const lookRelease=()=>{if(petting||lookOff)return;lookOff=setTimeout(()=>{lookOff=0;if(petting)return;ptr.in=false;setLook(false)},250)};
+addEventListener("pointermove",e=>{
+ if(!ready)return;const p=toWorld(e);ptr.x=p.x;ptr.y=p.y;lookOn();
+ canvas.style.cursor=petting?"grabbing":e.target!==canvas?"":overHead(p)?"grab":overBody(p)?"pointer":"default";
 });
-canvas.addEventListener("pointerenter",()=>{ptr.in=true;setLook(true)});
-canvas.addEventListener("pointerleave",()=>{if(petting)return;ptr.in=false;setLook(false)});
+document.documentElement.addEventListener("mouseleave",lookRelease);
+document.documentElement.addEventListener("mouseenter",lookOn);
 canvas.addEventListener("contextmenu",e=>e.preventDefault());
 
 // ---------- frame ----------
