@@ -142,8 +142,11 @@ def main():
         traceback.print_exc(); splash = None
 
     try:
+        # start_hidden: the students stay invisible for the whole load; they are shown (or handed
+        # to the start screen) only once the splash has gone.
         app = App(qapp, paths, args,
-                  progress=splash.set_progress if splash is not None else None)
+                  progress=splash.set_progress if splash is not None else None,
+                  start_hidden=True)
     except Exception as e:
         if splash is not None: splash.close()
         traceback.print_exc()
@@ -172,6 +175,10 @@ def main():
                 app.start_with_title()
         except Exception:
             traceback.print_exc()        # never block the pets because of the start screens
+
+    # No start screen took the team (picker switched off): bring the held-back students up now.
+    # A no-op when the title screen / Student Select already has them.
+    app.reveal_students()
 
     code = qapp.exec()
     app.watcher.stop()                   # the polling thread is a daemon,

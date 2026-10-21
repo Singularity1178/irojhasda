@@ -91,6 +91,28 @@ class AppUI:
         except Exception:
             traceback.print_exc()
 
+    def take_boot_team(self):
+        """The students who would come up at start-up (saved visibility).
+
+        While loading, the launcher keeps every window hidden and parks that list in
+        _boot_team; without it (nothing held back) it is whoever is on screen right now.
+        Either way it is handed over once: a second call returns the live visible list."""
+        team = getattr(self, "_boot_team", None)
+        self._boot_team = None
+        return list(team) if team is not None else [p for p in self.pets if p.isVisible()]
+
+    def reveal_students(self):
+        """End of loading with no start screen: show the students that were held back.
+
+        A no-op once a start screen has taken the team (start_with_title / start_with_picker)."""
+        team = getattr(self, "_boot_team", None)
+        if team is None: return
+        self._boot_team = None
+        for p in team:
+            try: p.show()
+            except Exception: traceback.print_exc()
+        if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
+
     def start_with_title(self):
         """Startup: hold every student back and open the title screen (Desktop Pets / Battle Arena).
 
@@ -98,7 +120,7 @@ class AppUI:
         Student Select with last session's team already in the formation."""
         if getattr(self, "arena", None) is None:
             self.start_with_picker(); return
-        self._startup_team = [p for p in self.pets if p.isVisible()]
+        self._startup_team = self.take_boot_team()
         for p in self.pets:
             try: p.hide()
             except Exception: traceback.print_exc()
@@ -151,7 +173,7 @@ class AppUI:
         not persisted (cfg['hidden'] is untouched), and it happens before the event
         loop runs, so nobody flashes onto the desktop first.
         """
-        team = [p for p in self.pets if p.isVisible()]
+        team = self.take_boot_team()
         for p in self.pets:
             try: p.hide()
             except Exception: traceback.print_exc()

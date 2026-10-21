@@ -49,13 +49,18 @@ class AppScreen:
         for p in self.pets: self.set_pet_visible(p, vis)
         if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
 
-    def apply_hidden_state(self, hidden):
+    def apply_hidden_state(self, hidden, show=True):
         """Restore per-character visibility from the saved list (after spawning).
 
         Two safety nets, both so a bad save can never leave you with a blank screen:
           * stale entries (a character whose .glb is gone) are dropped
           * a list that hides *every* character is the signature of the old
             'Hide to tray' bug, not a real choice, so everybody comes back
+
+        show=False (start-up loading): nobody is shown. The students who WOULD have come up
+        are remembered in self._boot_team instead, and take_boot_team() / reveal_students()
+        hand them on once loading is over - so they never flash onto the desktop behind the
+        "Now Loading" card.
         """
         hidden = set(hidden or ())
         known = {p.name for p in self.pets}
@@ -64,8 +69,12 @@ class AppScreen:
             print("[info] every character was saved as hidden (leftover 'Hide to tray' "
                   "state) - showing them all.")
             hidden = set()
-        for p in self.pets:
-            p.show() if p.name not in hidden else p.hide()
+        if show:
+            for p in self.pets:
+                p.show() if p.name not in hidden else p.hide()
+        else:
+            self._boot_team = [p for p in self.pets if p.name not in hidden]
+            for p in self.pets: p.hide()
         self.cfg["hidden"] = sorted(known & hidden)
         if stale:
             print("[info] dropping hidden characters that no longer exist:",

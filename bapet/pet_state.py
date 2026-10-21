@@ -10,7 +10,8 @@ from .mathutil import clamp
 
 
 class PetState:
-    def spawn(self, index=0):
+    def spawn(self, index=0, show=True):
+        """Put her on her spot. show=False places her but leaves her window hidden (start-up loading)."""
         g = self.A.resolve_screen()
         saved = self.cfg["positions"].get(self.name) if isinstance(self.cfg.get("positions"), dict) else None
         if saved is None and index == 0:
@@ -22,7 +23,8 @@ class PetState:
         fx = self.A.clamp_x(saved, self.W)
         self.rag_clear()
         self.set_feet(fx, self.A.floor_y(fx)); self.grounded = True
-        self.show(); self.do_tactical(first=True)
+        if show: self.show()
+        self.do_tactical(first=True)
 
     # ---------------- animation / state ----------------
     def play(self, key, restart=True):

@@ -30,9 +30,14 @@ from .wintracker import WinTracker
 
 
 class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, AppUI, QtCore.QObject):
-    def __init__(self, qapp, paths, args, progress=None):
+    def __init__(self, qapp, paths, args, progress=None, start_hidden=False):
         super().__init__()
         self.qapp, self.args = qapp, args
+        # start_hidden: no student window is shown while loading (the launcher shows the
+        # "Now Loading" card, and the students used to pop up behind it for a few seconds).
+        # Who WOULD have been up waits in _boot_team until take_boot_team() / reveal_students().
+        self._boot_team = None
+        self.start_hidden = bool(start_hidden)
         # `progress(fraction 0..1, status text)` drives the "Now Loading" bar. A broken
         # callback must never stop the app from starting, so it is wrapped once here.
         def report(frac, status=None):
@@ -144,11 +149,11 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         qapp.aboutToQuit.connect(self.save)
         report(0.92, "Placing the students\u2026")
         for i, p in enumerate(self.pets):
-            p.spawn(i)
+            p.spawn(i, show=not self.start_hidden)
         report(0.97, "Almost there\u2026")
         # apply the saved hidden state only once every pet has spawned - doing it
         # inside the loop above judged later pets while they were still invisible
-        self.apply_hidden_state(hidden)
+        self.apply_hidden_state(hidden, show=not self.start_hidden)
         self.setup_hotkey()
         self.setup_rag_sound()
         qapp.aboutToQuit.connect(self.shutdown_hotkey)
