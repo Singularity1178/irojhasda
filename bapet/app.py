@@ -30,9 +30,19 @@ from .wintracker import WinTracker
 
 
 class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, AppUI, QtCore.QObject):
-    def __init__(self, qapp, paths, args):
+    def __init__(self, qapp, paths, args, progress=None):
         super().__init__()
         self.qapp, self.args = qapp, args
+        # `progress(fraction 0..1, status text)` drives the "Now Loading" bar. A broken
+        # callback must never stop the app from starting, so it is wrapped once here.
+        def report(frac, status=None):
+            if progress is None:
+                return
+            try:
+                progress(frac, status)
+            except Exception:
+                traceback.print_exc()
+        report(0.02, "Reading settings\u2026")
         self.cfg = dict(DEFAULTS)
         try:
             if SETTINGS_PATH.exists(): self.cfg.update({k: v for k, v in json.loads(SETTINGS_PATH.read_text()).items() if k in DEFAULTS})
@@ -59,18 +69,24 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.home = self.resolve_screen()
         print("Locked to screen:", self.screen_label())
         paths = [Path(p) for p in paths]
+        n_models = max(1, len(paths))
         print(f"{len(paths)} model(s) found.")
         self.chars = []
+        # 0.05 -> 0.50: reading every .glb (the slow part, so the biggest slice of the bar)
         for i, p in enumerate(paths):
+            report(0.05 + 0.45 * i / n_models, f"Reading {p.stem}  ({i + 1}/{len(paths)})")
             try:
                 self.chars.append(Character(p, i, args.dump, load_profile(p)))
             except Exception as e:
                 print(f"[error] could not load {p.name}: {type(e).__name__}: {e}")
                 traceback.print_exc()
+            report(0.05 + 0.45 * (i + 1) / n_models)
         if not self.chars:
             raise RuntimeError("none of the .glb files could be loaded")
+        report(0.52, "Starting the graphics context\u2026")
         self.ctx = moderngl.create_standalone_context(require=330)
         print("GL:", self.ctx.info.get("GL_RENDERER"))
+        report(0.58, "Setting up physics and dialogue\u2026")
         self.tracker = WinTracker(); self.trk_t = 0.0
         # One physics world for the whole app, shared by every pet, so two of
         # them can collide with each other. Only exists with pymunk; without it
@@ -105,11 +121,16 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.target = -1                                   # -1 = all characters
         hidden = set(self.cfg["hidden"])
         print(f"Saved hidden characters: {len(hidden)} ({', '.join(sorted(hidden)) or 'none'})")
+        # 0.62 -> 0.85: upload each model to the GPU and build her pet
+        n_chars = max(1, len(self.chars))
         for i, ch in enumerate(self.chars):
+            report(0.62 + 0.23 * i / n_chars, f"Uploading {ch.name}  ({i + 1}/{len(self.chars)})")
             ch.renderer = Renderer(ch.model, ch.fit, self.ctx)
             pet = Pet(self, ch)
             self.pets.append(pet)
+            report(0.62 + 0.23 * (i + 1) / n_chars)
         self.active = self.pets[0]
+        report(0.87, "Building the control panel\u2026")
         if self.test_weapon(): self.setup_mouse_hook()   # only while a weapon is picked: see setup_mouse_hook
         self.panel = Panel(self)             # picker and asks the gun how it is doing
         self.setup_tray()
@@ -121,8 +142,10 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.timer = QTimer(self); self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.tick); self.timer.start(int(1000 / self.cfg["fps"]))
         qapp.aboutToQuit.connect(self.save)
+        report(0.92, "Placing the students\u2026")
         for i, p in enumerate(self.pets):
             p.spawn(i)
+        report(0.97, "Almost there\u2026")
         # apply the saved hidden state only once every pet has spawned - doing it
         # inside the loop above judged later pets while they were still invisible
         self.apply_hidden_state(hidden)
@@ -130,6 +153,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.setup_rag_sound()
         qapp.aboutToQuit.connect(self.shutdown_hotkey)
         qapp.aboutToQuit.connect(self.shutdown_mouse_hook)
+        report(1.0, "Ready!")
 
     def sync_phys_screen(self):
         """Keep both physics worlds' walls on the CURRENT home screen.

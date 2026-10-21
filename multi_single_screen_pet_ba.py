@@ -142,7 +142,8 @@ def main():
         traceback.print_exc(); splash = None
 
     try:
-        app = App(qapp, paths, args)
+        app = App(qapp, paths, args,
+                  progress=splash.set_progress if splash is not None else None)
     except Exception as e:
         if splash is not None: splash.close()
         traceback.print_exc()
@@ -150,7 +151,9 @@ def main():
                                        f"{type(e).__name__}: {e}\n\nSee the console for details.\n"
                                        "Make sure your GPU drivers support OpenGL 3.3.")
         return 1
-    if splash is not None: splash.close()
+    if splash is not None:
+        splash.set_progress(1.0, "Ready!")      # make sure the bar ends full
+        splash.close()
 
     # The Battle Arena (babattlearena/) hangs off the App; a failure there never blocks the pets.
     try:

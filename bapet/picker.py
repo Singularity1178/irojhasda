@@ -1405,8 +1405,13 @@ class LoadingSplash(QtWidgets.QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.names = list(names)
         self.resize(520, 190)
+        self.qapp = None
+        self.target = 0.0                # 0..1 where the loader says it is
+        self.shown = 0.0                 # 0..1 what the bar draws (eases toward target)
+        self.status = "Starting…"
 
     def show_now(self, qapp):
+        self.qapp = qapp
         scr = qapp.screenAt(QtGui.QCursor.pos()) or qapp.primaryScreen()
         g = scr.availableGeometry()
         self.move(g.center().x() - self.width() // 2, g.center().y() - self.height() // 2)
@@ -1415,6 +1420,33 @@ class LoadingSplash(QtWidgets.QWidget):
             qapp.processEvents()
         self.repaint()
         qapp.processEvents()
+
+    def set_progress(self, frac, status=None):
+        """Move the bar to `frac` (0..1) and say what is being done.
+
+        The models load on the main thread, so nothing else can repaint the card
+        while they are read. Every call therefore pumps the event loop itself:
+        it eases the bar from where it was to the new value over a few frames,
+        so the fill visibly runs instead of jumping from 0 to done.
+        """
+        self.target = clamp(float(frac), 0.0, 1.0)
+        if status is not None:
+            self.status = status
+        if self.qapp is None:
+            self.shown = self.target
+            return
+        start, end = self.shown, self.target
+        if end <= start:                       # never run the bar backwards
+            self.target = self.shown = max(start, end)
+            self.repaint(); self.qapp.processEvents()
+            return
+        steps = 8 if (end - start) > 0.02 else 1
+        for i in range(1, steps + 1):
+            self.shown = start + (end - start) * ease_out(i / steps)
+            self.repaint()                     # synchronous paint, not a queued update
+            self.qapp.processEvents()
+            if steps > 1:
+                time.sleep(0.012)
 
     def paintEvent(self, ev):
         p = QtGui.QPainter(self)
@@ -1447,7 +1479,16 @@ class LoadingSplash(QtWidgets.QWidget):
         text(p, QRectF(R.left() + 42, R.top() + 82, R.width() - 160, 20),
              f"Preparing {n} student{'s' if n != 1 else ''}: {who}", 12, GREY, QtGui.QFont.Weight.Bold, False,
              AF.AlignLeft | AF.AlignVCenter, elide=True)
+        text(p, QRectF(R.left() + 42, R.top() + 102, R.width() - 160, 18), self.status, 11, BLUE_D,
+             QtGui.QFont.Weight.Bold, False, AF.AlignLeft | AF.AlignVCenter, elide=True)
+        frac = clamp(self.shown, 0.0, 1.0)
         bar = QRectF(R.left() + 42, R.bottom() - 34, R.width() - 170, 8)
         p.setBrush(col(BLUE, 40)); p.drawRoundedRect(bar, 4, 4)
-        p.setBrush(BLUE); p.drawRoundedRect(QRectF(bar.left(), bar.top(), bar.width() * 0.66, bar.height()), 4, 4)
+        if frac > 0.0:
+            fill = QRectF(bar.left(), bar.top(), max(bar.height(), bar.width() * frac), bar.height())
+            p.setBrush(BLUE); p.drawRoundedRect(fill, 4, 4)
+            p.setBrush(col(WHITE, 90))          # soft highlight so the fill reads as a bar, not a line
+            p.drawRoundedRect(QRectF(fill.left() + 2, fill.top() + 1, max(0.0, fill.width() - 4), 2.5), 1.2, 1.2)
+        text(p, QRectF(bar.right() + 10, bar.top() - 9, 56, 26), f"{int(round(frac * 100))}%", 14, NAVY,
+             QtGui.QFont.Weight.Black, True, AF.AlignLeft | AF.AlignVCenter)
         p.end()
