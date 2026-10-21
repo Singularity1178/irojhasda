@@ -1409,6 +1409,31 @@ class LoadingSplash(QtWidgets.QWidget):
         self.target = 0.0                # 0..1 where the loader says it is
         self.shown = 0.0                 # 0..1 what the bar draws (eases toward target)
         self.status = "Starting…"
+        self._drag_off = None            # cursor offset inside the card while it is being dragged
+
+    # -- drag the card by any point on it, like the other windows -------------
+    def mousePressEvent(self, ev):
+        if ev.button() == Qt.MouseButton.LeftButton:
+            self._drag_off = ev.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            ev.accept()
+        else:
+            super().mousePressEvent(ev)
+
+    def mouseMoveEvent(self, ev):
+        if self._drag_off is not None and (ev.buttons() & Qt.MouseButton.LeftButton):
+            self.move(ev.globalPosition().toPoint() - self._drag_off)
+            ev.accept()
+        else:
+            super().mouseMoveEvent(ev)
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == Qt.MouseButton.LeftButton and self._drag_off is not None:
+            self._drag_off = None
+            self.unsetCursor()
+            ev.accept()
+        else:
+            super().mouseReleaseEvent(ev)
 
     def show_now(self, qapp):
         self.qapp = qapp
