@@ -5,22 +5,15 @@
 <style>
 html,body{margin:0;height:100%;background:#cfe6f7;overflow:hidden;user-select:none;-webkit-user-select:none}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
-#back{position:fixed;left:18px;top:18px;width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.85);
- background:#10306a;box-shadow:0 3px 10px rgba(5,20,60,.45);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
- transition:transform .12s,background .12s;z-index:5}
-#back:hover{background:#1a47a0;transform:scale(1.07)}
-#back:active{transform:scale(.95)}
-#back svg{width:30px;height:30px;display:block}
 #msg{position:fixed;left:0;right:0;bottom:16px;text-align:center;font:600 14px system-ui,"Segoe UI",sans-serif;color:#10306a;pointer-events:none;
  text-shadow:0 0 6px #fff,0 0 6px #fff}
 #err{display:none;position:fixed;left:90px;right:20px;top:20px;padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #d92d20;
  color:#d92d20;font:13px system-ui,sans-serif;z-index:6}
-</style></head>
+</style>
+<link rel="stylesheet" href="/shop_ui.css">
+</head>
 <body>
 <canvas id="c"></canvas>
-<button id="back" title="Back to main menu" aria-label="Back to main menu">
- <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5"/><path d="M11.5 5.5 5 12l6.5 6.5"/></svg>
-</button>
 <div id="msg">Loading Sora's shop…</div>
 <div id="err"></div>
 <script src="/spine-webgl.js"></script>
@@ -29,16 +22,12 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:
 const $=id=>document.getElementById(id);
 const canvas=$("c"),msg=$("msg"),errEl=$("err");
 const SHOP="/sora_shop/";
-// the scene is the Frontdesk layer (x -1801..1581); the view keeps that width and crops top/bottom around Sora
-const VIEW={x0:-1801,x1:1581,cy:1050,minH:1500};
+// the scene is the Frontdesk layer (x -1801..1581, y about -200..2300); the view never shows past it
+const VIEW={x0:-1801,x1:1581,y0:-200,y1:2300,cx:-45,cy:938,H:1960};  // framing copied from the reference screenshot: view is H world units tall, Sora left of centre
 const HEAD_R=250;                                  // pat area around the Touch_Point bone
 const BODY={x0:-1100,x1:-120,y0:-200,y1:1750};     // Sora's body: tapping it makes her talk
 const EYE_MAX=60,HEAD_MAX=30;                      // ranges used by the game's own Dev_Look / Dev_Pat clips
 
-const back=()=>{try{fetch("/__back",{method:"POST"})}catch(e){}};
-$("back").addEventListener("click",back);
-$("back").addEventListener("pointerdown",e=>e.stopPropagation());
-addEventListener("keydown",e=>{if(e.key==="Escape")back()});
 
 const ctx=new spine.webgl.ManagedWebGLRenderingContext(canvas,{alpha:true,premultipliedAlpha:true});
 const gl=ctx.gl;
@@ -132,8 +121,9 @@ let cx=0,cy=0,u=1;
 function layout(){
  const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
  canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));
- u=Math.max(canvas.width/(VIEW.x1-VIEW.x0),canvas.height/2500);   // cover: never show past the background
- cx=(VIEW.x0+VIEW.x1)/2;cy=VIEW.cy;
+ u=Math.max(canvas.height/VIEW.H,canvas.width/(VIEW.x1-VIEW.x0),canvas.height/(VIEW.y1-VIEW.y0));   // same scale as the 745px-tall UI; cover: never past the background
+ const hw=canvas.width/u/2,hh=canvas.height/u/2;
+ cx=Math.min(VIEW.x1-hw,Math.max(VIEW.x0+hw,VIEW.cx));cy=Math.min(VIEW.y1-hh,Math.max(VIEW.y0+hh,VIEW.cy));
 }
 addEventListener("resize",layout);layout();
 const toWorld=e=>{const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
@@ -194,4 +184,6 @@ function frame(now){
  batcher.begin(shader);renderer.draw(batcher,skeleton);batcher.end();
 }
 init();
-</script></body></html>
+</script>
+<script src="/shop_ui.js"></script>
+</body></html>

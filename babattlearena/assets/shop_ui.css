@@ -1,0 +1,114 @@
+/* Sora's shop - Blue Archive style shop UI drawn over the Spine scene.
+   Everything is laid out in a fixed 745px-tall design space (the reference screenshot) that is scaled to the window
+   height by shop_ui.js; #stage is as wide as the window needs, so the right-hand panel stays glued to the right edge. */
+#stage{position:fixed;left:0;top:0;height:745px;transform-origin:0 0;pointer-events:none;z-index:4;
+ font-family:"Noto Sans JP","Yu Gothic UI","Meiryo UI","Hiragino Sans","Segoe UI",system-ui,sans-serif;color:#1c2b46}
+#stage *{box-sizing:border-box}
+#stage .hit{pointer-events:auto;cursor:pointer}
+#stage svg{display:block}
+
+/* ---------------------------------------------------------------- top bar */
+#topbar{position:absolute;left:0;right:0;top:0;height:37px;
+ background:linear-gradient(#ffffff,#f6f8fb);border-bottom:1px solid #dde4ee;box-shadow:0 3px 8px rgba(30,50,90,.25)}
+#back{position:absolute;left:28px;top:2px;width:52px;height:52px;border-radius:50%;padding:0;cursor:pointer;
+ border:0;background:radial-gradient(circle at 50% 28%,#4f6cab,#34508f 78%);
+ box-shadow:0 2px 6px rgba(20,40,90,.4),inset 0 0 0 2px rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;transition:transform .1s,filter .1s}
+#back:hover{filter:brightness(1.15)}
+#back:active{transform:scale(.94)}
+#back svg{width:32px;height:32px}
+#title{position:absolute;left:95px;top:3px;z-index:1;font-size:21px;font-weight:800;letter-spacing:.01em;color:#1a2a47;line-height:30px;white-space:nowrap}
+#title:after{content:"";position:absolute;left:-16px;right:-3px;bottom:-2px;height:4px;border-radius:2px;
+ background:#f8dc6a;box-shadow:0 0 5px rgba(255,214,90,.7);z-index:-1}
+#help{position:absolute;left:191px;top:8px;width:20px;height:20px;border-radius:4px;background:#1c2f52;color:#fff;
+ font:800 15px/20px system-ui,sans-serif;text-align:center}
+#wallet{position:absolute;right:31px;top:0;height:37px;display:flex;align-items:center}
+.cur{display:flex;align-items:center;height:37px;font-size:19.5px;font-weight:500;color:#3a475c;white-space:nowrap}
+.cur svg.ico{width:24px;height:24px;margin-right:7px;flex:none}
+.cur.credit svg.ico{margin-right:10px}
+.cur .v{display:inline-block}
+.plus{width:22px;height:22px;flex:none}
+.plus:hover{transform:scale(1.12)}
+.sep{width:1px;height:15px;background:#c9d0db;transform:skewX(-22deg);flex:none}
+.tb-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:transform .1s;flex:none}
+.tb-btn:hover{transform:scale(1.1)}
+.tb-btn svg{width:28px;height:28px}
+
+/* ---------------------------------------------------------------- left tabs */
+#tabs{position:absolute;left:0;top:89px;width:190px}
+.tab{position:relative;height:53px;margin-bottom:12px;width:184px;display:flex;align-items:center;padding-left:26px;gap:4px;
+ background:linear-gradient(#ffffff,#f1f4f8);border-radius:0 6px 6px 0;box-shadow:2px 3px 6px rgba(20,40,80,.32);
+ font-size:17.5px;font-weight:600;color:#1b2a46;white-space:nowrap;transition:transform .1s,filter .1s}
+.tab:hover{filter:brightness(.97);transform:translateX(3px)}
+.tab svg{width:22px;height:22px;flex:none}
+.tab.on{width:189px;background:linear-gradient(#162a4d,#0f2040);color:#ffe36a;font-style:italic;box-shadow:2px 3px 8px rgba(5,15,40,.5)}
+.tab.on:hover{transform:none;filter:none}
+
+/* ---------------------------------------------------------------- right panel */
+#shop{position:absolute;right:33px;top:97px;width:527px;height:548px}
+#chip{position:absolute;left:212px;top:-43px;height:28px;display:flex;align-items:center;font-size:17px;font-weight:700;color:#1d2c47}
+#chip svg{width:26px;height:26px;margin-right:7px}
+#filter{position:absolute;right:3px;top:-45px;width:164px;height:30px;display:flex;align-items:center;padding-left:14px;gap:7px;
+ background:linear-gradient(#7d8591,#656d79);color:#fff;font-size:14px;font-weight:700;
+ clip-path:polygon(8px 0,100% 0,100% 70%,calc(100% - 9px) 100%,0 100%,0 8px);box-shadow:inset 0 2px 0 rgba(255,255,255,.3)}
+#filter svg{width:16px;height:16px}
+#filter b{font-size:13px;color:#d3d8df;font-weight:700;letter-spacing:.02em}
+#filter.on b{color:#ffe36a}
+#panel{position:absolute;inset:0;border-radius:6px;border:3px solid #8e97a6;
+ background:linear-gradient(#c8cdd6,#bbc1cc);box-shadow:inset 0 3px 8px rgba(40,50,70,.35),0 3px 8px rgba(20,30,50,.3);padding:7px 8px 6px 7px}
+#grid{height:100%;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:repeat(4,118px);grid-auto-rows:201px;gap:6px 7px;
+ align-content:start;padding-right:0;pointer-events:auto;scrollbar-width:none}
+#grid::-webkit-scrollbar{display:none}
+#bar{position:absolute;right:4px;top:6px;bottom:6px;width:6px;border-radius:3px;background:rgba(20,30,50,.12);pointer-events:none}
+#bar i{position:absolute;left:0;right:0;border-radius:3px;background:#2c3548;min-height:30px}
+
+.card{position:relative;width:118px;height:201px;border-radius:5px;overflow:hidden;
+ background:linear-gradient(#f4f6fa,#e1e6ee);box-shadow:0 2px 3px rgba(30,40,60,.35),inset 0 0 0 1px #fff}
+.card .nm{height:41px;padding:5px 3px 0;text-align:center;font-size:14.5px;font-weight:700;line-height:16px;color:#1e2d49;font-feature-settings:"palt";position:relative;
+ background:linear-gradient(#f9fafc,#eceff5);overflow:hidden;word-break:break-all}
+.card .nm.sm{font-size:13px;line-height:15px}
+.card .nm:after{content:"";position:absolute;left:6px;right:6px;bottom:1px;height:1px;background:#c9d0dc}
+.card .art{position:relative;height:91px;background:
+ linear-gradient(135deg,rgba(255,255,255,.0) 40%,rgba(255,255,255,.7) 41%,rgba(255,255,255,.7) 46%,rgba(255,255,255,0) 47%),
+ linear-gradient(#eef1f7,#dde3ec)}
+.card .art .bg{position:absolute;left:50%;top:50%;width:106px;height:84px;margin:-42px 0 0 -53px;transform:skewX(-8deg)}
+.card .art .it{position:absolute;left:50%;top:50%;width:68px;height:75px;margin:-39px 0 0 -34px;filter:drop-shadow(0 3px 2px rgba(60,40,100,.35))}
+.card .qty{position:absolute;right:7px;bottom:-1px;font-size:16px;font-weight:900;font-style:italic;color:#1d2a44;
+ text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff}
+.card .left{height:15px;background:linear-gradient(#26395e,#16264a);color:#fff;font-size:12px;font-weight:600;line-height:15px;text-align:center;letter-spacing:.01em}
+.card .buy{position:relative;height:54px;padding:5px 6px 0;background:linear-gradient(#52c6ff,#2a9cf0);border-top:1px solid #a8e4ff;
+ box-shadow:inset 0 -3px 0 rgba(20,90,170,.35);text-align:center;cursor:pointer;transition:filter .1s}
+.card .buy:hover{filter:brightness(1.1)}
+.card .buy:active{filter:brightness(.92)}
+.card .price{height:21px;border-radius:4px;display:flex;align-items:center;justify-content:center;gap:5px;
+ background:linear-gradient(#2c4d86,#1d3a6c);color:#fff;font-size:17px;font-weight:600;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.card .price svg{width:19px;height:19px}
+.card .go{margin-top:3px;font-size:17px;font-weight:600;color:#fff;letter-spacing:.04em;text-shadow:0 1px 2px #14609e,0 0 3px #14609e}
+.card.out:after{content:"";position:absolute;inset:0;background:rgba(60,66,82,.42);pointer-events:none}
+.card.out .buy{background:linear-gradient(#4b8bb8,#2f6f9c);cursor:default}
+.card.out .buy:hover,.card.out .buy:active{filter:none}
+.card.shake{animation:shake .3s}
+@keyframes shake{20%{transform:translateX(-4px)}50%{transform:translateX(4px)}80%{transform:translateX(-2px)}}
+
+#foot{position:absolute;right:33px;top:657px;width:527px;height:62px;border-radius:6px;
+ background:linear-gradient(#ffffff,#eef2f7);box-shadow:0 2px 6px rgba(20,30,50,.35);display:flex;align-items:center;padding:0 13px 0 19px}
+#foot .tm{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:500;color:#3a475c;white-space:nowrap}
+#foot .tm svg{width:22px;height:22px}
+#foot .tm span{color:#2b72c9}
+#foot .tm em{font-style:normal;margin-left:4px}
+#confirm{position:relative;margin-left:auto;height:40px;width:201px;display:flex;align-items:center;justify-content:flex-start;padding-left:14px;gap:14px;
+ font-size:17px;font-weight:600;color:#3a475c;transition:filter .1s}
+#confirm:before{content:"";position:absolute;inset:0;border-radius:18px;border:2px solid #c9d1dc;background:linear-gradient(#fff,#f3f5f9);
+ box-shadow:0 1px 3px rgba(20,30,50,.3);transform:skewX(-8deg);z-index:0}
+#confirm>*{position:relative;z-index:1}
+#confirm:hover{filter:brightness(.96)}
+#confirm svg{width:20px;height:20px}
+
+/* gem purchase shortcut, bottom left */
+#gembuy{position:absolute;left:14px;top:627px;width:86px;text-align:center}
+#gembuy svg{width:68px;height:68px;margin:0 auto;filter:drop-shadow(0 3px 3px rgba(20,40,80,.5))}
+#gembuy div{margin-top:-4px;font-size:12px;font-weight:700;color:#1c2b46;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 4px #fff}
+#gembuy:hover svg{transform:translateY(-2px)}
+
+#toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);padding:9px 22px;border-radius:20px;background:rgba(18,32,64,.92);color:#fff;
+ font-size:15px;font-weight:700;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1}

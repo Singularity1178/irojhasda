@@ -10,6 +10,8 @@ babattlearena/assets/ (the localize/ folder of the original export is deliberate
     * hold the left button on her head to pat her (Pat_01_M, released with PatEnd_01_A / _M)
     * tap her to make her talk (Talk_01..07, mouth + body clips); voice lines play if the .wav files
       are dropped into assets/sora_shop/ (they are not part of the repo's copy of the export)
+    * the Blue Archive shop screen (top bar, category tabs, item grid, filter, footer) is drawn over the scene by
+      assets/shop_ui.css + assets/shop_ui.js; its currencies, items and prices are placeholders and nothing is saved
     * the round dark-blue arrow in the top left corner (or Esc) goes back to the main menu
 """
 from __future__ import annotations
