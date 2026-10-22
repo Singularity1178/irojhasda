@@ -115,6 +115,7 @@ class Pet(
         self.bubble = None; self.parts = []
         self.say_next = []; self.say_next_at = None     # later parts of a multi-part line, see say()
         self.intro_line = None                          # her spawn line, held until she is on screen
+        self.recall_say = False                         # her summon line is up: landing must not talk over it
         self.emo = None                        # (kind, t0, dur): the emote balloon over her head (see vfx.emote)
         self.emo_seen = None                   # last emote drawn, so the mask refreshes when it ends
         # earliest time she may next swap her bubble for a reactive combat line, see say_combat

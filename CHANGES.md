@@ -1,3 +1,11 @@
+# Clicked students use cafe / login lines; summon plays Gachaget
+
+* **Clicked** (poke, and the head-pat) no longer uses the `Lobby_N` voice lines. She now draws from **Cafe_monolog_N**, **Cafe_Act_N** (when her wiki page has any; letter variants like `Cafe_Act_3_a` count) and **LogIn_N**, pooled together. Idle chatter is still Cafe_monolog.
+* **Summoned** (student select drop-in, "Summon to cursor", the panel's Summon) now speaks her own **Gachaget** line instead of the generic "<name> is here." / "You called, Sensei?". Without a wiki file she still falls back to the generic lines.
+* Fixed: that line was being replaced a moment after it appeared. A summoned student arrives by falling, and `land()` then said a landing line (or a perch line) over her bubble, dropping the later parts of a two-part Gachaget line. `Pet.recall_say` now makes the landing leave the bubble alone. The bubble is also sized to the line's length instead of a fixed 2 s.
+* `wikilines.EVENT_KEYS` maps an event to a tuple of wiki rows now. `DialogueEngine.get_any` (the panel's "Say") drops duplicate lines when two events share a row.
+* Tests: `dialogue/tests/test_wikilines.py` covers the new mapping, that clicks never return a Lobby line, letter variants, and summon -> Gachaget.
+
 # Students speak their own wiki voice lines
 
 * Dialogue now comes from each student's own voice line file, `voicelines/data/<Student>.wiki` (the wiki's audio page the app already downloads). While that file has a line for the situation, **only** her own lines are used; the generic lines in `dialogue/data` are the fallback.

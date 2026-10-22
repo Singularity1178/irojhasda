@@ -11,11 +11,14 @@ Those files are the raw wikitext of the wiki's ``<Student>/audio`` page, downloa
 A long line is split into several parts with ``<p>...</p>`` paragraphs. The parts are kept apart
 and handed on joined by ``PART_SEP``; the pet shows them one after another with a pause.
 
-Which wiki line answers which event (``EVENT_KEYS``):
+Which wiki lines answer which event (``EVENT_KEYS``; an event with several rows draws from all
+of them together, and a row that does not exist for that student is simply skipped):
 
-    tactical_first   Gachaget        she has just spawned in
-    idle             Cafe_monolog_N  standing around
-    poke / petting   Lobby_N         she was tapped
+    tactical_first   Gachaget                               she has just spawned in
+    summon           Gachaget                               she was summoned (student select, "Summon
+                                                            to cursor"): replaces "<name> is here."
+    idle             Cafe_monolog_N                         standing around
+    poke / petting   Cafe_monolog_N, Cafe_Act_N, LogIn_N    she was clicked (never Lobby_N)
 
 Anything this module cannot supply - no file, an unreadable file, no such row - returns None, and the
 caller falls back to the generic lines in dialogue/data. No Qt, no network, never raises.
@@ -30,12 +33,14 @@ from pathlib import Path
 #: joins the parts of one line; Pet.say splits on it and waits between the parts
 PART_SEP = "<p>"
 
-#: engine event -> wiki row key (the Name column, minus the trailing ``_<n>`` variant number)
+#: engine event -> wiki row keys (the Name column, minus the trailing ``_<n>`` variant number). Every
+#: key listed for an event is pooled together; a key the student has no rows for adds nothing.
 EVENT_KEYS = {
-    "tactical_first": "Gachaget",
-    "idle": "Cafe_monolog",
-    "poke": "Lobby",
-    "petting": "Lobby",
+    "tactical_first": ("Gachaget",),
+    "summon": ("Gachaget",),
+    "idle": ("Cafe_monolog",),
+    "poke": ("Cafe_monolog", "Cafe_Act", "LogIn"),
+    "petting": ("Cafe_monolog", "Cafe_Act", "LogIn"),
 }
 
 FILE_SUFFIX = ".wiki"
@@ -133,8 +138,9 @@ def parse(text):
 
 def pool(book, key):
     """Every line for a row key: ``Lobby`` collects Lobby, Lobby_1, Lobby_2 ... (never
-    MemorialLobby_1 or EventLobby_1). Each entry is its parts joined with PART_SEP."""
-    pat = re.compile(r"^" + re.escape(key.lower()) + r"(?:_\d+)?$")
+    MemorialLobby_1 or EventLobby_1). A few rows use a letter variant (``Cafe_Act_3_a``), which
+    belongs to its key too. Each entry is its parts joined with PART_SEP."""
+    pat = re.compile(r"^" + re.escape(key.lower()) + r"(?:_\d+)?(?:_[a-z])?$")
     out = []
     for name, lines in (book or {}).items():
         if pat.match(name):
@@ -191,10 +197,16 @@ class WikiLines:
 
     def lines(self, name, event):
         """Her wiki lines for `event`, or [] (no mapping, no file, or no such row)."""
-        key = EVENT_KEYS.get(event)
-        if key is None:
+        keys = EVENT_KEYS.get(event)
+        if not keys:
             return []
+        if isinstance(keys, str):
+            keys = (keys,)
         try:
-            return pool(self.book(name), key)
+            book = self.book(name)
+            out = []
+            for key in keys:
+                out.extend(pool(book, key))
+            return out
         except Exception:
             return []

@@ -124,6 +124,7 @@ class PetState:
     def launch(self):
         if self.ragdoll: self.rag_shove(2.0); return
         self.ragdoll = False; self.rig.rag_post = []; self.rig.dangle_on = True
+        self.recall_say = False
         self.grounded = False; self.support = None; self.dragging = False
         self.vx = random.choice([-1, 1]) * random.uniform(500, 1400) * self.cfg["scale"]
         self.vy = -random.uniform(1500, 2300) * self.cfg["scale"]
@@ -132,8 +133,15 @@ class PetState:
         fx_, fy_ = self.feet_local(); self.emit_impact(fx_, fy_, 1.0)
 
     def recall(self):
-        """Called when the user summons this specific character."""
-        self.say(self.line("summon"), 2.0)
+        """Called when the user summons this specific character (student select, "Summon to cursor").
+
+        With a wiki file her "summon" line is her own Gachaget voice line instead of "<name> is here.".
+        No fixed duration: a wiki line can be long or in several parts, so say() sizes the bubble to it.
+        recall_say tells land() to leave the bubble alone: she arrives by falling, and the landing
+        line would otherwise replace this one a moment after it appeared.
+        """
+        self.say(self.line("summon"))
+        self.recall_say = True
 
     def play_anim(self, key):
         if self.dragging or not self.grounded: return

@@ -28,12 +28,15 @@ code. Nothing here imports PySide, so it can be imported and tested on its own.
 Before any of the pools below, `DialogueEngine.get` asks `wikilines.py` for the student's own lines
 from `voicelines/data/<Student>.wiki`:
 
-| event                  | wiki row           |
-|------------------------|--------------------|
-| `tactical_first` (spawn) | `Gachaget`       |
-| `idle`                 | `Cafe_monolog_N`   |
-| `poke`, `petting`      | `Lobby_N`          |
+| event                  | wiki rows                                  |
+|------------------------|--------------------------------------------|
+| `tactical_first` (spawn) | `Gachaget`                               |
+| `summon` (student select, "Summon to cursor") | `Gachaget` (replaces "{name} is here.") |
+| `idle`                 | `Cafe_monolog_N`                           |
+| `poke`, `petting` (clicked) | `Cafe_monolog_N`, `Cafe_Act_N`, `LogIn_N` (never `Lobby_N`) |
 
+An event with several rows draws from all of them together; a row the student has none of adds nothing
+(`Cafe_Act` is optional). Letter variants such as `Cafe_Act_3_a` count as part of their row.
 If she has any, one of those is spoken and the pools below are skipped (watcher states included).
 With no file, an unreadable file, or no such row, or for any other event, the chain below runs as before.
 A line made of several `<p>` paragraphs comes back as `part<p>part`; `Pet.say` shows the parts one after another with a pause.

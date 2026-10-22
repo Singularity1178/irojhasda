@@ -321,7 +321,8 @@ class DialogueEngine:
         for ev in events:
             wiki = self._wiki_pool(character, ev)
             if wiki:
-                pool.extend(wiki)
+                # events can share wiki rows (idle and poke both use Cafe_monolog): keep one copy
+                pool.extend(l for l in wiki if l not in pool)
                 continue
             for candidate in self._chain(character, ev, states):
                 pool.extend(candidate)

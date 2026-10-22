@@ -41,6 +41,26 @@ WIKI = """\
 | あぁ
 | Ugh. What a &nbsp;nuisance...
 |-
+| LogIn_1
+| [[File:Iroha_LogIn_1.ogg]]
+| ああ
+| Welcome back, Sensei.
+|-
+| Cafe_Act_1
+| [[File:Iroha_Cafe_Act_1.ogg]]
+| うん
+| Sit down for a bit.
+|-
+| Cafe_Act_3_a
+| [[File:Iroha_Cafe_Act_3_a.ogg]]
+| えっ
+| Is that a letter variant?
+|-
+| EventLogin_1
+| [[File:Iroha_EventLogin_1.ogg]]
+| x
+| event login only
+|-
 | Lobby_1
 | [[File:Iroha_Lobby_1.ogg]]
 | ふぅ
@@ -110,6 +130,13 @@ class TestParse(unittest.TestCase):
         self.assertNotIn("event only", lobby)
         self.assertIn("Hmm... Sensei?" + PART_SEP + "Let's slack off.", lobby)
 
+    def test_pool_takes_letter_variants_but_not_look_alikes(self):
+        book = parse(WIKI)
+        act = pool(book, "Cafe_Act")
+        self.assertEqual(sorted(act), ["Is that a letter variant?", "Sit down for a bit."])
+        login = pool(book, "LogIn")
+        self.assertEqual(login, ["Welcome back, Sensei."])      # not EventLogin_1
+
 
 class Folder(unittest.TestCase):
     def setUp(self):
@@ -130,8 +157,28 @@ class TestWikiLines(Folder):
         self.assertEqual(w.lines("Iroha", "tactical_first"),
                          ["How did it come to this?" + PART_SEP + "Well, I'll just have to deal with it."])
         self.assertEqual(len(w.lines("Iroha", "idle")), 2)
-        self.assertEqual(len(w.lines("Iroha", "poke")), 2)
+        # clicked: Cafe_monolog (2) + Cafe_Act (2) + LogIn (1)
+        self.assertEqual(len(w.lines("Iroha", "poke")), 5)
         self.assertEqual(w.lines("Iroha", "poke"), w.lines("Iroha", "petting"))
+
+    def test_clicked_never_uses_lobby(self):
+        self.write("Iroha")
+        lobby = set(pool(parse(WIKI), "Lobby"))
+        self.assertTrue(lobby)
+        w = WikiLines(self.dir)
+        for event in ("poke", "petting"):
+            self.assertFalse(lobby & set(w.lines("Iroha", event)))
+
+    def test_summon_uses_gachaget(self):
+        self.write("Iroha")
+        w = WikiLines(self.dir)
+        self.assertEqual(w.lines("Iroha", "summon"), w.lines("Iroha", "tactical_first"))
+        self.assertEqual(len(w.lines("Iroha", "summon")), 1)
+
+    def test_clicked_without_cafe_act_still_works(self):
+        self.write("Iroha", "{|\n|-\n| LogIn_1\n| [[File:a.ogg]]\n| jp\n| Hi.\n|-\n"
+                            "| Cafe_monolog_1\n| [[File:b.ogg]]\n| jp\n| Hm.\n|}")
+        self.assertEqual(sorted(WikiLines(self.dir).lines("Iroha", "poke")), ["Hi.", "Hm."])
 
     def test_unmapped_event_has_no_wiki_lines(self):
         self.write("Iroha")
@@ -172,9 +219,13 @@ class TestEngine(Folder):
     def test_wiki_lines_are_used_alone(self):
         self.write("Iroha")
         e = self.engine()
-        wiki = set(pool(parse(WIKI), "Lobby"))
+        book = parse(WIKI)
+        wiki = set(pool(book, "Cafe_monolog")) | set(pool(book, "Cafe_Act")) | set(pool(book, "LogIn"))
+        lobby = set(pool(book, "Lobby"))
         for _ in range(30):
-            self.assertIn(e.get("Iroha", "poke", ["battery_low"]), wiki)
+            line = e.get("Iroha", "poke", ["battery_low"])
+            self.assertIn(line, wiki)
+            self.assertNotIn(line, lobby)
 
     def test_idle_uses_cafe_monolog_even_with_a_state_active(self):
         self.write("Iroha")
@@ -187,6 +238,18 @@ class TestEngine(Folder):
         self.write("Iroha")
         self.assertEqual(self.engine().get("Iroha", "tactical_first"),
                          "How did it come to this?" + PART_SEP + "Well, I'll just have to deal with it.")
+
+    def test_summon_uses_gachaget_instead_of_the_generic_line(self):
+        self.write("Iroha")
+        gacha = "How did it come to this?" + PART_SEP + "Well, I'll just have to deal with it."
+        e = self.engine()
+        for _ in range(10):
+            self.assertEqual(e.get("Iroha", "summon"), gacha)
+
+    def test_summon_is_generic_without_a_file(self):
+        generic = {l.replace("{name}", "Nobody") for l in DialogueEngine(voicelines=False).reactions.get("summon") or []}
+        self.assertTrue(generic)
+        self.assertIn(self.engine().get("Nobody", "summon"), generic)
 
     def test_falls_back_to_generic_without_a_file(self):
         e = self.engine()
@@ -208,7 +271,8 @@ class TestEngine(Folder):
 
     def test_get_any_prefers_wiki_lines(self):
         self.write("Iroha")
-        wiki = set(pool(parse(WIKI), "Cafe_monolog")) | set(pool(parse(WIKI), "Lobby"))
+        book = parse(WIKI)
+        wiki = set(pool(book, "Cafe_monolog")) | set(pool(book, "Cafe_Act")) | set(pool(book, "LogIn"))
         for _ in range(20):
             self.assertIn(self.engine().get_any("Iroha", ["idle", "poke"]), wiki)
 
@@ -230,10 +294,11 @@ class TestRealFile(Folder):
         self.assertEqual(w.lines("Iroha", "tactical_first"),
                          ["*sigh* How did it come to this? Well, I'll just have to deal with it."])
         self.assertEqual(len(w.lines("Iroha", "idle")), 5)
-        lobby = w.lines("Iroha", "poke")
-        self.assertEqual(len(lobby), 5)
-        self.assertIn("*sigh*" + PART_SEP + "Do you wanna slack off somewhere?", lobby)
-        self.assertTrue(all("<" not in l.replace(PART_SEP, "") and "[[" not in l for l in lobby))
+        clicked = w.lines("Iroha", "poke")                  # Cafe_monolog 1-5 + LogIn 1-2 (no Cafe_Act rows)
+        self.assertEqual(len(clicked), 7)
+        self.assertIn("*sigh* What? Student duty?" + PART_SEP + "Okay. I'll do my best to fulfill your request.", clicked)
+        self.assertNotIn("*sigh*" + PART_SEP + "Do you wanna slack off somewhere?", clicked)     # a Lobby line
+        self.assertTrue(all("<" not in l.replace(PART_SEP, "") and "[[" not in l for l in clicked))
 
 
 if __name__ == "__main__":

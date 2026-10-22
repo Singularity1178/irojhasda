@@ -189,9 +189,11 @@ class PetBehavior:
             self.emit_impact(self.W / 2, self.H * (1 - self.PADB), clamp(impact / (1400.0 * s_), 0.3, 1.8))
         else:
             self.emit("puff", 6, self.W / 2, self.H * (1 - self.PADB), spread=90)
+        keep_bubble, self.recall_say = self.recall_say, False      # just summoned: her summon line stays up
         if self.air_kind == "thrown" and impact > 900:
-            self.say(self.line("land")); self.enter("shot", "react")
+            if not keep_bubble: self.say(self.line("land"))
+            self.enter("shot", "react")
             self.emote(random.choice(("sweat", "dots", "angry")), 1.6)
         else:
             self.enter("idle"); self.plan_t = 1.5
-            if h is not None and random.random() < 0.5: self.say(self.line("perch"), 2.0)
+            if h is not None and not keep_bubble and random.random() < 0.5: self.say(self.line("perch"), 2.0)
