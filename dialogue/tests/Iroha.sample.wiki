@@ -1,0 +1,340 @@
+{{AudioTop}}
+=Normal lines=
+{| class="wikitable limitwidth-1024"
+|+
+! rowspan="2" |Name
+! rowspan="2" style="width:300px" |
+! colspan="2" |Transcription
+|-
+! style="width:240px" |Japanese
+! style="width:240px" |English
+|-
+| Title
+| [[File:Iroha_Title.ogg]]
+| lang="ja" | <p>はぁ……ブルーアーカイブ……</p>
+| <p>*sigh*... Blue Archive!</p>
+|-
+| Gachaget
+| [[File:Iroha_Gachaget.ogg]]
+| lang="ja" | <p>はあ、どうしてこんなことに……。<br>まあこうなった以上、やることはやりますよ。</p>
+| <p>*sigh* How did it come to this? Well, I'll just have to deal with it.</p>
+|-
+| Cafe_monolog_1
+| [[File:Iroha_Cafe_monolog_1.ogg]]
+| lang="ja" | <p>静かに本を<br>読めるところは……</p>
+| <p>Is there a quiet place to read?</p>
+|-
+| Cafe_monolog_2
+| [[File:Iroha_Cafe_monolog_2.ogg]]
+| lang="ja" | <p>あぁ、<br>めんどくさい……</p>
+| <p>Ugh. What a nuisance...</p>
+|-
+| Cafe_monolog_3
+| [[File:Iroha_Cafe_monolog_3.ogg]]
+| lang="ja" | <p>あんまり<br>騒がしいのは<br>ちょっと……</p>
+| <p>I don't really like big crowds...</p>
+|-
+| Cafe_monolog_4
+| [[File:Iroha_Cafe_monolog_4.ogg]]
+| lang="ja" | <p>どこか、<br>バレなさそうな<br>ところは……</p>
+| <p>Where...can we go hide?</p>
+|-
+| Cafe_monolog_5
+| [[File:Iroha_Cafe_monolog_5.ogg]]
+| lang="ja" | <p>なるほど、ここなら<br>見つからないかも<br>しれませんね。</p>
+| <p>Indeed. I think we'll be safe here.</p>
+|-
+| LogIn_1
+| [[File:Iroha_LogIn_1.ogg]]
+| lang="ja" | <p>はぁ、<br>何ですか当番制って……</p><p>はいはい、<br>頼まれたからには頑張りますよ。</p>
+| <p>*sigh* What? Student duty?</p><p>Okay. I'll do my best to fulfill your request.</p>
+|-
+| LogIn_2
+| [[File:Iroha_LogIn_2.ogg]]
+| lang="ja" | <p>ああ……おかえりなさい、先生<br>ほら、めんどうな仕事が<br>山積みですよ。</p>
+| <p>Oh... Welcome, Sensei...lots of annoying tasks are awaiting you.</p>
+|-
+| Lobby_1
+| [[File:Iroha_Lobby_1.ogg]]
+| lang="ja" | <p>ふぅ……</p><p>ちょっとどこかで<br>サボりません？</p>
+| <p>*sigh*</p><p>Do you wanna slack off somewhere?</p>
+|-
+| Lobby_2
+| [[File:Iroha_Lobby_2.ogg]]
+| lang="ja" | <p>……ちゃんとやってますよ？</p>
+| <p>...You're working hard?</p>
+|-
+| Lobby_3
+| [[File:Iroha_Lobby_3.ogg]]
+| lang="ja" | <p>めんどくさいですが……<br>はぁ、仕方ありませんね。</p>
+| <p>How annoying... *sigh* Fine, then.</p>
+|-
+| Lobby_4
+| [[File:Iroha_Lobby_4.ogg]]
+| lang="ja" | <p>何ですか。<br>やるべきことは、<br>ちゃんと終わらせましたが。</p>
+| <p>...What? I finished everything I was supposed to do.</p>
+|-
+| Lobby_5
+| [[File:Iroha_Lobby_5.ogg]]
+| lang="ja" | <p>どうしました、<br>何か頼み事でも？</p>
+| <p>What brings you here? Can I help you with something?</p>
+|-
+| Season_Birthday_Player
+| [[File:Iroha_Season_Birthday_Player.ogg]]
+| lang="ja" | <p>そんな顔しなくても、<br>今日が先生の誕生日って<br>ことくらい知ってます。</p><p>……仕方ありませんね、<br>祝ってあげますよ。</p><p>お誕生日<br>おめでとうございます、先生。</p>
+| <p>You don't have to make that face. I know it's your birthday today, Sensei.</p><p>...All right, then. Let's celebrate your birthday.</p><p>Happy birthday, Sensei.</p>
+|-
+| Season_Birthday
+| [[File:Iroha_Season_Birthday.ogg]]
+| lang="ja" | <p>……はい？私の誕生日……<br>どこでそれを……</p><p>いえ、<br>別に嫌というわけでは……</p><p>ちょっとあっち行ってて<br>ください、今は近寄ら<br>ないでもらえると。</p>
+| <p>...Huh? My birthday? How did you know...?</p><p>No, I'm not saying I'm upset...</p><p>Please give me some space. I just need some time...</p>
+|-
+| Season_NewYear
+| [[File:Iroha_Season_NewYear.ogg]]
+| lang="ja" | <p>あけまして<br>おめでとうございます。</p><p>そうですね、<br>願うことがあるとすれば……</p><p>今年は面倒ごとが、<br>できるだけ少ないと<br>良いですね。</p>
+| <p>Happy New Year.</p><p>I see. A New Year's wish...</p><p>I hope there will be less annoying things in my life this year.</p>
+|-
+| Season_Xmas
+| [[File:Iroha_Season_Xmas.ogg]]
+| lang="ja" | <p>誰も彼も浮かれてますね……</p><p>いえ、別に嫌というわけでは</p><p>外に出るのもアレですし、<br>仕方ないので先生と<br>一緒にいてあげますか……</p>
+| <p>Everyone seems excited.</p><p>No, it's not that I dislike it.</p><p>I'd rather not go outside. So, I guess I'm staying here with you.</p>
+|-
+| Season_Halloween
+| [[File:Iroha_Season_Halloween.ogg]]
+| lang="ja" | <p>はい、とっとと飴ください。</p><p>……え？ちゃんと言ってほしい？</p><p>はいはい、<br>トリックオアトリートー</p>
+| <p>Okay, give me treats.</p><p>...Huh? You want me to say it, right?</p><p>Okay, okay! Trick or treat!</p>
+|-
+| ExWeapon_Get
+| [[File:Iroha_ExWeapon_Get.ogg]]
+| lang="ja" | <p>はぁ、全く……ここまでしてもらって、<br>本気を出さないわけには<br>いかないじゃないですか。</p>
+| <p>*sigh* Seriously...what do you expect me to do when you act like this?</p>
+|}
+=Memorial lobby=
+{| class="wikitable limitwidth-1024"
+|+
+! rowspan="2" |Name
+! rowspan="2" style="width:300px" |
+! colspan="2" |Transcription
+|-
+! style="width:240px" |Japanese
+! style="width:240px" |English
+|-
+| MemorialLobby_1
+| [[File:Iroha_MemorialLobby_1.ogg]]
+| lang="ja" | <p>ふふっ、中々悪くない<br>場所だと思いませんか。</p>
+| <p>Heehee, not bad, right?</p>
+|-
+| MemorialLobby_2
+| [[File:Iroha_MemorialLobby_2_1.ogg]]<br>[[File:Iroha_MemorialLobby_2_2.ogg]]
+| lang="ja" | <p>このふかふかな座布団、<br>揃えられた幾つものおやつ。</p><p>さらには本や<br>ゲームまでたくさん。</p>
+| <p>Look at this fluffy cushion! This perfect arrangement of diverse snacks...</p><p>And a plethora of books and games.</p>
+|-
+| MemorialLobby_3
+| [[File:Iroha_MemorialLobby_3.ogg]]
+| lang="ja" | <p>私だけの、<br>自慢の休憩スペースです。<br>どうですか？</p>
+| <p>It's my very own hideout. I'm pretty proud of it. What do you think?</p>
+|-
+| MemorialLobby_4
+| [[File:Iroha_MemorialLobby_4.ogg]]
+| lang="ja" | <p>ふふっ、もっと感心して、<br>褒めてくれても良いんですよ？</p>
+| <p>Heehee. Go on, compliment me more! I'm all ears.</p>
+|-
+| MemorialLobby_5
+| [[File:Iroha_MemorialLobby_5_1.ogg]]<br>[[File:Iroha_MemorialLobby_5_2.ogg]]
+| lang="ja" | <p>さて、今は共犯がいる<br>ことですし、今日も今日とて<br>サボるとしましょうか？</p><p>ねえ、先生？</p>
+| <p>Okay! Now that I've lured you here... How about we skip work together, as usual?</p><p>Hm, Sensei?</p>
+|}
+=Event lines=
+{| class="wikitable limitwidth-1024"
+|+
+! rowspan="2" |Name
+! rowspan="2" style="width:300px" |
+! colspan="2" |Transcription
+|-
+! style="width:240px" |Japanese
+! style="width:240px" |English
+|-
+| EventLogin_1
+| [[File:Iroha_EventLogin_1.ogg]]
+| lang="ja" | <p>全く、<br>問題が山積みですね</p>
+| <p>Seriously, there are so many problems.</p>
+|-
+| EventLogin_2
+| [[File:Iroha_EventLogin_2.ogg]]
+| lang="ja" | <p>はぁ……やってられ<br>ませんねー……。</p>
+| <p>*sigh*... I can't do this.</p>
+|-
+| EventLogin_Season_1
+| [[File:Iroha_EventLogin_Season_1.ogg]]
+| lang="ja" | <p>結構時間も<br>経っていますが、<br>間に合いそうですか？</p>
+| <p>It's taking a while. Do you think it can be done in time?</p>
+|-
+| EventLogin_Season_2
+| [[File:Iroha_EventLogin_Season_2.ogg]]
+| lang="ja" | <p>そろそろ仕上げですね……<br>最後まで油断しない<br>ように。</p><p>面倒ごとは嫌なので。</p>
+| <p>It's getting there...but don't let your guard down until the end.</p><p>I hate annoying stuff.</p>
+|-
+| EventLogin_Season_End
+| [[File:Iroha_EventLogin_Season_End.ogg]]
+| lang="ja" | <p>どうやら落ち着いたよう<br>ですね。お疲れ様でした、<br>先生。</p>
+| <p>It looks like the commotion ended. Great work, Sensei.</p>
+|-
+| EventLobby_1
+| [[File:Iroha_EventLobby_1.ogg]]
+| lang="ja" | <p>交流会、何だか<br>めちゃくちゃになって<br>しまいましたね</p>
+| <p>The exchange meeting somehow ended up a mess.</p>
+|-
+| EventLobby_2
+| [[File:Iroha_EventLobby_2.ogg]]
+| lang="ja" | <p>はぁ……少しは後処理を<br>する人の立場も考えて<br>ほしいものです</p>
+| <p>*sigh* ...Why can't they consider the person who has to clean up the mess afterwards?</p>
+|-
+| EventLobby_3
+| [[File:Iroha_EventLobby_3.ogg]]
+| lang="ja" | <p>どうして他所の自治区に<br>来てまで、後始末を……</p>
+| <p>Why am I in still stuck putting things in order in a different district?</p>
+|-
+| EventLobby_4
+| [[File:Iroha_EventLobby_4.ogg]]
+| lang="ja" | <p>こういうのが、<br>中間管理職の<br>辛いところですね</p>
+| <p>I guess this is the pain of a middle manager.</p>
+|-
+| EventMission_Login_1
+| [[File:Iroha_EventMission_Login_1.ogg]]
+| lang="ja" | <p>この辺りが、<br>解決しなくては<br>いけないものですね</p>
+| <p>These are the problems that need to be solved.</p>
+|-
+| EventMission_Login_2
+| [[File:Iroha_EventMission_Login_2.ogg]]
+| lang="ja" | <p>リストの確認、<br>よろしくお願いしますよ。<br>先生</p>
+| <p>Please check the list, Sensei.</p>
+|-
+| EventMission_1
+| [[File:Iroha_EventMission_1.ogg]]
+| lang="ja" | <p>めんどくさいですが……<br>だからこそ、先生がいて<br>良かったですね</p>
+| <p>It's annoying, but I'm glad you're with me, Sensei.</p>
+|-
+| EventMission_2
+| [[File:Iroha_EventMission_2.ogg]]
+| lang="ja" | <p>だーーーるい……</p>
+| <p>It's so hard!</p>
+|-
+| EventMission_Get_1
+| [[File:Iroha_EventMission_Get_1.ogg]]
+| lang="ja" | <p>ふぅ……一件落着、<br>ですかね</p>
+| <p>Phew... One problem resolved.</p>
+|-
+| EventMission_Get_2
+| [[File:Iroha_EventMission_Get_2.ogg]]
+| lang="ja" | <p>解決しましたか、<br>お疲れ様です</p>
+| <p>Did you take care of it? Great job.</p>
+|-
+| EventMission_Day_End
+| [[File:Iroha_EventMission_Day_End.ogg]]
+| lang="ja" | <p>今日はこんなところで<br>しょうか。ま、お疲れ様<br>ですと言っておきます。</p>
+| <p>I think that's enough for today. Great work!</p>
+|}
+=Tactics and growth=
+{{Audio section warning}}
+{| class="wikitable limitwidth-1024"
+|+
+! rowspan="2" |Name
+! rowspan="2" style="width:300px" |
+! colspan="2" |Transcription
+|-
+! style="width:240px" |Japanese
+! style="width:240px" |English
+|-
+| Formation_In_1
+| [[File:Iroha_Formation_In_1.ogg]]
+| lang="ja" | <p>ああー。はい…了解です。</p>
+| <p>Sigh. Sure... Understood.</p>
+|-
+| Formation_In_2
+| [[File:Iroha_Formation_In_2.ogg]]
+| lang="ja" | <p>予想はしてましたが…はあー。</p>
+| <p>This is what I expected it, and yet... sigh.</p>
+|-
+| Formation_Select
+| [[File:Iroha_Formation_Select.ogg]]
+| lang="ja" | 
+| 
+|-
+| CommonSkill
+| [[File:Iroha_CommonSkill.ogg]]
+| lang="ja" | <p>攻撃</p>
+| <p>Attack.</p>
+|-
+| ExSkill_1
+| [[File:Iroha_ExSkill_1.ogg]]
+| lang="ja" | <p>はぁ、えっと、超無敵鉄甲「虎丸」、出撃……</p>
+| <p>Sigh, erm... "Super Invincible Steel Toramaru", charging forward.</p>
+|-
+| ExSkill_2
+| [[File:Iroha_ExSkill_2.ogg]]
+| lang="ja" | <p>はぁ、パトロールでもしますか、虎丸</p>
+| <p>Mm, shall we go on patrol, Toramaru?</p>
+|-
+| ExSkill_3
+| [[File:Iroha_ExSkill_3.ogg]]
+| lang="ja" | <p>超無敵鉄甲「虎丸」、前進<br>……名前、恥ずかしいですね</p>
+| <p>"Super Invincible Steel Toramaru", charging forward... the name's a little embarrassing.</p>
+|-
+| ExSkill_Level_1
+| [[File:Iroha_ExSkill_Level_1.ogg]]
+| lang="ja" | <p>はいはい、行きますよー</p>
+| <p>Yeah, yeah. We're going.</p>
+|-
+| ExSkill_Level_2
+| [[File:Iroha_ExSkill_Level_2.ogg]]
+| lang="ja" | <p>分かりましたよ、もう……</p>
+| <p>I got it already.</p>
+|-
+| ExSkill_Level_3
+| [[File:Iroha_ExSkill_Level_3.ogg]]
+| lang="ja" | <p>仕方ないですね……</p>
+| <p>I guess I have to.</p>
+|-
+| Growup_1
+| [[File:Iroha_Growup_1.ogg]]
+| lang="ja" | <p>サボらせて、くれなさそうですね……仕方ありません</p>
+| <p>I don't suppose you'll let me slack this once off. Alright, fine.</p>
+|-
+| Growup_2
+| [[File:Iroha_Growup_2.ogg]]
+| lang="ja" | <p>……なんですか、私に興味が？</p>
+| <p>What is it? Did I caught your interest?</p>
+|-
+| Growup_3
+| [[File:Iroha_Growup_3.ogg]]
+| lang="ja" | <p>へえ、ここまでしてくれるんですね？</p>
+| <p>Whoa, you would do this for me?</p>
+|-
+| Growup_4
+| [[File:Iroha_Growup_4.ogg]]
+| lang="ja" | <p>ありがとうございます……なんですか、普通にお礼くらい言いますが</p>
+| <p>Thank you very much... What is it? It's not like I can't say thank you.</p>
+|-
+| Relationship_Up_1
+| [[File:Iroha_Relationship_Up_1.ogg]]
+| lang="ja" | <p>ふふっ……まあ、波長が合わないわけではなさそうですね</p>
+| <p>Hehe. Well, it seems like we are on the same wavelength after all.</p>
+|-
+| Relationship_Up_2
+| [[File:Iroha_Relationship_Up_2.ogg]]
+| lang="ja" | <p>まぁ、頼られるのは嫌な気分ではありませんが……</p>
+| <p>I mean, it's not like I hate being relied on...</p>
+|-
+| Relationship_Up_3
+| [[File:Iroha_Relationship_Up_3.ogg]]
+| lang="ja" | <p>そういう積極的なアプローチは、ちょっと……</p>
+| <p>When you approach me that way, it's a little...</p>
+|-
+| Relationship_Up_4
+| [[File:Iroha_Relationship_Up_4.ogg]]
+| lang="ja" | <p>心が通うとは、こういうことなのでしょうか</p>
+| <p>Is this what is like to understand one another?</p>
+|}
+<references group="note"/>
+{{CharacterAudioSeo}}
+[[Category:Characters audio]]

@@ -110,7 +110,13 @@ class PetState:
 
     def do_tactical(self, first=False):
         if not self.grounded or self.dragging: return
-        self.enter("shot", "tactical"); self.say(self.line("tactical_first" if first else "tactical"), 3.6)
+        self.enter("shot", "tactical")
+        if first and not self.isVisible():
+            # spawned while the loading card / title screen still holds her back: keep her spawn
+            # line (the wiki "Gachaget" one) until she is actually on screen, see Pet.tick
+            self.intro_line = self.line("tactical_first")
+        else:
+            self.say(self.line("tactical_first" if first else "tactical"), 3.6)
         self.emit_spawn()                                       # BA tactical start: halo rings + rising light
 
     def spin(self): self.spin_t = 0.0

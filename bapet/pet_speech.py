@@ -8,6 +8,10 @@ import time
 from .combat_config import COMBAT_LINE_COOLDOWN
 from .config import GUST_RADIUS, GUST_SPEED
 from .mathutil import clamp
+from dialogue.wikilines import PART_SEP      # a wiki line split into parts is joined with this ("<p>")
+
+#: the parts of such a line are shown one after another, with this long a pause, in seconds, with no bubble between two parts
+PART_GAP = 0.7
 
 
 class PetSpeech:
@@ -35,9 +39,27 @@ class PetSpeech:
             and not self.ragdoll
 
     def say(self, text, dur=None):
+        """Show a bubble. A line made of several parts ("one<p>two", as the wiki voice lines can be)
+        is shown part by part with a short pause between them; saying anything else drops the rest."""
+        self.say_next = []; self.say_next_at = None
         if not self.cfg["speech"] or not text: return
+        parts = [t.strip() for t in str(text).split(PART_SEP) if t.strip()]
+        if not parts: return
+        if len(parts) == 1: self._show_bubble(parts[0], dur)
+        else:
+            self._show_bubble(parts[0], None); self.say_next = parts[1:]
+
+    def _show_bubble(self, text, dur=None):
         self.bubble = (text, time.time(), dur or (2.4 + 0.05 * len(text))); self.mask_dirty = True
         self.lift_bubble()
+
+    def pump_say(self, now):
+        """Once a part has been shown, wait PART_GAP and then show the next one."""
+        if not getattr(self, "say_next", None) or self.bubble is not None: return
+        if self.say_next_at is None: self.say_next_at = now + PART_GAP; return
+        if now < self.say_next_at: return
+        text = self.say_next.pop(0); self.say_next_at = None
+        self._show_bubble(text)
 
     def say_combat(self, text, dur=None, force=False):
         """Say a reactive combat line - being hit, a bullet going past, reloading - and report whether

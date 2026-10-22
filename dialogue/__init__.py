@@ -18,6 +18,7 @@ Nothing in this package imports PySide, the renderer or the Pet class, so it
 can be imported and tested on its own.
 """
 from .engine import DialogueEngine, as_lines, fill, display_name, load_json, read_json, load_folder
+from .wikilines import WikiLines, PART_SEP
 from .conversation import Conversation, ChatDirector, ConversationField, turn
 from .reactions import StateReactor
 from .system_watcher import SystemWatcher
@@ -28,6 +29,8 @@ __all__ = [
     "Conversation",
     "ConversationField",
     "StateReactor",
+    "WikiLines",
+    "PART_SEP",
     "SystemWatcher",
     "turn",
     "as_lines",

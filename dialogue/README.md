@@ -7,6 +7,7 @@ engine.py            DialogueEngine  - "give me a line for (character, event, st
 conversation.py      Conversation / ChatDirector - pet-to-pet talking
 reactions.py         StateReactor - one-off lines when a computer state starts
 system_watcher.py    SystemWatcher - what the computer is doing -> state tags
+wikilines.py         WikiLines - a student's own wiki voice lines (voicelines/data/*.wiki)
 data/
   default.json                     fallback lines + chat topics, for everyone
   states.json                      fallback lines per state + tag priority
@@ -21,6 +22,21 @@ Editing lines never means touching Python. Drop a `characters/hoshino.json` next
 to `Hoshino.glb` and only Hoshino changes; everything else falls through to
 `default.json`. Adding a game means adding a rule to `watcher_rules.json`, not
 code. Nothing here imports PySide, so it can be imported and tested on its own.
+
+## Her own wiki voice lines come first
+
+Before any of the pools below, `DialogueEngine.get` asks `wikilines.py` for the student's own lines
+from `voicelines/data/<Student>.wiki`:
+
+| event                  | wiki row           |
+|------------------------|--------------------|
+| `tactical_first` (spawn) | `Gachaget`       |
+| `idle`                 | `Cafe_monolog_N`   |
+| `poke`, `petting`      | `Lobby_N`          |
+
+If she has any, one of those is spoken and the pools below are skipped (watcher states included).
+With no file, an unreadable file, or no such row, or for any other event, the chain below runs as before.
+A line made of several `<p>` paragraphs comes back as `part<p>part`; `Pet.say` shows the parts one after another with a pause.
 
 ## Where a line comes from
 

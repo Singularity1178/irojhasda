@@ -1,3 +1,13 @@
+# Students speak their own wiki voice lines
+
+* Dialogue now comes from each student's own voice line file, `voicelines/data/<Student>.wiki` (the wiki's audio page the app already downloads). While that file has a line for the situation, **only** her own lines are used; the generic lines in `dialogue/data` are the fallback.
+* Which wiki row answers which moment: **Gachaget** when she first spawns in (held until she is actually on screen, so it is not spoken behind the loading card), **Cafe_monolog_N** as her idle chatter, **Lobby_N** when she is tapped (click or head-pat). `MemorialLobby_*` / `EventLobby_*` are not mixed into `Lobby`.
+* A line made of several `<p>` paragraphs in the wiki (e.g. Lobby_1: "*sigh*" then "Do you wanna slack off somewhere?") is shown part by part: the first bubble, a short pause (`PART_GAP`, 0.7 s, in `bapet/pet_speech.py`), then the next. A `<br>` inside a paragraph is just a space. Saying anything else drops the unshown parts.
+* Generic fallback whenever the wiki cannot supply a line: no file for that student, a file that cannot be read or parsed (an HTML error page, junk), or no row for that moment. A file downloaded after start-up is picked up within 30 s.
+* Other moments (hover, drag, throw, landing, cut-in, tactical, computer-state reactions, pet-to-pet chat) have no matching wiki row and still use the generic lines.
+* The wiki text is cleaned on the way in: links, bold/italic, templates and HTML tags are removed.
+* New: `dialogue/wikilines.py` (Qt-free), `dialogue/tests/test_wikilines.py`. `DialogueEngine(voicelines=False)` turns it off; `voicelines=<folder>` points it elsewhere.
+
 # Dialogue / voice line data downloaded per student: `voicelines/`
 
 * Every start, the app now fetches the wiki's audio page for each student in `model/` and saves it under `voicelines/data/<Student>.wiki`, e.g. `https://bluearchive.wiki/wiki/Iroha/audio?action=raw` -> `data/Iroha.wiki`, and `Hina (Dress).glb` -> `.../Hina_(Dress)/audio?action=raw` -> `data/Hina (Dress).wiki`.

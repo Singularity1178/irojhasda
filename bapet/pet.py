@@ -113,6 +113,8 @@ class Pet(
         self.light = np.array([-0.5, 0.6, 0.8])
         self.head_px = (BASE_W / 2, BASE_H * 0.3)
         self.bubble = None; self.parts = []
+        self.say_next = []; self.say_next_at = None     # later parts of a multi-part line, see say()
+        self.intro_line = None                          # her spawn line, held until she is on screen
         self.emo = None                        # (kind, t0, dur): the emote balloon over her head (see vfx.emote)
         self.emo_seen = None                   # last emote drawn, so the mask refreshes when it ends
         # earliest time she may next swap her bubble for a reactive combat line, see say_combat
@@ -199,6 +201,10 @@ class Pet(
                 self.say(self.line("idle"))
                 if random.random() < 0.35: self.emote(random.choice(("note", "note", "dots", "idea")), 1.8)
         if self.bubble and now - self.bubble[1] > self.bubble[2]: self.bubble = None; self.mask_dirty = True
+        self.pump_say(now)
+        if self.intro_line is not None and self.isVisible() and self.grounded and not self.dragging:
+            line, self.intro_line = self.intro_line, None
+            if not self.bubble: self.say(line)
         if self.emo and now - self.emo[1] > self.emo[2]: self.emo = None; self.mask_dirty = True
         if self.spin_t >= 0:
             self.spin_t += dt

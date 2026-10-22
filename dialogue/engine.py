@@ -30,6 +30,8 @@ import re
 from collections import deque
 from pathlib import Path
 
+from .wikilines import WikiLines, PART_SEP, EVENT_KEYS
+
 # how many recently used lines to remember per (character, event)
 HISTORY = 6
 
@@ -150,9 +152,14 @@ class DialogueEngine:
     """Resolves one line per call. Character and archetype files load lazily,
     so a folder with no per-character files costs nothing."""
 
-    def __init__(self, root=None, history=HISTORY):
+    def __init__(self, root=None, history=HISTORY, voicelines=None):
         self.root = Path(root) if root else Path(__file__).resolve().parent / "data"
         self.history_size = history
+        # Each student's own wiki voice lines (voicelines/data/<Student>.wiki). For the events in
+        # wikilines.EVENT_KEYS these are used on their own; everything else in this file is the
+        # fallback for a student / event the wiki data does not cover. voicelines=False turns it off.
+        self.wiki = None if voicelines is False else (
+            voicelines if isinstance(voicelines, WikiLines) else WikiLines(voicelines))
 
         default = load_json(self.root / "default.json")
         self.reactions = default.get("reactions") or {}
@@ -258,6 +265,15 @@ class DialogueEngine:
         chain.append(as_lines(self.reactions.get(event)))
         return chain
 
+    def _wiki_pool(self, name, event):
+        """Her own wiki lines for this event, or [] when there are none to use."""
+        if self.wiki is None:
+            return []
+        try:
+            return self.wiki.lines(name, event)
+        except Exception:
+            return []
+
     def _choose(self, name, event, chain):
         """First pool with a line we have not just used; small pools may repeat."""
         recent = self._recent.get((name, event)) or ()
@@ -292,7 +308,10 @@ class DialogueEngine:
         line pool wins, so passing several tags is safe. Returns None when
         nothing at all is defined - callers should cope with silence.
         """
-        line = self._choose(character, event, self._chain(character, event, states))
+        # her own wiki voice line first and alone; the generic chain only when she has none
+        wiki = self._wiki_pool(character, event)
+        chain = [wiki] if wiki else self._chain(character, event, states)
+        line = self._choose(character, event, chain)
         return self._speak(character, event, line, values) if line else None
 
     def get_any(self, character, events, states=(), **values):
@@ -300,6 +319,10 @@ class DialogueEngine:
         events = [events] if isinstance(events, str) else list(events or ())
         pool = []
         for ev in events:
+            wiki = self._wiki_pool(character, ev)
+            if wiki:
+                pool.extend(wiki)
+                continue
             for candidate in self._chain(character, ev, states):
                 pool.extend(candidate)
         key = "+".join(events)
