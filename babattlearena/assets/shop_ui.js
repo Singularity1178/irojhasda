@@ -56,34 +56,34 @@ function itemArt(hue){
 }
 
 // ------------------------------------------------------------------ placeholder data
-const STU=["ハスミ（水着）","セイア（水着）","コハル（水着）","ノゾミ","ヒカリ","ナギサ（水着）","アスナ（制服）","セイア","ミユ（水着）","サクラコ（アイドル）","マリー（アイドル）","ジュンコ（正月）",
- "アコ","アリス","アヤネ","アズサ","ホシノ","イロハ","キサキ","モモイ（メイド）","ニコ","セリカ","シロコ","ワカモ"];
+const STU=["Hasumi (Swimsuit)","Seia (Swimsuit)","Koharu (Swimsuit)","Nozomi","Hikari","Nagisa (Swimsuit)","Asuna (Uniform)","Seia","Miyu (Swimsuit)","Sakurako (Idol)","Mari (Idol)","Junko (New Year)",
+ "Ako","Aris","Ayane","Azusa","Hoshino","Iroha","Kisaki","Momoi (Maid)","Niko","Serika","Shiroko","Wakamo"];
 const TABS=[
- {id:"kakera1",label:"カケラ(文字)",cur:"kakera",amount:3200,name:s=>`${s}のカケラ`,price:[600,600,900],qty:10,per:[3,3,5]},
- {id:"kakera2",label:"カケラ(その他)",cur:"kakera",amount:3200,name:(s,i)=>`汎用カケラ ${String.fromCharCode(65+i%26)}`,price:[300,450],qty:20,per:[10,10,5]},
- {id:"raid",label:"総力戦",cur:"raid",amount:52000,name:(s,i)=>`総力戦サンプル ${i+1}`,price:[1200,2400,3600],qty:3,per:[2,4,6]},
- {id:"final",label:"大決戦",cur:"final",amount:18000,name:(s,i)=>`大決戦サンプル ${i+1}`,price:[1000,1500],qty:3,per:[2,3]},
- {id:"tact",label:"戦術対抗戦",cur:"tact",amount:9800,name:(s,i)=>`対抗戦サンプル ${i+1}`,price:[500,800,1200],qty:5,per:[3,5]},
- {id:"fire",label:"合同火力演習",cur:"fire",amount:4500,name:(s,i)=>`演習サンプル ${i+1}`,price:[400,700],qty:5,per:[5,10]},
- {id:"wanted",label:"指名手配",cur:"wanted",amount:120,name:(s,i)=>`指名手配サンプル ${i+1}`,price:[20,40,60],qty:1,per:[3,5]},
- {id:"cert",label:"熟達証書",cur:"cert",amount:7080,name:s=>`${s}の神名文字`,price:[1800,1800,1800,1800,2400],qty:5,per:[2,2,2,6]},
+ {id:"kakera1",label:"Shards (Name)",cur:"kakera",amount:3200,name:s=>`${s} Shard`,price:[600,600,900],qty:10,per:[3,3,5]},
+ {id:"kakera2",label:"Shards (Other)",cur:"kakera",amount:3200,name:(s,i)=>`Universal Shard ${String.fromCharCode(65+i%26)}`,price:[300,450],qty:20,per:[10,10,5]},
+ {id:"raid",label:"Total Assault",cur:"raid",amount:52000,name:(s,i)=>`Total Assault Sample ${i+1}`,price:[1200,2400,3600],qty:3,per:[2,4,6]},
+ {id:"final",label:"Grand Assault",cur:"final",amount:18000,name:(s,i)=>`Grand Assault Sample ${i+1}`,price:[1000,1500],qty:3,per:[2,3]},
+ {id:"tact",label:"Tac. Challenge",cur:"tact",amount:9800,name:(s,i)=>`Tactical Challenge Sample ${i+1}`,price:[500,800,1200],qty:5,per:[3,5]},
+ {id:"fire",label:"Firing Drill",cur:"fire",amount:4500,name:(s,i)=>`Firing Drill Sample ${i+1}`,price:[400,700],qty:5,per:[5,10]},
+ {id:"wanted",label:"Bounty",cur:"wanted",amount:120,name:(s,i)=>`Bounty Sample ${i+1}`,price:[20,40,60],qty:1,per:[3,5]},
+ {id:"cert",label:"Certificates",cur:"cert",amount:7080,name:s=>`${s} Name Glyph`,price:[1800,1800,1800,1800,2400],qty:5,per:[2,2,2,6]},
 ];
 const CERT_ICON={cert:"cert",kakera:"kakera",raid:"raid",final:"final",tact:"tact",fire:"fire",wanted:"wanted"};
 const ap={now:125,max:240},wallet={credit:395678886,gem:57780};
 let sel=TABS.length-1,filterOn=false,bar;
 
-// 熟達証書 tab: the first twelve cards are copied from the reference screenshot ([name, price, purchases left]); the rest is filler
-const CERT_SEED=[["ハスミ（水着）",1800,2],["セイア（水着）",1800,0],["コハル（水着）",1800,6],["ノゾミ",1800,2],
- ["ヒカリ",1800,2],["ナギサ（水着）",2400,2],["アスナ（制服）",1800,2],["セイア",1800,2],
- ["ミユ（水着）",1800,2],["サクラコ（アイドル）",1800,2],["マリー（アイドル）",1800,2],["ジュンコ（正月）",1800,2]];
-const CERT_MORE=["アコ","アリス","アヤネ","アズサ","ホシノ","イロハ","キサキ","モモイ（メイド）","ニコ","セリカ","シロコ","ワカモ","ヒナ（ドレス）","ミカ","ナツ","ハルナ",
- "イズミ","ヨシミ","ユウカ","ノア","チナツ","ハナエ","マキ","アカリ","カヨコ","ムツキ","ハルカ","ネル","ツバキ","ミドリ","ユズ","アル","レイサ","ツムギ","フウカ","ヒフミ",
- "ウイ","コユキ","リオ","トキ","スミレ","ホタル","クルミ","サオリ","ミサキ","アツコ","ヒヨリ","カズサ","ハナコ","ユメ","チセ","シュン"];
+// Certificates tab: the first twelve cards are copied from the reference screenshot ([name, price, purchases left]); the rest is filler
+const CERT_SEED=[["Hasumi (Swimsuit)",1800,2],["Seia (Swimsuit)",1800,0],["Koharu (Swimsuit)",1800,6],["Nozomi",1800,2],
+ ["Hikari",1800,2],["Nagisa (Swimsuit)",2400,2],["Asuna (Uniform)",1800,2],["Seia",1800,2],
+ ["Miyu (Swimsuit)",1800,2],["Sakurako (Idol)",1800,2],["Mari (Idol)",1800,2],["Junko (New Year)",1800,2]];
+const CERT_MORE=["Ako","Aris","Ayane","Azusa","Hoshino","Iroha","Kisaki","Momoi (Maid)","Niko","Serika","Shiroko","Wakamo","Hina (Dress)","Mika","Natsu","Haruna",
+ "Izumi","Yoshimi","Yuuka","Noa","Chinatsu","Hanae","Maki","Akari","Kayoko","Mutsuki","Haruka","Neru","Tsubaki","Midori","Yuzu","Aru","Reisa","Tsumugi","Fuuka","Hifumi",
+ "Ui","Koyuki","Rio","Toki","Sumire","Hotaru","Kurumi","Saori","Misaki","Atsuko","Hiyori","Kazusa","Hanako","Yume","Chise","Shun"];
 TABS.forEach((t,ti)=>{                       // deterministic placeholder stock per tab
  t.items=[];
  if(t.id==="cert"){
   CERT_SEED.concat(CERT_MORE.map((n,i)=>[n,i%7===3?2400:1800,[2,2,6,2,1,2,4][i%7]])).forEach(([n,price,left],i)=>
-   t.items.push({name:n+"の神名文字",price,qty:5,left,hue:(i*47+ti*61+260)%360}));
+   t.items.push({name:n+" Name Glyph",price,qty:5,left,hue:(i*47+ti*61+260)%360}));
   return;
  }
  for(let i=0;i<16;i++){
@@ -97,7 +97,7 @@ TABS.forEach((t,ti)=>{                       // deterministic placeholder stock 
 const stage=document.createElement("div");stage.id="stage";
 stage.innerHTML=DEFS+`
 <div id="topbar">
- <div id="title">ショップ</div><div id="help" class="hit" title="ヘルプ">?</div>
+ <div id="title">Shop</div><div id="help" class="hit" title="Help">?</div>
  <div id="wallet">
   <div class="cur">${ICONS.energy("ico")}<span class="v" id="apv" style="width:85px"></span>${ICONS.plus("plus hit")}</div>
   <div class="sep" style="margin:0 16px 0 17px"></div>
@@ -105,22 +105,22 @@ stage.innerHTML=DEFS+`
   <div class="sep" style="margin:0 13px 0 32px"></div>
   <div class="cur">${ICONS.gem("ico")}<span class="v" id="gmv" style="width:87px"></span>${ICONS.plus("plus hit")}</div>
   <div class="sep" style="margin:0 19px 0 17px"></div>
-  <div class="tb-btn hit" id="gear" title="設定">${ICONS.gear()}</div>
+  <div class="tb-btn hit" id="gear" title="Settings">${ICONS.gear()}</div>
   <div class="sep" style="margin:0 14px 0 17px"></div>
-  <div class="tb-btn hit" id="home" title="メインメニューへ">${ICONS.home()}</div>
+  <div class="tb-btn hit" id="home" title="To Main Menu">${ICONS.home()}</div>
  </div>
 </div>
-<button id="back" title="戻る" aria-label="Back to main menu">${ICONS.arrow()}</button>
+<button id="back" title="Back" aria-label="Back to main menu">${ICONS.arrow()}</button>
 <div id="tabs"></div>
-<div id="gembuy" class="hit">${ICONS.gembuy()}<div>青輝石購入</div></div>
+<div id="gembuy" class="hit">${ICONS.gembuy()}<div>Buy Pyroxene</div></div>
 <div id="shop">
  <div id="chip"></div>
- <div id="filter" class="hit">${ICONS.filter()}<span>フィルター</span><b>OFF</b></div>
+ <div id="filter" class="hit">${ICONS.filter()}<span>Filter</span><b>OFF</b></div>
  <div id="panel"><div id="grid"></div><div id="bar"><i></i></div></div>
 </div>
 <div id="foot">
- <div class="tm">${ICONS.clock()}<span>初期化まで</span><em id="reset"></em></div>
- <div id="confirm" class="hit">${ICONS.info()}<span>熟達証書の確認</span></div>
+ <div class="tm">${ICONS.clock()}<span>Resets in</span><em id="reset"></em></div>
+ <div id="confirm" class="hit">${ICONS.info()}<span>Check Certificates</span></div>
 </div>
 <div id="toast"></div>`;
 document.body.appendChild(stage);
@@ -154,17 +154,17 @@ function renderGrid(){
   if(filterOn&&it.left<=0)return;
   const c=document.createElement("div");c.className="card"+(it.left<=0?" out":"");
   c.innerHTML=`<div class="nm${it.name.length>14?" sm":""}">${it.name}</div><div class="art">${itemArt(it.hue)}<div class="qty">x${it.qty}</div></div>`+
-   `<div class="left">あと${it.left}回購入可能</div>`+
-   `<div class="buy"><div class="price">${ICONS[CERT_ICON[t.cur]]()}<span>${fmt(it.price)}</span></div><div class="go">購入</div></div>`;
+   `<div class="left">${it.left} purchase${it.left===1?"":"s"} left</div>`+
+   `<div class="buy"><div class="price">${ICONS[CERT_ICON[t.cur]]()}<span>${fmt(it.price)}</span></div><div class="go">Buy</div></div>`;
   $(".buy",c).onclick=()=>buy(t,it,c);
   grid.appendChild(c);
  });
  syncBar();
 }
 function buy(t,it,card){
- if(it.left<=0){toast("購入可能回数がありません");return}
- if(t.amount<it.price){card.classList.remove("shake");void card.offsetWidth;card.classList.add("shake");toast("所持数が足りません");return}
- t.amount-=it.price;it.left--;toast("購入しました（仮）");
+ if(it.left<=0){toast("No purchases remaining");return}
+ if(t.amount<it.price){card.classList.remove("shake");void card.offsetWidth;card.classList.add("shake");toast("Not enough currency");return}
+ t.amount-=it.price;it.left--;toast("Purchased (placeholder)");
  const y=grid.scrollTop;renderWallet();renderGrid();grid.scrollTop=y;syncBar();
 }
 function syncBar(){                           // thin scroll indicator on the panel's right edge
@@ -180,11 +180,11 @@ grid.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
 // ------------------------------------------------------------------ buttons
 $("#back",stage).addEventListener("click",goBack);
 $("#home",stage).addEventListener("click",goBack);
-$("#gear",stage).addEventListener("click",()=>toast("設定（準備中）"));
-$("#help",stage).addEventListener("click",()=>toast("ヘルプ（準備中）"));
-$("#gembuy",stage).addEventListener("click",()=>toast("青輝石購入（準備中）"));
-$("#confirm",stage).addEventListener("click",()=>toast("熟達証書の確認（準備中）"));
-stage.querySelectorAll(".plus").forEach(p=>p.addEventListener("click",()=>toast("チャージ（準備中）")));
+$("#gear",stage).addEventListener("click",()=>toast("Settings (coming soon)"));
+$("#help",stage).addEventListener("click",()=>toast("Help (coming soon)"));
+$("#gembuy",stage).addEventListener("click",()=>toast("Buy Pyroxene (coming soon)"));
+$("#confirm",stage).addEventListener("click",()=>toast("Check Certificates (coming soon)"));
+stage.querySelectorAll(".plus").forEach(p=>p.addEventListener("click",()=>toast("Top up (coming soon)")));
 $("#filter",stage).addEventListener("click",()=>{
  filterOn=!filterOn;const f=$("#filter",stage);f.classList.toggle("on",filterOn);$("b",f).textContent=filterOn?"ON":"OFF";
  grid.scrollTop=0;renderGrid();
@@ -199,7 +199,7 @@ addEventListener("keydown",e=>{if(e.key==="Escape")goBack()});
 
 // ------------------------------------------------------------------ reset timer (placeholder: 27 days 16 hours from opening)
 const end=Date.now()+(27*24+16)*3600e3;
-function tick(){const ms=Math.max(0,end-Date.now()),d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5);$("#reset",stage).textContent=`${d}日${h}時間`}
+function tick(){const ms=Math.max(0,end-Date.now()),d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5);$("#reset",stage).textContent=`${d}d ${h}h`}
 tick();setInterval(tick,30000);
 
 renderTabs();renderWallet();renderGrid();

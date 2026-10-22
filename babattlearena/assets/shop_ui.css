@@ -37,7 +37,7 @@
 #tabs{position:absolute;left:0;top:89px;width:190px}
 .tab{position:relative;height:53px;margin-bottom:12px;width:184px;display:flex;align-items:center;padding-left:26px;gap:4px;
  background:linear-gradient(#ffffff,#f1f4f8);border-radius:0 6px 6px 0;box-shadow:2px 3px 6px rgba(20,40,80,.32);
- font-size:17.5px;font-weight:600;color:#1b2a46;white-space:nowrap;transition:transform .1s,filter .1s}
+ font-size:16px;font-weight:600;color:#1b2a46;white-space:nowrap;transition:transform .1s,filter .1s}
 .tab:hover{filter:brightness(.97);transform:translateX(3px)}
 .tab svg{width:22px;height:22px;flex:none}
 .tab.on{width:189px;background:linear-gradient(#162a4d,#0f2040);color:#ffe36a;font-style:italic;box-shadow:2px 3px 8px rgba(5,15,40,.5)}
@@ -96,7 +96,7 @@
 #foot .tm span{color:#2b72c9}
 #foot .tm em{font-style:normal;margin-left:4px}
 #confirm{position:relative;margin-left:auto;height:40px;width:201px;display:flex;align-items:center;justify-content:flex-start;padding-left:14px;gap:14px;
- font-size:17px;font-weight:600;color:#3a475c;transition:filter .1s}
+ font-size:15px;font-weight:600;color:#3a475c;transition:filter .1s}
 #confirm:before{content:"";position:absolute;inset:0;border-radius:18px;border:2px solid #c9d1dc;background:linear-gradient(#fff,#f3f5f9);
  box-shadow:0 1px 3px rgba(20,30,50,.3);transform:skewX(-8deg);z-index:0}
 #confirm>*{position:relative;z-index:1}
