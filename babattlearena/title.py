@@ -2,16 +2,13 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
 
 from PySide6 import QtGui
 from PySide6.QtCore import QPointF, QRectF, Qt
 
+from sorashop import ICON_PATH as SHOP_ICON
 from .theme import (AF, BLUE, BLUE_D, CYAN, GREY, NAVY, NAVY_D, NOPEN, ORANGE, PINK, RED_T, WHITE, YELLOW, BAWindow,
                     W_BLACK, W_BOLD, clamp, col, ease_back, ease_out, glyph_icon, para, poly_path, rounded, text)
-
-
-SHOP_ICON = Path(__file__).resolve().parent / "assets" / "MP_Shop.png"
 
 
 class TitleScreen(BAWindow):

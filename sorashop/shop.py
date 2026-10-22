@@ -3,7 +3,7 @@
 The scene is rendered by the Spine 3.8 WebGL runtime (assets/spine-webgl.js, the same one the Spine
 folder viewer uses) inside a QtWebEngine view. A tiny localhost server hands the page and the Spine
 files to the view, and receives the page's back button (POST /__back). Everything lives in
-babattlearena/assets/ (the localize/ folder of the original export is deliberately not used).
+sorashop/assets/ (the localize/ folder of the original export is deliberately not used).
 
     * the arrival clip plays, then Idle_01 loops
     * her eyes follow the cursor (Touch_Eye_Key), her head and halo sway a little (Touch_Point_Key)

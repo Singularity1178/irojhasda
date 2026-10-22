@@ -40,7 +40,7 @@ class ArenaManager:
 
     def shop(self):
         if self._shop is None:
-            from .shop import SoraShop
+            from sorashop.shop import SoraShop
             self._shop = SoraShop(self)
         return self._shop
 

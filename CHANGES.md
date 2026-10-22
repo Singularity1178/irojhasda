@@ -1,3 +1,9 @@
+# Sora's shop moved into its own package: `sorashop/`
+
+* `babattlearena/shop.py` is now `sorashop/shop.py`, and the whole `babattlearena/assets/` folder (shop page, `shop_ui.js` / `shop_ui.css`, `spine-webgl.js`, `sora_shop/` export, `MP_Shop.png`) is now `sorashop/assets/`. Nothing in it was shared with the rest of the arena.
+* `sorashop/__init__.py` stays free of Qt and exposes `ASSETS_DIR` and `ICON_PATH`. `babattlearena/title.py` reads the shop icon from `ICON_PATH`; `babattlearena/manager.py` imports `from sorashop.shop import SoraShop`.
+* The shop screen text is in English now (`sorashop/assets/shop_ui.js`).
+
 # Sora's shop on the main menu
 
 * The title screen (main menu) has a new icon button in its top left corner (`babattlearena/assets/MP_Shop.png`). It opens **Sora's shop**, the Spine 3.8 lobby scene, fully rigged and animated: arrival clip then idle, eyes that follow the cursor, head pats (hold the left button on her head) and talk clips (tap her).

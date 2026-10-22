@@ -20,7 +20,7 @@ except ImportError as _e:                           # pragma: no cover
     print('Run:  pip install PySide6 moderngl numpy "pymunk>=7,<8"')
     sys.exit(1)
 
-# Sora's shop (babattlearena/shop.py) shows the Spine scene in a QtWebEngine view. QtWebEngineWidgets has to
+# Sora's shop (sorashop/shop.py) shows the Spine scene in a QtWebEngine view. QtWebEngineWidgets has to
 # be imported before the QApplication exists, so it is done here. Optional: without it the shop icon on
 # the main menu just prints a hint and the rest of the app is unaffected.
 try:
