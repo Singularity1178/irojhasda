@@ -1,3 +1,11 @@
+# Dialogue / voice line data downloaded per student: `voicelines/`
+
+* Every start, the app now fetches the wiki's audio page for each student in `model/` and saves it under `voicelines/data/<Student>.wiki`, e.g. `https://bluearchive.wiki/wiki/Iroha/audio?action=raw` -> `data/Iroha.wiki`, and `Hina (Dress).glb` -> `.../Hina_(Dress)/audio?action=raw` -> `data/Hina (Dress).wiki`.
+* A student whose file is already saved (and not empty) is skipped, so only the first run (or a newly added model) downloads anything. Delete a file to fetch it again.
+* **Text only.** No audio files are downloaded; the saved wikitext holds the dialogue, the voice line names and the audio file names for when playback is added. The text is stored exactly as served, nothing is parsed yet.
+* Never gets in the way: it runs on a background thread (the Now Loading bar does not wait for it), every error is caught and printed with a `[voicelines]` prefix, a failed student is retried next start, a bot-check / HTML reply is never saved as data, files are written atomically, and if the wiki cannot be reached at all the rest are not tried.
+* New: `voicelines/__init__.py` (Qt-free), `test_voicelines.py` (headless, fake network). `multi_single_screen_pet_ba.py` starts it right after the models are found.
+
 # Sora's shop moved into its own package: `sorashop/`
 
 * `babattlearena/shop.py` is now `sorashop/shop.py`, and the whole `babattlearena/assets/` folder (shop page, `shop_ui.js` / `shop_ui.css`, `spine-webgl.js`, `sora_shop/` export, `MP_Shop.png`) is now `sorashop/assets/`. Nothing in it was shared with the rest of the arena.

@@ -69,6 +69,7 @@ from bapet.config import MODEL_DIR
 from bapet.panel import QSS
 from bapet.picker import LoadingSplash
 from bapet.profiles import load_profile
+from voicelines import start_background_sync
 
 
 def find_models(args):
@@ -132,6 +133,14 @@ def main():
             f"No .glb models found in:\n{MODEL_DIR}\n\n"
             f"Put your character models in that folder (it should already exist).")
         return 1
+
+    # Dialogue / voice line text for every student (voicelines/data/<Student>.wiki, from the wiki's
+    # audio page). Already-saved students are skipped. Runs in the background and never blocks or
+    # breaks start-up. Text only: no audio files are downloaded.
+    try:
+        start_background_sync([p.stem for p in paths])
+    except Exception:
+        traceback.print_exc()
 
     # A "Now Loading" card while every model is read and uploaded (that is the slow part).
     splash = None
