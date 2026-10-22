@@ -49,7 +49,8 @@ const ICONS={
 function itemArt(hue){
  const skin=`hsl(${(hue+30)%360} 55% 82%)`,hair=`hsl(${hue} 45% 28%)`,bg=`hsl(${hue} 60% 86%)`;
  return `<svg class="bg" viewBox="0 0 100 100" preserveAspectRatio="none"><rect x="3" y="3" width="94" height="94" rx="14" fill="#fff" opacity=".62"/><path d="M62 3 36 97" stroke="#fff" stroke-width="5" opacity=".8"/></svg>`+
- `<svg class="it" viewBox="0 0 100 110"><polygon points="${HEX}" fill="url(#gHex)" stroke="#5f2fa6" stroke-width="3" stroke-linejoin="round" transform="translate(0 5)"/>`+
+ `<svg class="it" viewBox="0 0 100 110"><polygon points="${HEX}" fill="rgba(60,40,100,.28)" stroke="rgba(60,40,100,.28)" stroke-width="5" stroke-linejoin="round" transform="translate(0 9)"/>`+
+ `<polygon points="${HEX}" fill="url(#gHex)" stroke="#5f2fa6" stroke-width="3" stroke-linejoin="round" transform="translate(0 5)"/>`+
  `<polygon points="${HEX}" fill="url(#gHexIn)" transform="translate(0 5) translate(50 50) scale(.84) translate(-50 -50)"/>`+
  `<circle cx="50" cy="55" r="29" fill="${bg}"/><ellipse cx="50" cy="86" rx="22" ry="15" fill="${hair}"/>`+
  `<circle cx="50" cy="52" r="15" fill="${skin}"/><path d="M34 52a16 16 0 0 1 32 0c-5-8-11-10-16-10s-11 2-16 10z" fill="${hair}"/></svg>`;
@@ -95,7 +96,8 @@ TABS.forEach((t,ti)=>{                       // deterministic placeholder stock 
 
 // ------------------------------------------------------------------ DOM
 const stage=document.createElement("div");stage.id="stage";
-stage.innerHTML=DEFS+`
+const ui=document.createElement("div");ui.id="ui";stage.appendChild(ui);   // #stage is the permanent compositor layer, #ui carries the scale (see shop_ui.css)
+ui.innerHTML=DEFS+`
 <div id="topbar">
  <div id="title">Shop</div><div id="help" class="hit" title="Help">?</div>
  <div id="wallet">
@@ -126,7 +128,7 @@ stage.innerHTML=DEFS+`
 document.body.appendChild(stage);
 const grid=$("#grid",stage),toastEl=$("#toast",stage);
 
-function fit(){const s=innerHeight/745;stage.style.transform=`scale(${s})`;stage.style.width=(innerWidth/s)+"px"}
+function fit(){const s=innerHeight/745;ui.style.transform=`scale(${s})`;ui.style.width=(innerWidth/s)+"px"}
 addEventListener("resize",fit);fit();
 
 let tt=0;

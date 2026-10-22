@@ -133,8 +133,10 @@ function layout(){
  if(resized&&ready)safeDraw();                       // repaint in the same task, so no blank frame is ever presented
 }
 addEventListener("resize",layout);layout();
-const toWorld=e=>{const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
- return {x:cx+((e.clientX-r.left)*d-canvas.width/2)/u,y:cy+(canvas.height/2-(e.clientY-r.top)*d)/u}};
+// the canvas is position:fixed over the whole viewport, so its rect is always (0,0); reading getBoundingClientRect on every
+// pointermove forced a synchronous layout while the UI's hover styles were pending, which stalled the frame loop
+const toWorld=e=>{const d=window.devicePixelRatio||1;
+ return {x:cx+(e.clientX*d-canvas.width/2)/u,y:cy+(canvas.height/2-e.clientY*d)/u}};
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const overHead=p=>ready&&dist(p,{x:boneHead.worldX,y:boneHead.worldY})<=HEAD_R;
 const overBody=p=>p.x>=BODY.x0&&p.x<=BODY.x1&&p.y>=BODY.y0&&p.y<=BODY.y1;
@@ -153,12 +155,13 @@ canvas.addEventListener("pointerup",release);canvas.addEventListener("pointercan
 // cursor crosses a card or tab; each one used to restart Look_01 / LookEnd_01 and snap her eyes back (flicker bursts).
 // So the cursor is tracked at window level instead: she keeps looking at it over the UI, and only lets go when it
 // really leaves the window (after a short grace period, so a quick exit and re-entry does nothing).
-let lookOff=0;
+let lookOff=0,curStyle="";
 const lookOn=()=>{clearTimeout(lookOff);lookOff=0;ptr.in=true;setLook(true)};
 const lookRelease=()=>{if(petting||lookOff)return;lookOff=setTimeout(()=>{lookOff=0;if(petting)return;ptr.in=false;setLook(false)},250)};
 addEventListener("pointermove",e=>{
  if(!ready)return;const p=toWorld(e);ptr.x=p.x;ptr.y=p.y;lookOn();
- canvas.style.cursor=petting?"grabbing":e.target!==canvas?"":overHead(p)?"grab":overBody(p)?"pointer":"default";
+ const cur=petting?"grabbing":e.target!==canvas?"":overHead(p)?"grab":overBody(p)?"pointer":"default";
+ if(cur!==curStyle){curStyle=cur;canvas.style.cursor=cur}      // only touch the style when it changes
 });
 document.documentElement.addEventListener("mouseleave",lookRelease);
 document.documentElement.addEventListener("mouseenter",lookOn);
