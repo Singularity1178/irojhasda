@@ -295,7 +295,7 @@ class PetRender:
         bg = self.bubble_geom()
         eg = self.emote_geom(); rf = self.reload_frac()
         ad = self.anim_debug_panel()[1] if self.cfg.get("anim_debug") else None
-        key = (hash(packed), self.grounded, None if bg is None else (int(bg[0].x()), int(bg[0].y()), int(bg[0].width()), int(bg[0].height())),
+        key = (hash(packed), self.grounded, self.warp_alpha() is not None, None if bg is None else (int(bg[0].x()), int(bg[0].y()), int(bg[0].width()), int(bg[0].height())),
                tuple((int(q["x"]), int(q["y"]), q["kind"]) for q in self.parts if q["life"] >= 0),
                None if eg is None else (int(eg.x()), int(eg.y())), rf is not None,
                None if ad is None else (int(ad.x()), int(ad.y()), int(ad.width()), int(ad.height())))
@@ -314,6 +314,11 @@ class PetRender:
             if rf is not None:
                 rx, ry, rs = self.reload_pos(); rr = int(24 * rs)
                 region = region.united(QtGui.QRegion(QtCore.QRect(int(rx - rr), int(ry - rr), rr * 2, int(rr * 2 + 18 * rs))))
+            wu = self.warp_alpha()
+            if wu is not None:                   # teleport column + floor halo paint outside her silhouette
+                fx_, fy_, ch_, top_ = self._warp_geom()
+                region = region.united(QtGui.QRegion(QtCore.QRect(int(fx_ - self.W * 0.3), int(top_ - ch_ * 0.3),
+                                                                  int(self.W * 0.6), int(fy_ - top_ + ch_ * 0.3 + self.W * 0.12))))
             # A3: particles float outside the silhouette, so fold them into the mask too
             for q in self.parts:
                 if q["life"] < 0: continue
@@ -340,7 +345,12 @@ class PetRender:
             p.setPen(Qt.PenStyle.NoPen); p.setBrush(QtGui.QBrush(g)); p.drawEllipse(QPointF(0, 0), rw, rw); p.restore()
         fancy = bool(self.cfg.get("ba_vfx", True))
         self.paint_back_fx(p, fancy)                                 # floor rings + EX aura, behind her
-        if self.img is not None: p.drawImage(QRectF(0, 0, self.W, self.H), self.img)
+        w_u = self.warp_alpha()
+        if w_u is not None:
+            self.paint_warp_back(p, w_u)                             # light column, behind her
+            if self.img is not None: self.paint_warp_body(p, w_u)    # scan-in + blue flash
+            self.paint_warp_front(p, w_u)                            # scanline + bloom
+        elif self.img is not None: p.drawImage(QRectF(0, 0, self.W, self.H), self.img)
         for q in self.parts:
             if q["life"] < 0 or q["kind"] == "ring": continue
             u = q["life"] / q["max"]
@@ -391,6 +401,95 @@ class PetRender:
         if self.cfg.get("anim_debug"):
             self.anim_debug_draw(p)
         p.end()
+
+    # ---------------- teleport-in (summon) ----------------
+    @staticmethod
+    def _sm(a, b, u):
+        t = clamp((u - a) / (b - a), 0.0, 1.0); return t * t * (3 - 2 * t)
+
+    def _warp_geom(self):
+        fx, fy = self.W / 2, self.H * (1 - self.PADB)
+        ch = self.char_h()
+        return fx, fy, ch, fy - ch * 1.06
+
+    def _warp_reveal_y(self, u):
+        """The scanline: sweeps from her feet to just over her head between u=0.12 and u=0.58."""
+        fx, fy, ch, top = self._warp_geom()
+        k = self._sm(0.12, 0.58, u)
+        return fy + 4 - (fy + 4 - top) * k
+
+    def paint_warp_back(self, p, u):
+        fx, fy, ch, top = self._warp_geom()
+        # column of light: snaps open, holds while she forms, thins and fades
+        a = self._sm(0.0, 0.10, u) * (1.0 - self._sm(0.45, 0.95, u))
+        if a <= 0.01: return
+        wcol = self.W * (0.16 + 0.05 * self._sm(0.0, 0.15, u)) * (1.0 - 0.55 * self._sm(0.5, 0.95, u))
+        ytop = top - ch * 0.25
+        p.save(); p.setPen(Qt.PenStyle.NoPen)
+        for width, rgb, aa in ((wcol * 1.0, vfx.BA_SKY, 70), (wcol * 0.45, (200, 238, 255), 120), (wcol * 0.14, vfx.WHITE, 170)):
+            lg = QtGui.QLinearGradient(fx - width, 0, fx + width, 0)
+            lg.setColorAt(0.0, vfx.qc(rgb, 0)); lg.setColorAt(0.5, vfx.qc(rgb, aa * a)); lg.setColorAt(1.0, vfx.qc(rgb, 0))
+            p.setBrush(QtGui.QBrush(lg))
+            # tapered towards the top so the column has no hard end
+            path = QtGui.QPainterPath(QPointF(fx - width, fy))
+            path.lineTo(fx - width * 0.55, ytop + ch * 0.25); path.lineTo(fx, ytop)
+            path.lineTo(fx + width * 0.55, ytop + ch * 0.25); path.lineTo(fx + width, fy); path.closeSubpath()
+            p.drawPath(path)
+        # a pale glow pool at her feet
+        vfx.glow(p, fx, fy, self.W * 0.26, vfx.BA_SKY, 110 * a)
+        # thin turning halo on the floor (BA tactical circle), small and short-lived
+        ha = self._sm(0.02, 0.15, u) * (1.0 - self._sm(0.55, 0.9, u))
+        if ha > 0.01:
+            p.translate(fx, fy); p.scale(1.0, 0.28); p.rotate(u * 140)
+            pn = vfx.pen(vfx.BA_SKY, 210 * ha, 3.0); pn.setDashPattern([5, 4]); p.setPen(pn); p.setBrush(vfx.NOBRUSH)
+            r = self.W * (0.2 + 0.06 * self._sm(0.0, 0.4, u))
+            p.drawEllipse(QPointF(0, 0), r, r)
+            p.setPen(vfx.pen(vfx.WHITE, 150 * ha, 1.6)); p.drawEllipse(QPointF(0, 0), r * 0.78, r * 0.78)
+        p.restore()
+
+    def paint_warp_body(self, p, u):
+        rect = QRectF(0, 0, self.W, self.H)
+        ry = self._warp_reveal_y(u)
+        # silhouette tinted pale blue, fading as she settles in
+        tint = 1.0 - self._sm(0.35, 0.92, u)
+        p.save()
+        p.setClipRect(QRectF(0, ry, self.W, self.H - ry))
+        p.setOpacity(0.35 + 0.65 * self._sm(0.1, 0.55, u))
+        p.drawImage(rect, self.img)
+        p.restore()
+        if tint > 0.01:
+            sil = QtGui.QImage(self.img.size(), QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+            sil.setDevicePixelRatio(self.img.devicePixelRatio())
+            sil.fill(QtGui.QColor(185, 232, 255))
+            q = QtGui.QPainter(sil)
+            q.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_DestinationIn)
+            q.drawImage(QRectF(0, 0, sil.width() / sil.devicePixelRatio(), sil.height() / sil.devicePixelRatio()), self.img)
+            q.end()
+            p.save()
+            p.setClipRect(QRectF(0, ry, self.W, self.H - ry))
+            p.setOpacity(0.85 * tint)
+            p.drawImage(rect, sil)
+            p.restore()
+
+    def paint_warp_front(self, p, u):
+        fx, fy, ch, top = self._warp_geom()
+        ry = self._warp_reveal_y(u)
+        sa = self._sm(0.08, 0.16, u) * (1.0 - self._sm(0.52, 0.66, u))
+        p.save(); p.setPen(Qt.PenStyle.NoPen)
+        if sa > 0.01:                                   # the scanline drawing her in
+            hw = self.W * 0.24
+            lg = QtGui.QLinearGradient(fx - hw, 0, fx + hw, 0)
+            lg.setColorAt(0.0, vfx.qc(vfx.BA_SKY, 0)); lg.setColorAt(0.5, vfx.qc(vfx.WHITE, 235 * sa)); lg.setColorAt(1.0, vfx.qc(vfx.BA_SKY, 0))
+            p.setBrush(QtGui.QBrush(lg)); p.drawRect(QRectF(fx - hw, ry - 1.2, hw * 2, 2.4))
+            gl = QtGui.QLinearGradient(0, ry - 14, 0, ry + 14)
+            gl.setColorAt(0.0, vfx.qc(vfx.BA_SKY, 0)); gl.setColorAt(0.5, vfx.qc(vfx.BA_SKY, 90 * sa)); gl.setColorAt(1.0, vfx.qc(vfx.BA_SKY, 0))
+            p.setBrush(QtGui.QBrush(gl)); p.drawRect(QRectF(fx - hw * 0.8, ry - 14, hw * 1.6, 28))
+        # one gentle bloom over her chest as the scan completes
+        ba = self._sm(0.5, 0.6, u) * (1.0 - self._sm(0.6, 0.9, u))
+        if ba > 0.01:
+            vfx.glow(p, fx, fy - ch * 0.55, ch * 0.42, vfx.BA_SKY, 70 * ba)
+            vfx.glow(p, fx, fy - ch * 0.55, ch * 0.2, vfx.WHITE, 60 * ba)
+        p.restore()
 
     # ---------------- Blue Archive VFX painting ----------------
     def paint_back_fx(self, p, fancy):

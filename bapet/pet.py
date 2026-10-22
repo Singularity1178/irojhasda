@@ -106,6 +106,7 @@ class Pet(
         self.ori_p = self.ori_t = 0.0          # eased pitch/tilt offsets (rad), see render_frame
         self.rot_pitch0 = self.rot_tilt0 = 0.0; self.rot_shift = False
         self.spin_t = -1.0; self.bow = 0.0; self.last_px = 0.0; self.last_py = 0.0
+        self.warp_t = -1.0                 # teleport-in effect clock (pet_state.teleport_in), -1 = off
         # hold-physics drive: smoothed window velocity + 0..1 hold energy
         self.hold_vx = self.hold_vy = 0.0; self.hold_e = 0.0
         self.wind_vx = self.wind_vy = 0.0
@@ -210,6 +211,9 @@ class Pet(
         if self.spin_t >= 0:
             self.spin_t += dt
             if self.spin_t > 1.1: self.spin_t = -1.0
+        if self.warp_t >= 0:
+            self.warp_t += dt; self.mask_dirty = True
+            if self.warp_t > self.WARP_DUR or self.ragdoll or self.dragging: self.warp_t = -1.0
         for q in self.parts:
             q["life"] += dt
             if q["life"] < 0: continue                     # hasn't been reached by the gust yet

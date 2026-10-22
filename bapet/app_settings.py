@@ -64,11 +64,10 @@ class AppSettings:
         c = QtGui.QCursor.pos()
         if not (g.left() <= c.x() <= g.right() and g.top() <= c.y() <= g.bottom()):
             c = g.center()                                   # cursor is on another monitor
+        # teleport in on the surface under the cursor (a window top or the floor) instead of
+        # dropping from the pointer - no fall, no landing slam, no ragdoll
         for p in (self.targets() if pet is None else [pet]):
-            p.rag_clear()
-            p.support = None; p.grounded = False; p.dragging = False
-            p.chat_abort(); p.meet_target = None
-            fx = self.clamp_x(c.x(), p.W)
-            p.set_feet(fx, min(c.y() - 40, g.bottom() - p.H * 0.2))
-            p.vx = p.vy = 0; p.air_kind = "thrown"
-            p.enter("fall"); p.recall()
+            p.teleport_in(c.x(), c.y())
+            p.recall()
+        try: self.restack(force=True)
+        except Exception: pass

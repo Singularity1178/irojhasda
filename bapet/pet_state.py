@@ -121,6 +121,40 @@ class PetState:
 
     def spin(self): self.spin_t = 0.0
 
+    # ---- teleport in (summon / student select deploy) ----
+    WARP_DUR = 0.95          # seconds the materialise effect runs (see PetRender.paint_warp_*)
+
+    def teleport_in(self, fx, near_y=None):
+        """Arrive by BA-style teleport instead of falling: she is placed standing on the
+        surface under (fx, near_y) - a window she can perch on, or the screen floor - and
+        materialises there in a column of pale-blue light. No fall, no landing, no ragdoll."""
+        A = self.A
+        try: self.rag_clear()
+        except Exception: pass
+        self.dragging = False; self.vx = self.vy = 0.0; self.bounces = 0
+        try: self.chat_abort()
+        except Exception: pass
+        self.meet_target = None
+        fx = A.clamp_x(fx, self.W)
+        top, h = A.floor_y(fx), None
+        if near_y is not None:
+            try:
+                for t, hh in A.surfaces(fx, self.cfg.get("perch", True)):     # sorted top -> bottom
+                    if t >= near_y - 8: top, h = t, hh; break
+            except Exception: pass
+        self.set_feet(fx, top)
+        self.grounded = True; self.support = h; self.air_kind = None
+        self.sq = 0.0; self.sq_v = 0.0
+        self.warp_t = 0.0; self.mask_dirty = True
+        self.enter("shot", "tactical")
+        self.emit_warp()
+
+    def warp_alpha(self):
+        """0..1 progress of the teleport effect, or None when she is not materialising."""
+        t = getattr(self, "warp_t", -1.0)
+        if t is None or t < 0: return None
+        return min(1.0, t / self.WARP_DUR)
+
     def launch(self):
         if self.ragdoll: self.rag_shove(2.0); return
         self.ragdoll = False; self.rig.rag_post = []; self.rig.dangle_on = True
@@ -137,11 +171,13 @@ class PetState:
 
         With a wiki file her "summon" line is her own Gachaget voice line instead of "<name> is here.".
         No fixed duration: a wiki line can be long or in several parts, so say() sizes the bubble to it.
-        recall_say tells land() to leave the bubble alone: she arrives by falling, and the landing
-        line would otherwise replace this one a moment after it appeared.
+        recall_say tells land() to leave the bubble alone when she arrives by falling, so the
+        landing line does not replace this one a moment after it appeared. A teleport arrival
+        is already standing, so there is no landing to guard against.
         """
         self.say(self.line("summon"))
-        self.recall_say = True
+        # only keep the guard while she really is in the air
+        self.recall_say = not self.grounded
 
     def play_anim(self, key):
         if self.dragging or not self.grounded: return

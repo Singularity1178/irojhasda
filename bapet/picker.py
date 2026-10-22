@@ -433,12 +433,18 @@ class StudentPicker(QtWidgets.QWidget):
         orig = app.restack
 
         def restack(force=False, _orig=orig):
-            _orig(force)
+            # Students stay ABOVE the formation screen: whenever the screen is (re)raised,
+            # the pets are raised again right after it so they are never hidden behind it.
+            # Their windows are click-through outside their silhouettes, so the screen
+            # underneath still gets every click that does not land on a student.
             if self.isVisible() and not self._closing:
                 now = time.perf_counter()
                 if force or now - self._last_raise > 0.4:
                     self._last_raise = now
                     self.raise_()
+                    _orig(True)
+                    return
+            _orig(force)
         app.restack = restack
 
     def closing(self):
@@ -464,6 +470,8 @@ class StudentPicker(QtWidgets.QWidget):
             self.timer.start(int(1000 / PREVIEW_FPS))
             self._tick()
         self.raise_(); self.activateWindow(); self.setFocus()
+        try: self.app.restack(force=True)               # students back on top of the screen
+        except Exception: pass
 
     def _sync_team(self, team):
         if team is not None:
@@ -608,19 +616,12 @@ class StudentPicker(QtWidgets.QWidget):
         if not p.isVisible():
             try:
                 g = app.resolve_screen()
-                try: p.rag_clear()
-                except Exception: pass
-                p.support = None; p.grounded = False; p.dragging = False
-                try: p.chat_abort()
-                except Exception: pass
-                p.meet_target = None
-                fx = app.clamp_x(g.left() + (g.right() - g.left()) * frac, p.W)
-                p.set_feet(fx, g.top() + min(p.H * 0.95, g.height() * 0.5))
-                p.vx = p.vy = 0; p.air_kind = "thrown"
+                fx = g.left() + (g.right() - g.left()) * frac
+                p.teleport_in(fx)                       # stands on the floor, materialises in light
                 app.set_pet_visible(p, True)
-                p.enter("fall")
                 try: p.recall()
                 except Exception: pass
+                app.restack(force=True)                 # above the Student Select window
             except Exception:
                 traceback.print_exc()
                 try: app.set_pet_visible(p, True)

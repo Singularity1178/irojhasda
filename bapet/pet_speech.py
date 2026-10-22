@@ -196,6 +196,30 @@ class PetSpeech:
         self.emit_sparkles(10, fx, fy - self.char_h() * 0.3, spread=self.W * 0.35, up=1.4)
         self.emit_shards(6, fx, fy - 6, spread=self.W * 0.3, speed=(120, 260), g=260.0)
 
+    def emit_warp(self):
+        """Teleport arrival: two soft floor halos and a few motes drifting up the light column.
+        Deliberately restrained - the column / scanline itself is painted by PetRender."""
+        if not self.vfx_on(): return
+        fx, fy = self.feet_local()
+        ch = self.char_h()
+        sky, pale, white = (110, 205, 255), (170, 225, 255), (255, 255, 255)
+        self.emit_ring(fx, fy, self.W * 0.30, sky, 0.75, 0.26, delay=0.05)
+        self.emit_ring(fx, fy, self.W * 0.20, white, 0.6, 0.26, delay=0.30)
+        sc = math.sqrt(max(0.3, self.cfg["scale"]))
+        for i in range(9):                                   # motes rising inside the column
+            self._part(kind="sparkle", x=fx + random.uniform(-0.11, 0.11) * self.W,
+                       y=fy - random.uniform(0.0, 0.55) * ch, vx=random.uniform(-12, 12) * sc,
+                       vy=-random.uniform(70, 150) * sc, max=random.uniform(0.7, 1.15),
+                       size=random.uniform(4, 8) * sc, col=random.choice((white, pale, sky)),
+                       g=-30.0, drag=1.6, ph=random.uniform(0, math.tau), mask_r=20,
+                       life=-random.uniform(0.0, 0.45))
+        for _ in range(5):                                   # a few triangles flicked off at the end
+            ang = random.uniform(-math.pi * 0.85, -math.pi * 0.15); sp = random.uniform(90, 190) * sc
+            self._part(kind="shard", x=fx + random.uniform(-0.08, 0.08) * self.W, y=fy - ch * random.uniform(0.3, 0.7),
+                       vx=math.cos(ang) * sp, vy=math.sin(ang) * sp, max=random.uniform(0.55, 0.9),
+                       size=random.uniform(4, 7) * sc, col=random.choice((white, sky)), rot=random.uniform(-3, 3),
+                       g=180.0, drag=2.0, hollow=random.random() < 0.4, mask_r=16, life=-0.42)
+
     def combat_popup(self, text, kind="normal", scale=1.0):
         """Floating combat text over her chest on the shared ShotFX overlay."""
         if not self.cfg.get("damage_numbers", True) or not self.isVisible(): return
