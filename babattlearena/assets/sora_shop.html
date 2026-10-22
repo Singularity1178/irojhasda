@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sora's Shop</title>
 <style>
-html,body{margin:0;height:100%;background:#cfe6f7;overflow:hidden;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:#eef3fa;overflow:hidden;user-select:none;-webkit-user-select:none}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #msg{position:fixed;left:0;right:0;bottom:16px;text-align:center;font:600 14px system-ui,"Segoe UI",sans-serif;color:#10306a;pointer-events:none;
  text-shadow:0 0 6px #fff,0 0 6px #fff}
@@ -29,7 +29,10 @@ const BODY={x0:-1100,x1:-120,y0:-200,y1:1750};     // Sora's body: tapping it ma
 const EYE_MAX=60,HEAD_MAX=30;                      // ranges used by the game's own Dev_Look / Dev_Pat clips
 
 
-const ctx=new spine.webgl.ManagedWebGLRenderingContext(canvas,{alpha:true,premultipliedAlpha:true});
+// The canvas is opaque and keeps its buffer: a transparent canvas lets the page backdrop show through any frame that is
+// blank or re-presented by the compositor (resize, hide/show, a dropped frame), which looked like random light-blue flashes.
+const BGC=[0xee/255,0xf3/255,0xfa/255];            // same colour as the page / Qt backdrop, so even a hole in the art is not blue
+const ctx=new spine.webgl.ManagedWebGLRenderingContext(canvas,{alpha:false,premultipliedAlpha:false,preserveDrawingBuffer:true});
 const gl=ctx.gl;
 {const bf=gl.blendFunc.bind(gl);   // keep the premultiplied framebuffer correct (same fix as the viewer)
  gl.blendFunc=(s,d)=>{if(s===gl.DST_COLOR)gl.blendFuncSeparate(s,d,gl.ZERO,gl.ONE);else gl.blendFuncSeparate(s,d,gl.ONE,gl.ONE_MINUS_SRC_ALPHA)}}
@@ -80,7 +83,8 @@ function enter(){                                 // plays one of her two arriva
  talkEnd=0;petting=false;looking=false;ek.x=ek.y=hk.x=hk.y=0;paused=false;
 }
 function leave(){paused=true;document.querySelectorAll("audio").forEach(a=>a.pause())}
-window.shopEnter=enter;window.shopLeave=leave;
+function resume(){paused=false;if(ready)safeDraw()}      // window shown again without a fresh enter() (e.g. restored from minimize)
+window.shopEnter=enter;window.shopLeave=leave;window.shopResume=resume;
 
 let talkEnd=0,lastTalk=0,petting=false,looking=false;
 function startTalk(){
@@ -120,10 +124,13 @@ function onEvent(ev){
 let cx=0,cy=0,u=1;
 function layout(){
  const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
- canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));
+ const nw=Math.max(1,Math.round(r.width*d)),nh=Math.max(1,Math.round(r.height*d));
+ const resized=nw!==canvas.width||nh!==canvas.height;
+ if(resized){canvas.width=nw;canvas.height=nh}       // assigning width/height wipes the canvas, so only when it really changed
  u=Math.max(canvas.height/VIEW.H,canvas.width/(VIEW.x1-VIEW.x0),canvas.height/(VIEW.y1-VIEW.y0));   // same scale as the 745px-tall UI; cover: never past the background
  const hw=canvas.width/u/2,hh=canvas.height/u/2;
  cx=Math.min(VIEW.x1-hw,Math.max(VIEW.x0+hw,VIEW.cx));cy=Math.min(VIEW.y1-hh,Math.max(VIEW.y0+hh,VIEW.cy));
+ if(resized&&ready)safeDraw();                       // repaint in the same task, so no blank frame is ever presented
 }
 addEventListener("resize",layout);layout();
 const toWorld=e=>{const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
@@ -159,12 +166,24 @@ canvas.addEventListener("contextmenu",e=>e.preventDefault());
 
 // ---------- frame ----------
 let last=performance.now();
+function draw(){                                  // clear + draw in one go; nothing that can throw runs between them
+ const w=canvas.width,h=canvas.height;
+ gl.viewport(0,0,w,h);gl.clearColor(BGC[0],BGC[1],BGC[2],1);gl.clear(gl.COLOR_BUFFER_BIT);
+ mvp.ortho2d(cx-w/u/2,cy-h/u/2,w/u,h/u);
+ shader.bind();shader.setUniform4x4f(spine.webgl.Shader.MVP_MATRIX,mvp.values);
+ batcher.begin(shader);renderer.draw(batcher,skeleton);batcher.end();
+}
+function safeDraw(){
+ try{draw()}catch(e){console.error(e);try{if(batcher.isDrawing)batcher.end()}catch(_){}}
+}
 function frame(now){
  requestAnimationFrame(frame);
  const dt=Math.min(0.1,(now-last)/1000);last=now;
  if(paused||!ready)return;
- const w=canvas.width,h=canvas.height;
- gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+ try{update(dt,now)}catch(e){console.error(e)}      // a failing update keeps the previous picture instead of a blank canvas
+ safeDraw();
+}
+function update(dt,now){
  state.update(dt);state.apply(skeleton);
  // cursor-driven bones (the game moves these keys; the skeleton's constraints do the rest)
  let ex=0,ey=0,hx=0,hy=0;
@@ -186,9 +205,6 @@ function frame(now){
  boneEyeKey.x=boneEyeKey.data.x+ek.x;boneEyeKey.y=boneEyeKey.data.y+ek.y;
  boneHeadKey.x=boneHeadKey.data.x+hk.x;boneHeadKey.y=boneHeadKey.data.y+hk.y;
  skeleton.updateWorldTransform();
- mvp.ortho2d(cx-w/u/2,cy-h/u/2,w/u,h/u);
- shader.bind();shader.setUniform4x4f(spine.webgl.Shader.MVP_MATRIX,mvp.values);
- batcher.begin(shader);renderer.draw(batcher,skeleton);batcher.end();
 }
 init();
 </script>

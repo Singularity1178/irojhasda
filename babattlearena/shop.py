@@ -126,7 +126,9 @@ class SoraShop(QtWidgets.QWidget):
         s = self.view.settings()
         s.setAttribute(QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, False)
         s.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
-        self.view.page().setBackgroundColor(QtGui.QColor(207, 230, 247))
+        # the backdrop shows whenever the page has nothing painted yet (first load, re-show after hide); keep it
+        # neutral and equal to sora_shop.html's colour, a light-blue one read as the scene flashing blue
+        self.view.page().setBackgroundColor(QtGui.QColor(0xee, 0xf3, 0xfa))
         lay = QtWidgets.QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(self.view)
@@ -175,6 +177,11 @@ class SoraShop(QtWidgets.QWidget):
             self._drag_off = None
             return
         self.move(QtGui.QCursor.pos() - self._drag_off)
+
+    def showEvent(self, ev):
+        super().showEvent(ev)
+        if self._loaded:        # shown again (also after a minimize): un-pause and repaint the scene right away
+            self.view.page().runJavaScript("window.shopResume && window.shopResume()")
 
     def hideEvent(self, ev):
         self._drag_timer.stop()
