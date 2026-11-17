@@ -118,3 +118,11 @@
 #toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);padding:9px 22px;border-radius:20px;background:rgba(18,32,64,.92);color:#fff;
  font-size:15px;font-weight:700;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none;will-change:opacity}   /* permanent layer: an opacity fade would otherwise create and drop one each time */
 #toast.show{opacity:1}
+
+/* ---------------------------------------------------------------- campaign tabs (Training / Unlocks / Supplies) */
+#desc{display:none;font-size:14px;line-height:18px;font-weight:500;color:#3a475c;max-height:54px;overflow:hidden}
+#desc b{font-weight:800;color:#1b2a46}
+#foot.camp .tm,#foot.camp #confirm{display:none}
+#foot.camp #desc{display:block}
+.card.camp .left{letter-spacing:0}
+.card.camp .qty{font-size:14px}

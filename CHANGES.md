@@ -1,3 +1,17 @@
+# Campaign mode: a roguelite on top of the Battle Arena, paid out at Sora's shop
+
+Full write-up in `CAMPAIGN.md`.
+
+* **Title screen**: a third card, **Campaign** (also `run_campaign.bat`, `--campaign`, and *Campaign…* in the tray menu).
+* **The run**: 3 areas x 4 rooms, the fourth is the area boss. Pick a door (it shows the reward and who is inside), win the room, take the reward, repeat. HP and lives carry over. Rewards are academy **supports** (19 of them, Common / Rare / Epic, they stack and last the run), Credits, Pyroxene, supplies, healing, extra lives. Two rooms have no fight: Sora's field stall and a café break. Clearing the campaign unlocks higher threat levels.
+* **Enemies are the students' own `.glb` models**: everyone you did not put in your squad. Grunts are weakened, elites are tougher and a little bigger, bosses have several HP bars and an escort.
+* **You can drive a student**: WASD, hold LMB to fire at the cursor, RMB / Q for her EX, Space to dash (brief invulnerability), R to reload, 1-4 for supplies, Tab to take over the next squad member, T for manual / autopilot. On autopilot the whole squad uses its own tactics, exactly like an arena team.
+* **Sora's shop is real now**: its first three tabs (Training, Unlocks, Supplies) sell 14 permanent upgrades for Pyroxene and 8 consumables for Credits, and the wallet in its top bar is the campaign's. Purchases are saved to `campaign_save.json`. Opened from the campaign it returns to the campaign. Without QtWebEngine the campaign shows a plain counter with the same stock.
+* **Code**: `babattlearena/campaign_data.py` (rules, pure Python), `campaign_battle.py` (the room, the player-driven fighter, input, overlay, HUD), `campaign.py` (controller and screens). `battle.py` gained three construction hooks; arena matches behave as before (`test_arena_ai.py` still passes).
+* **Fixed on the way** (`babattlearena/effects.py`): the summon beam at the start of every match was painted with `QColor(e["c"])` while `Battle.step` hands it an `(r, g, b)` tuple like every other effect. That raised a `TypeError` on each frame the beam was alive, which dropped the rest of the battlefield for that frame. Arena matches had it too; the campaign plays that intro once per room.
+* **Tests**: `python test_campaign.py` (rules), `--battle` (real rooms without a window, synthetic input, every supply, every screen), `--live` (the whole flow through the real Qt event loop: real key and mouse events, pause, abandon, reward and result screens).
+* **Not done by hand yet**: the balance comes from autopilot runs (table in `CAMPAIGN.md`); nobody has played this build with a keyboard and mouse, and the shop page was exercised in a DOM test against the real server code, not inside QtWebEngine.
+
 # Clicked students use cafe / login lines; summon plays Gachaget
 
 * **Clicked** (poke, and the head-pat) no longer uses the `Lobby_N` voice lines. She now draws from **Cafe_monolog_N**, **Cafe_Act_N** (when her wiki page has any; letter variants like `Cafe_Act_3_a` count) and **LogIn_N**, pooled together. Idle chatter is still Cafe_monolog.

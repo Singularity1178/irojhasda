@@ -91,6 +91,15 @@ class AppUI:
         except Exception:
             traceback.print_exc()
 
+    def show_campaign(self):
+        arena = getattr(self, "arena", None)
+        if arena is None: return
+        try:
+            if arena.battle_active(): arena.pause_menu()
+            else: arena.open_campaign()
+        except Exception:
+            traceback.print_exc()
+
     def take_boot_team(self):
         """The students who would come up at start-up (saved visibility).
 
@@ -271,6 +280,8 @@ class AppUI:
         self._tray_entry(m, "Title Screen\u2026", self.show_title, "\u2302", "#1ea1ff")
         label = "Battle Arena: pause menu\u2026" if arena.battle_active() else "Battle Arena\u2026"
         self._tray_entry(m, label, self.show_arena, "\u2694", "#ff4c68")
+        if not arena.battle_active():
+            self._tray_entry(m, "Campaign\u2026", self.show_campaign, "\u2691", "#966eff")
         m.addSeparator()
 
     @staticmethod

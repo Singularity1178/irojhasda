@@ -3,6 +3,8 @@
     title  ->  Desktop Pets (Student Select)    |   Battle Arena lobby -> battle -> results
                                                           ^      |  rematch / arena menu / title
                                                           +------+
+           ->  Campaign (campaign.py): hub -> doors -> room (a CampaignBattle) -> reward -> doors ... -> result
+           ->  Sora's shop (sorashop/): spends what the campaign earns; returns to wherever it was opened from
 
 While a battle runs the desktop pets are put away (not persisted - cfg['hidden'] is untouched) and
 they come back exactly as they were when you leave the arena for the title screen.
@@ -24,6 +26,8 @@ class ArenaManager:
         self.last_teams = None
         self.saved_visible = None
         self._title = self._lobby = self._settings_win = self._pause = self._results = self._shop = None
+        self.campaign = None                # campaign.Campaign, created the first time it is needed
+        self._shop_origin = None            # "campaign" while the shop was opened from the campaign screens
 
     # ------------------------------------------------------------------ screens
     def title(self):
@@ -44,6 +48,15 @@ class ArenaManager:
             self._shop = SoraShop(self)
         return self._shop
 
+    def campaign_ctl(self):
+        if self.campaign is None:
+            from .campaign import Campaign
+            self.campaign = Campaign(self)
+        return self.campaign
+
+    def _campaign_screen(self):
+        return self.campaign._screen if self.campaign is not None else None
+
     def _hide(self, w):
         if w is not None and w.isVisible():
             try: w.close_animated()
@@ -54,10 +67,25 @@ class ArenaManager:
             self.end_battle()
             self.restore_pets()
         self._hide(self._lobby)
+        self._hide(self._campaign_screen())
         if self._shop is not None: self._shop.hide()
         try: self.app.hide_picker()
         except Exception: pass
         self.title().open()
+
+    def open_campaign(self):
+        """Main menu -> the campaign hub (or the run that is still in progress)."""
+        if self.battle is not None:
+            self.pause_menu(); return
+        try:
+            camp = self.campaign_ctl()
+        except Exception:
+            traceback.print_exc(); return
+        self._hide(self._title); self._hide(self._lobby)
+        if self._shop is not None: self._shop.hide()
+        try: self.app.hide_picker()
+        except Exception: pass
+        camp.open()
 
     def open_desktop_pets(self):
         self._hide(self._title)
@@ -78,28 +106,38 @@ class ArenaManager:
         except Exception: pass
         self.lobby().open()
 
-    def open_shop(self):
-        """Main menu -> Sora's shop (the scene opens where the title screen was)."""
+    def open_shop(self, origin=None):
+        """Main menu (or a campaign screen: origin="campaign") -> Sora's shop. The scene opens where that
+        screen was, and its back arrow returns to it. -> False when the shop cannot be shown (no QtWebEngine);
+        the campaign then falls back to its own plain counter."""
         try:
             shop = self.shop()
         except Exception:
             traceback.print_exc()
             print("Sora's shop needs QtWebEngine:  pip install PySide6   (the full package, not PySide6-Essentials)")
-            return
-        t = self._title
+            return False
+        t = self._campaign_screen() if origin == "campaign" else self._title
         center = t.frameGeometry().center() if t is not None and t.isVisible() else None
+        self._shop_origin = origin
         shop.open(center)
         self._hide(self._title)
+        self._hide(self._campaign_screen())
+        return True
 
     def close_shop(self):
-        """Back arrow in the shop -> main menu."""
+        """Back arrow in the shop -> where it was opened from (main menu or the campaign)."""
         center = None
         if self._shop is not None:
             if self._shop.isVisible():
                 center = self._shop.frameGeometry().center()
             self._shop.hide()
-        t = self.title()
-        t.open()
+        origin, self._shop_origin = self._shop_origin, None
+        if origin == "campaign" and self.campaign is not None:
+            self.campaign.open()
+            t = self.campaign.screen()
+        else:
+            t = self.title()
+            t.open()
         if center is not None:                  # reopen the menu where the (draggable) shop was, kept on screen
             g = t.home()
             x = min(max(center.x() - t.width() // 2, g.left()), g.right() - t.width() + 1)
@@ -170,10 +208,14 @@ class ArenaManager:
             if w is not None:
                 try: w.hide()
                 except Exception: pass
+        if self.campaign is not None: self.campaign.hide_pause()
 
     def pause_menu(self):
         if self.battle is None: return
         if self._results is not None and self._results.isVisible(): return
+        if getattr(self.battle, "campaign", None) is not None:          # a campaign room has its own menu
+            if self.battle.phase != "end": self.campaign_ctl().pause()
+            return
         self.battle.set_paused(True)
         if self._pause is None:
             from .hud import PauseMenu
@@ -182,10 +224,14 @@ class ArenaManager:
 
     def resume(self):
         self._hide(self._pause)
+        if self.campaign is not None: self.campaign.hide_pause()
         if self.battle is not None:
             self.battle.set_paused(False)
 
     def show_results(self, battle):
+        if getattr(battle, "campaign", None) is not None:               # a campaign room: reward screen instead
+            self.campaign_ctl().on_battle_end(battle)
+            return
         if self._results is None:
             from .hud import ResultScreen
             self._results = ResultScreen(self)
@@ -204,6 +250,7 @@ class ArenaManager:
 
     def to_title(self):
         self.end_battle()
+        self._hide(self._campaign_screen())
         self.restore_pets()
         self.title().open()
 

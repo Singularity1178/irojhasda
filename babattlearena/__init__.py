@@ -9,7 +9,10 @@ them mid-fight and everybody re-plans.
 
 Modules
     manager    screen flow (title / lobby / battle / pause / results), pets put away during a match
-    title      the title screen: Desktop Pets or Battle Arena, plus the Sora's shop icon (top left)
+    title      the title screen: Desktop Pets, Battle Arena or Campaign, plus the Sora's shop icon (top left)
+    campaign          the roguelite campaign: controller + hub / doors / reward / stall / result screens
+    campaign_data     its rules (pure Python): save file, permanent upgrades, supplies, supports, room generation
+    campaign_battle   one campaign room: modifiers, enemy tiers, loot, supplies and the student you control
     (Sora's shop, opened from the title screen icon, lives in its own package: sorashop/)
     lobby      team builder with avatar cards, settings, BEGIN BATTLE
     settings   arena rules + the settings screen (battle_arena_settings.json)

@@ -1,8 +1,9 @@
 # Battle Arena
 
-Startup now opens a **title screen** with two options:
+Startup now opens a **title screen** with three options:
 
 * **Desktop Pets**: Student Select and the desktop pets, same as before. The back arrow in Student Select returns to the title.
+* **Campaign**: a roguelite built on the arena. Lead a squad (and drive one student yourself with WASD + mouse if you like) through 12 rooms and 3 bosses, pick supports between rooms, and spend what you earn at Sora's shop on permanent upgrades and supplies. See `CAMPAIGN.md`.
 * **Battle Arena**: a team builder that uses avatar cards (the baked Student Select portraits, not live 3D previews).
   * Left-click a card to add it to the highlighted team. Right-click adds it to the other team. Click a team header to make it the active one.
   * Random / Balance / Clear buttons.
@@ -11,7 +12,7 @@ Startup now opens a **title screen** with two options:
 
 The **shop icon** in the top left corner of the title screen opens **Sora's shop** (`sorashop/shop.py`): the Spine 3.8 lobby scene from `sorashop/assets/sora_shop/` (`.skel`, `.atlas`, two pages; the `localize/` folder is not used), drawn by the Spine WebGL runtime in `sorashop/assets/spine-webgl.js` inside a QtWebEngine view (full `pip install PySide6`). She plays her arrival clip then `Idle_01`; her eyes follow the cursor; hold the left button on her head to pat her (`Pat_01_M`, then `PatEnd_01`); tap her to make her talk (`Talk_01`-`07`). The round dark-blue arrow in the top left corner (or Esc) returns to the title screen. Voice lines play if the `Sora_Shop_*.wav` files are put next to the `.skel`.
 
-`run_battle_arena.bat` (or `--arena`) goes straight to the lobby. The tray menu also has *Title Screen…* and *Battle Arena…* entries.
+`run_battle_arena.bat` (or `--arena`) goes straight to the lobby, `run_campaign.bat` (or `--campaign`) to the campaign hub. The tray menu also has *Title Screen…*, *Battle Arena…* and *Campaign…* entries.
 
 ## The match
 * The screen is the floor and the view is top-down. Students keep their real 3D models, drawn by their own toon renderer through an oblique top-down camera (`babattlearena/topdown.py`).

@@ -33,10 +33,11 @@ GRAV = 1500.0
 
 
 class Battle(QtCore.QObject):
-    def __init__(self, mgr, teams, settings):
+    def __init__(self, mgr, teams, settings, campaign=None):
         super().__init__()
         self.mgr = mgr
         self.app = mgr.app
+        self.campaign = campaign        # None in the arena; campaign_battle.CampaignBattle passes its room context
         self.settings = dict(settings)
         self.teams = [list(teams[0]), list(teams[1])]
         S = self.settings
@@ -86,7 +87,7 @@ class Battle(QtCore.QObject):
             pts, home = spawn_points(self.rect, len(self.teams[team]), team, S["layout"], self.size, rng)
             keep.append((home[0], home[1], self.size * 1.8))
             for i, (e, (x, y)) in enumerate(zip(self.teams[team], pts)):
-                f = Fighter(self, e, team, i, x, y)
+                f = self.make_fighter(e, team, i, x, y)
                 f.brain = Brain(f)
                 f.visible_t = 0.25 + i * 0.22 + team * 0.11
                 self.fighters.append(f)
@@ -108,11 +109,23 @@ class Battle(QtCore.QObject):
         self.timer.timeout.connect(self.tick)
         self.last = time.perf_counter()
 
+    # ------------------------------------------------------------------ construction hooks
+    # The campaign (campaign_battle.py) overrides these three: its own fighters, overlay and HUD bar.
+    def make_fighter(self, entry, team, slot, x, y):
+        return Fighter(self, entry, team, slot, x, y)
+
+    def make_overlay(self):
+        from .hud import ArenaOverlay
+        return ArenaOverlay(self)
+
+    def make_hud(self):
+        from .hud import ArenaHUD
+        return ArenaHUD(self)
+
     # ------------------------------------------------------------------ lifecycle
     def start(self):
-        from .hud import ArenaHUD, ArenaOverlay
-        self.overlay = ArenaOverlay(self)
-        self.hud = ArenaHUD(self)
+        self.overlay = self.make_overlay()
+        self.hud = self.make_hud()
         self.overlay.show_on(self.home)
         self.hud.open()
         self.last = time.perf_counter()

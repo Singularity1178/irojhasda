@@ -11,7 +11,12 @@ sorashop/assets/ (the localize/ folder of the original export is deliberately no
     * tap her to make her talk (Talk_01..07, mouth + body clips); voice lines play if the .wav files
       are dropped into assets/sora_shop/ (they are not part of the repo's copy of the export)
     * the Blue Archive shop screen (top bar, category tabs, item grid, filter, footer) is drawn over the scene by
-      assets/shop_ui.css + assets/shop_ui.js; its currencies, items and prices are placeholders and nothing is saved
+      assets/shop_ui.css + assets/shop_ui.js
+    * the first three tabs are the CAMPAIGN shop (babattlearena/campaign_data.py): Training and Unlocks are permanent
+      upgrades paid in Pyroxene, Supplies are consumables paid in Credits. The wallet in the top bar is the campaign
+      save's. The page reads it from GET /__campaign and buys through POST /__buy {"id": ...}; the purchase is made
+      and saved here, on the Python side (campaign_save.json). The remaining tabs are still placeholders.
+    * opened from a campaign screen, the back arrow returns there instead of to the main menu (ArenaManager.close_shop)
     * the round dark-blue arrow in the top left corner (or Esc) goes back to the main menu; the top bar drags the window
 """
 from __future__ import annotations
@@ -40,6 +45,16 @@ class _Bridge(QObject):
     drag = Signal()
 
 
+def _campaign_save():
+    """The campaign save (wallet, upgrades, supplies), or None if the campaign module cannot be loaded."""
+    try:
+        from babattlearena.campaign_data import get_save
+        return get_save()
+    except Exception:
+        traceback.print_exc()
+        return None
+
+
 def _make_handler(bridge):
     root = ASSETS.resolve()
 
@@ -60,8 +75,7 @@ def _make_handler(bridge):
 
         def do_POST(self):
             n = int(self.headers.get("Content-Length") or 0)
-            if n:
-                self.rfile.read(n)
+            body = self.rfile.read(n) if n else b""
             route = urlparse(self.path).path
             if route == "/__back":
                 bridge.back.emit()
@@ -69,6 +83,18 @@ def _make_handler(bridge):
             elif route == "/__drag":
                 bridge.drag.emit()
                 self._send(204)
+            elif route == "/__buy":
+                try:
+                    pid = json.loads(body.decode("utf-8") or "{}").get("id")
+                except Exception:
+                    pid = None
+                save = _campaign_save()
+                if save is None or not isinstance(pid, str):
+                    ok, msg, state = False, "The shop is closed", None
+                else:
+                    ok, msg = save.buy(pid)
+                    state = save.shop_state()
+                self._send(200, json.dumps(dict(ok=ok, msg=msg, state=state)).encode(), "application/json")
             else:
                 self._send(404)
 
@@ -77,6 +103,10 @@ def _make_handler(bridge):
             if path == "/__audio":
                 names = [p.name for p in SHOP_DIR.iterdir() if p.suffix.lower() in AUDIO_EXT] if SHOP_DIR.is_dir() else []
                 return self._send(200, json.dumps(names).encode(), "application/json", head)
+            if path == "/__campaign":
+                save = _campaign_save()
+                state = save.shop_state() if save is not None else None
+                return self._send(200, json.dumps(state).encode(), "application/json", head)
             rel = path.lstrip("/") or PAGE
             f = (root / rel).resolve()
             if root not in f.parents or not f.is_file():
@@ -154,7 +184,8 @@ class SoraShop(QtWidgets.QWidget):
             self._loaded = True
             self.view.load(QUrl(f"{self._base}/{PAGE}"))
         else:
-            self.view.page().runJavaScript("window.shopEnter && window.shopEnter()")
+            self.view.page().runJavaScript("window.shopEnter && window.shopEnter(); "
+                                           "window.campaignRefresh && window.campaignRefresh()")
         self.view.setFocus()
 
     def go_back(self):

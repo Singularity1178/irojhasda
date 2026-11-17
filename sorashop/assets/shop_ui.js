@@ -1,6 +1,10 @@
 "use strict";
 /* Sora's shop - Blue Archive style shop UI (top bar, category tabs, item grid, filter, footer).
-   Placeholder data only: every item, price and currency below is made up, and nothing is saved.
+   The first three tabs are the CAMPAIGN shop and are real: the wallet, the ranks and the stock come from
+   GET /__campaign (campaign_save.json through sorashop/shop.py) and a purchase is POST /__buy {"id": ...}.
+     Training / Unlocks  permanent upgrades, paid in Pyroxene (a couple of unlocks in Credits)
+     Supplies            consumables packed for a run, paid in Credits
+   The other tabs are still placeholders: made-up items and prices, nothing saved.
    Layout lives in shop_ui.css; this file builds the DOM, scales it to the window and handles the clicks. */
 (function(){
 const $=(s,r)=>(r||document).querySelector(s);
@@ -69,9 +73,17 @@ const TABS=[
  {id:"wanted",label:"Bounty",cur:"wanted",amount:120,name:(s,i)=>`Bounty Sample ${i+1}`,price:[20,40,60],qty:1,per:[3,5]},
  {id:"cert",label:"Certificates",cur:"cert",amount:7080,name:s=>`${s} Name Glyph`,price:[1800,1800,1800,1800,2400],qty:5,per:[2,2,2,6]},
 ];
-const CERT_ICON={cert:"cert",kakera:"kakera",raid:"raid",final:"final",tact:"tact",fire:"fire",wanted:"wanted"};
-const ap={now:125,max:240},wallet={credit:395678886,gem:57780};
-let sel=TABS.length-1,filterOn=false,bar;
+const CERT_ICON={cert:"cert",kakera:"kakera",raid:"raid",final:"final",tact:"tact",fire:"fire",wanted:"wanted",gem:"gem",credit:"credit"};
+const ap={now:125,max:240},wallet={credit:0,gem:0};
+let sel=0,filterOn=false,bar;
+// the campaign shop: filled from /__campaign (null until it answers, or when the game has no campaign module)
+let camp=null,busy=false;
+const CAMP_TABS=[
+ {id:"c_training",label:"Training",cur:"gem",camp:"training",hint:"Permanent training for every campaign run. Paid in <b>Pyroxene</b>: bosses, elite guards and Pyroxene doors drop it."},
+ {id:"c_unlocks",label:"Unlocks",cur:"gem",camp:"unlocks",hint:"Permanent unlocks: extra lives, squad and supply slots, re-rolls, a head start."},
+ {id:"c_supplies",label:"Supplies",cur:"credit",camp:"supplies",hint:"Consumables to pack for a run (keys 1-4 in a fight). Paid in <b>Credits</b>: every retired enemy drops some."},
+];
+const KEEP=["kakera1","raid","final","tact","cert"];      // placeholder tabs that stay (eight tabs fit the left column)
 
 // Certificates tab: the first twelve cards are copied from the reference screenshot ([name, price, purchases left]); the rest is filler
 const CERT_SEED=[["Hasumi (Swimsuit)",1800,2],["Seia (Swimsuit)",1800,0],["Koharu (Swimsuit)",1800,6],["Nozomi",1800,2],
@@ -93,6 +105,7 @@ TABS.forEach((t,ti)=>{                       // deterministic placeholder stock 
  }
  if(t.items[1])t.items[1].left=0;
 });
+TABS.splice(0,TABS.length,...CAMP_TABS,...TABS.filter(t=>KEEP.includes(t.id)));
 
 // ------------------------------------------------------------------ DOM
 const stage=document.createElement("div");stage.id="stage";
@@ -123,6 +136,7 @@ ui.innerHTML=DEFS+`
 <div id="foot">
  <div class="tm">${ICONS.clock()}<span>Resets in</span><em id="reset"></em></div>
  <div id="confirm" class="hit">${ICONS.info()}<span>Check Certificates</span></div>
+ <div id="desc"></div>
 </div>
 <div id="toast"></div>`;
 document.body.appendChild(stage);
@@ -136,11 +150,57 @@ function toast(msg){toastEl.textContent=msg;toastEl.classList.add("show");clearT
 
 function renderWallet(){
  $("#apv",stage).textContent=`${ap.now}/${ap.max}`;
+ if(camp){wallet.credit=camp.credits;wallet.gem=camp.pyrox}
  $("#crv",stage).textContent=fmt(wallet.credit);
  $("#gmv",stage).textContent=fmt(wallet.gem);
  const t=TABS[sel];
- $("#chip",stage).innerHTML=ICONS[CERT_ICON[t.cur]]()+`<span>${fmt(t.amount)}</span>`;
+ const amount=t.camp?(t.cur==="gem"?wallet.gem:wallet.credit):t.amount;
+ $("#chip",stage).innerHTML=ICONS[CERT_ICON[t.cur]]()+`<span>${fmt(amount)}</span>`;
+ $("#foot",stage).classList.toggle("camp",!!t.camp);
+ setDesc(null);
 }
+// ------------------------------------------------------------------ campaign tabs
+function setDesc(html){const t=TABS[sel];$("#desc",stage).innerHTML=html||(t.camp?(camp?t.hint:"The campaign save could not be read."):"")}
+function campItems(t){if(!camp)return[];return t.camp==="supplies"?camp.items:camp.upgrades.filter(u=>u.tab===t.camp)}
+function campArt(it){                         // the same hexagon as the placeholder items, with the item's tag instead of a portrait
+ const c1=`hsl(${it.hue} 75% 62%)`,c2=`hsl(${it.hue} 70% 38%)`,big=it.tag.length<=3;
+ return `<svg class="bg" viewBox="0 0 100 100" preserveAspectRatio="none"><rect x="3" y="3" width="94" height="94" rx="14" fill="#fff" opacity=".62"/><path d="M62 3 36 97" stroke="#fff" stroke-width="5" opacity=".8"/></svg>`+
+ `<svg class="it" viewBox="0 0 100 110"><polygon points="${HEX}" fill="rgba(40,50,90,.28)" stroke="rgba(40,50,90,.28)" stroke-width="5" stroke-linejoin="round" transform="translate(0 9)"/>`+
+ `<polygon points="${HEX}" fill="${c1}" stroke="${c2}" stroke-width="3" stroke-linejoin="round" transform="translate(0 5)"/>`+
+ `<polygon points="${HEX}" fill="#fff" opacity=".25" transform="translate(0 5) translate(50 50) scale(.84) translate(-50 -50)"/>`+
+ `<text x="50" y="${big?67:64}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${big?31:23}" font-weight="900" font-style="italic" fill="#fff" stroke="${c2}" stroke-width="1.4" paint-order="stroke">${it.tag}</text></svg>`;
+}
+function renderCamp(t){
+ grid.innerHTML="";
+ campItems(t).forEach(it=>{
+  const maxed=it.price===null,supply=t.camp==="supplies";
+  if(filterOn&&maxed)return;
+  const c=document.createElement("div");c.className="card camp"+(maxed?" out":"");
+  const left=supply?`Owned ${it.level}/${it.max}`+(it.equipped?" \u00b7 packed":""):`Rank ${it.level}/${it.max}`;
+  c.innerHTML=`<div class="nm${it.name.length>14?" sm":""}">${it.name}</div><div class="art">${campArt(it)}<div class="qty">${supply?"x1":"+1"}</div></div>`+
+   `<div class="left">${left}</div>`+
+   `<div class="buy"><div class="price">${ICONS[it.cur==="pyrox"?"gem":"credit"]()}<span>${maxed?"-":fmt(it.price)}</span></div><div class="go">${maxed?"MAX":"Buy"}</div></div>`;
+  c.addEventListener("mouseenter",()=>setDesc(`<b>${it.name}</b> \u2014 ${it.desc}`));
+  $(".buy",c).onclick=()=>buyCamp(it,c);
+  grid.appendChild(c);
+ });
+ syncBar();
+}
+function shake(card){card.classList.remove("shake");void card.offsetWidth;card.classList.add("shake")}
+function buyCamp(it,card){
+ if(busy||!camp)return;
+ if(it.price===null){toast(it.tab==="supplies"?"You can't carry more of these":"Already at max rank");return}
+ if((it.cur==="pyrox"?camp.pyrox:camp.credits)<it.price){shake(card);toast("Not enough "+(it.cur==="pyrox"?"Pyroxene":"Credits"));return}
+ busy=true;
+ fetch("/__buy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:it.id})}).then(r=>r.json()).then(res=>{
+  busy=false;if(res.state)camp=res.state;
+  toast(res.ok?"Purchased: "+res.msg:res.msg);
+  if(res.ok&&window.startTalk){try{window.startTalk()}catch(_){}}      // Sora says thank you
+  const y=grid.scrollTop;renderWallet();renderGrid();grid.scrollTop=y;syncBar();
+ }).catch(()=>{busy=false;toast("The shop is not answering")});
+}
+function loadCamp(){return fetch("/__campaign").then(r=>r.json()).then(s=>{camp=s;renderWallet();renderGrid()}).catch(()=>{})}
+window.campaignRefresh=loadCamp;              // shop.py calls this every time the shop is opened again
 function renderTabs(){
  const el=$("#tabs",stage);el.innerHTML="";
  TABS.forEach((t,i)=>{
@@ -151,7 +211,9 @@ function renderTabs(){
  });
 }
 function renderGrid(){
- const t=TABS[sel];grid.innerHTML="";
+ const t=TABS[sel];
+ if(t.camp){renderCamp(t);return}
+ grid.innerHTML="";
  t.items.forEach((it,i)=>{
   if(filterOn&&it.left<=0)return;
   const c=document.createElement("div");c.className="card"+(it.left<=0?" out":"");
@@ -184,7 +246,8 @@ $("#back",stage).addEventListener("click",goBack);
 $("#home",stage).addEventListener("click",goBack);
 $("#gear",stage).addEventListener("click",()=>toast("Settings (coming soon)"));
 $("#help",stage).addEventListener("click",()=>toast("Help (coming soon)"));
-$("#gembuy",stage).addEventListener("click",()=>toast("Buy Pyroxene (coming soon)"));
+$("#gembuy",stage).addEventListener("click",()=>toast("Pyroxene is earned in the Campaign: bosses and elite guards"));
+grid.addEventListener("mouseleave",()=>setDesc(null));
 $("#confirm",stage).addEventListener("click",()=>toast("Check Certificates (coming soon)"));
 stage.querySelectorAll(".plus").forEach(p=>p.addEventListener("click",()=>toast("Top up (coming soon)")));
 $("#filter",stage).addEventListener("click",()=>{
@@ -205,5 +268,6 @@ function tick(){const ms=Math.max(0,end-Date.now()),d=Math.floor(ms/864e5),h=Mat
 tick();setInterval(tick,30000);
 
 renderTabs();renderWallet();renderGrid();
+loadCamp();
 requestAnimationFrame(syncBar);
 })();

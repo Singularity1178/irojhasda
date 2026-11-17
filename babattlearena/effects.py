@@ -176,7 +176,9 @@ class Effects:
             elif k == "summon":
                 w = 46 * (1 - f * 0.6)
                 g = QtGui.QLinearGradient(QPointF(e["x"] - w / 2, 0), QPointF(e["x"] + w / 2, 0))
-                c = QtGui.QColor(e["c"]); c0 = QtGui.QColor(c); c0.setAlpha(0)
+                # the colour arrives as an (r, g, b) tuple like every other effect's (Battle.step -> summon)
+                c = QtGui.QColor(*e["c"]) if isinstance(e["c"], (tuple, list)) else QtGui.QColor(e["c"])
+                c0 = QtGui.QColor(c); c0.setAlpha(0)
                 c.setAlpha(int(200 * inv))
                 g.setColorAt(0, c0); g.setColorAt(0.5, QtGui.QColor(255, 255, 255, int(230 * inv))); g.setColorAt(1, c0)
                 p.fillRect(QRectF(e["x"] - w / 2, e["y"] - e["h"], w, e["h"]), g)

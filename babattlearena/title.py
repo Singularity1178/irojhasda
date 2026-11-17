@@ -1,4 +1,4 @@
-"""Title screen (placeholder): two choices, Desktop Pets or Battle Arena."""
+"""Title screen (placeholder): three choices - Desktop Pets, Battle Arena or the Campaign."""
 from __future__ import annotations
 
 import math
@@ -7,7 +7,7 @@ from PySide6 import QtGui
 from PySide6.QtCore import QPointF, QRectF, Qt
 
 from sorashop import ICON_PATH as SHOP_ICON
-from .theme import (AF, BLUE, BLUE_D, CYAN, GREY, NAVY, NAVY_D, NOPEN, ORANGE, PINK, RED_T, WHITE, YELLOW, BAWindow,
+from .theme import (AF, BLUE, BLUE_D, CYAN, GREY, NAVY, NAVY_D, NOPEN, ORANGE, PINK, PURPLE, RED_T, WHITE, YELLOW, BAWindow,
                     W_BLACK, W_BOLD, clamp, col, ease_back, ease_out, glyph_icon, para, poly_path, rounded, text)
 
 
@@ -42,16 +42,19 @@ class TitleScreen(BAWindow):
         text(p, QRectF(R.left(), R.top() + 200, R.width(), 24), "SCHALE  \u00b7  FEDERAL INVESTIGATION CLUB", 11,
              col(BLUE_D, 160), W_BOLD, False, AF.AlignCenter, 3)
         # options
-        cw, ch = 380.0, 230.0
-        gap = 40.0
+        cw, ch = 296.0, 230.0
+        gap = 22.0
         y = R.top() + 250
         opts = ((("pets",), "Desktop Pets", "\u30c7\u30b9\u30af\u30c8\u30c3\u30d7\u30da\u30c3\u30c8",
-                 "Student Select & your desktop companions", "heart", BLUE),
+                 "Student Select & companions", "heart", BLUE),
                 (("arena",), "Battle Arena", "\u6226\u8853\u5bfe\u6297\u6226",
-                 "Two teams, top-down, real ragdolls & cover", "cross", RED_T))
+                 "Two teams, ragdolls & cover", "cross", RED_T),
+                (("campaign",), "Campaign", "\u7dcf\u529b\u6226  \u00b7  ROGUELITE",
+                 "Lead a squad through 12 rooms", "flag", PURPLE))
+        n = len(opts)
         for i, (key, title, jp, sub, icon, acc) in enumerate(opts):
             a = ease_out((now - self.t_open - 0.15 - i * 0.1) / 0.4)
-            x = R.center().x() - cw - gap / 2 + i * (cw + gap)
+            x = R.center().x() - (n * cw + (n - 1) * gap) / 2 + i * (cw + gap)
             r = QRectF(x, y + (1 - a) * 30, cw, ch)
             hov = self.hover == key
             if hov: r = r.translated(0, -6)
@@ -66,15 +69,15 @@ class TitleScreen(BAWindow):
             sx = r.left() - 200 + (now * 50) % 60
             while sx < r.right():
                 p.drawLine(QPointF(sx, r.bottom()), QPointF(sx + 100, r.top())); sx += 60
-            glyph_icon(p, QPointF(r.right() - 90, r.center().y() + 10), 70, icon, col(WHITE, 60), 10)
+            glyph_icon(p, QPointF(r.right() - 70, r.center().y() + 10), 62, icon, col(WHITE, 60), 10)
             p.restore()
-            glyph_icon(p, QPointF(r.left() + 66, r.top() + 64), 26, icon, WHITE, 4)
-            text(p, QRectF(r.left() + 40, r.top() + 104, cw - 60, 46), title, 34, WHITE, W_BLACK, True,
-                 AF.AlignLeft | AF.AlignVCenter)
-            text(p, QRectF(r.left() + 38, r.top() + 148, cw - 60, 20), jp, 13, col(WHITE, 220), W_BOLD, False,
-                 AF.AlignLeft | AF.AlignVCenter, 2)
-            text(p, QRectF(r.left() + 30, r.top() + 176, cw - 60, 20), sub, 12, col(WHITE, 235), W_BOLD, False,
-                 AF.AlignLeft | AF.AlignVCenter)
+            glyph_icon(p, QPointF(r.left() + 62, r.top() + 64), 26, icon, WHITE, 4)
+            text(p, QRectF(r.left() + 38, r.top() + 104, cw - 52, 46), title, 30, WHITE, W_BLACK, True,
+                 AF.AlignLeft | AF.AlignVCenter, elide=True)
+            text(p, QRectF(r.left() + 36, r.top() + 148, cw - 52, 20), jp, 12, col(WHITE, 220), W_BOLD, False,
+                 AF.AlignLeft | AF.AlignVCenter, 1.6, elide=True)
+            text(p, QRectF(r.left() + 30, r.top() + 176, cw - 52, 20), sub, 12, col(WHITE, 235), W_BOLD, False,
+                 AF.AlignLeft | AF.AlignVCenter, elide=True)
             if hov:
                 p.setPen(QtGui.QPen(col(YELLOW, 230), 4)); p.setBrush(Qt.BrushStyle.NoBrush); p.drawPath(path)
             p.restore()
@@ -113,6 +116,7 @@ class TitleScreen(BAWindow):
         if k == "shop": self.mgr.open_shop()
         elif k == "pets": self.mgr.open_desktop_pets()
         elif k == "arena": self.mgr.open_lobby()
+        elif k == "campaign": self.mgr.open_campaign()
         elif k == "panel":
             self.close_animated()
             self.app.show_panel()

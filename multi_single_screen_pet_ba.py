@@ -22,7 +22,11 @@ Start-up: the TITLE SCREEN (babattlearena/title.py)
                           screen as the floor - real 3D models, real ragdolls (one life lost per
                           ragdoll, 3 lives by default), props and your actual windows as cover.
                           Pause / stop any time from the bar at the top or the tray icon.
+        Campaign       -> a roguelite built on the arena: lead a squad (and drive one student yourself with
+                          WASD + mouse if you like) through 12 rooms and 3 bosses, pick supports between
+                          rooms, and spend what you earn at Sora's shop on permanent upgrades and supplies.
         --arena       go straight to the Battle Arena lobby
+        --campaign    go straight to the Campaign hub
 
 Desktop Pets / Student Select
     The app no longer throws everybody onto the desktop at once. It opens the
@@ -122,6 +126,8 @@ def main():
                     help="show the start screen even if 'Open at startup' is switched off")
     ap.add_argument("--arena", action="store_true",
                     help="skip the title screen and open the Battle Arena lobby")
+    ap.add_argument("--campaign", action="store_true",
+                    help="skip the title screen and open the Campaign hub")
     args = ap.parse_args()
 
     qapp = QtWidgets.QApplication(sys.argv)
@@ -174,10 +180,14 @@ def main():
         traceback.print_exc()
 
     # Title screen first (Desktop Pets / Battle Arena): everybody is held back until a choice is made.
-    want_picker = args.picker or args.arena or (not args.no_picker and bool(app.cfg.get("picker_on_start", True)))
+    want_picker = (args.picker or args.arena or args.campaign
+                   or (not args.no_picker and bool(app.cfg.get("picker_on_start", True))))
     if want_picker:
         try:
-            if args.arena and getattr(app, "arena", None) is not None:
+            if args.campaign and getattr(app, "arena", None) is not None:
+                app.start_with_title()
+                app.arena.open_campaign()
+            elif args.arena and getattr(app, "arena", None) is not None:
                 app.start_with_title()
                 app.arena.open_lobby()
             else:
