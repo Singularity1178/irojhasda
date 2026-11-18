@@ -158,6 +158,29 @@ class PetRender:
         zt = 1.08 if (self.state == "shot" and self.shot_key == "cutin") else 1.0
         self.zoom += (zt - self.zoom) * (1 - math.exp(-dt * 8))
 
+    def grab_frame(self, R, world, M, cfg):
+        """Draw her and publish the frame: self.raw (buffer), self.img (QImage), self.alpha (mask).
+
+        TWO CHANGES THAT MUST STAY TOGETHER. The frame is drawn upside down (flip_y=True) so GL's
+        bottom-first rows arrive TOP-first, which is what the QImage wants, so the QImage is no
+        longer `.mirrored()` and the alpha mask no longer reads `[::-1, :, 3]`. Reverting or
+        changing one without the other inverts the click-through mask against the picture
+        (clicks land on the empty half of her window). tests: test_renderer_port.PetFrameTests.
+
+        It is read straight into her own reusable buffer, which the QImage and the mask only
+        VIEW (they used to be a new frame-sized bytes object every tick plus a second copy to
+        turn it over). Both are valid until the next grab_frame, i.e. for the rest of this tick.
+        """
+        w, h = R.w, R.h
+        raw = self._fbuf
+        if raw is None or len(raw) != w * h * 4:
+            raw = self._fbuf = bytearray(w * h * 4)
+        R.draw(world, M, self.light, cfg, flip_y=True, into=raw)
+        self.raw = raw
+        self.img = QtGui.QImage(raw, w, h, w * 4, QtGui.QImage.Format.Format_RGBA8888_Premultiplied)
+        self.img.setDevicePixelRatio(self.dpr)              # B8: no resample on fractional-DPI screens
+        self.alpha = np.frombuffer(raw, np.uint8).reshape(h, w, 4)[:, :, 3]
+
     def render_frame(self, cur):
         A, cfg, R = self.A, self.cfg, self.ch.renderer
         # smoothstep, not the raw clock: half-way through the fade the vehicle
@@ -219,12 +242,8 @@ class PetRender:
             az, el = math.radians(cfg["light_az"]), math.radians(cfg["light_el"])
             tgt = np.array([math.cos(el) * math.sin(az), math.sin(el), math.cos(el) * math.cos(az)])
         self.light += (tgt - self.light) * min(1.0, 1.0 - math.exp(-self.dt * 12))     # B7: frame-rate independent
-        raw = R.draw(world, M, self.light, cfg)
         w, h = R.w, R.h
-        self.raw = raw
-        self.img = QtGui.QImage(raw, w, h, w * 4, QtGui.QImage.Format.Format_RGBA8888_Premultiplied).mirrored(False, True)
-        self.img.setDevicePixelRatio(self.dpr)              # B8: no resample on fractional-DPI screens
-        self.alpha = np.frombuffer(raw, np.uint8).reshape(h, w, 4)[::-1, :, 3]
+        self.grab_frame(R, world, M, cfg)
         if self.model.head is not None:
             hxp, hyp = R.project(world[self.model.head][:3, 3], M)
             # stand_h(), not H: the nudge that lifts her head marker off the

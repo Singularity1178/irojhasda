@@ -10,6 +10,7 @@ from .mathutil import mat_bytes, perspective, translate
 from .shaders import FS_MAIN, FS_OUT, VS_MAIN, VS_OUT
 
 IDENTITY_BYTES = mat_bytes(np.eye(4))
+_FLIP_Y = np.diag([1.0, -1.0, 1.0, 1.0])
 
 
 def U(prog, name, val):
@@ -19,14 +20,84 @@ def U(prog, name, val):
     else: u.value = val
 
 
+class _Prog:
+    """One linked shader program, its uniform handles, and the last value sent to each.
+
+    Looking a uniform up by name (a dict miss raises KeyError for the ones the GLSL compiler
+    optimised away) and re-sending a value that has not changed were most of what drawing a
+    student cost on the Python side. Handles are found once, and `set` skips a value that is
+    already there.
+
+    The program is SHARED by every Renderer on a context (see shared_programs), so `last`
+    describes the GL program's state, not one renderer's: anything that is not rewritten on every
+    draw() must keep `last` honest (see Renderer._draw and u_node).
+    """
+    __slots__ = ("prog", "h", "last")
+
+    def __init__(self, ctx, vs, fs):
+        self.prog = ctx.program(vertex_shader=vs, fragment_shader=fs)
+        self.h = {}
+        self.last = {}
+
+    def handle(self, name):
+        try: return self.h[name]
+        except KeyError: pass
+        try: u = self.prog[name]
+        except KeyError: u = None
+        self.h[name] = u
+        return u
+
+    def set(self, name, val):
+        """A scalar or tuple uniform; skipped when it already holds this value."""
+        if self.last.get(name) == val: return
+        self.last[name] = val
+        u = self.handle(name)
+        if u is not None: u.value = val
+
+    def write(self, name, data):
+        """Raw bytes (matrices): always sent, they change every frame."""
+        u = self.handle(name)
+        if u is not None: u.write(data)
+
+    def write_once(self, name, data):
+        """Raw bytes that are usually the same object as last time (the identity node matrix)."""
+        if self.last.get(name) is data: return
+        self.last[name] = data
+        u = self.handle(name)
+        if u is not None: u.write(data)
+
+
+_PROGRAMS = {}        # id(context) -> (context, main program, outline program)
+
+
+def shared_programs(ctx):
+    """The toon and outline programs, compiled ONCE per GL context and shared by every student.
+
+    Each Renderer used to compile and link its own pair - forty programs for twenty models, all
+    identical. Sharing is safe because draw() sets every uniform it relies on before each use.
+    """
+    ent = _PROGRAMS.get(id(ctx))
+    if ent is None or ent[0] is not ctx:
+        ent = _PROGRAMS[id(ctx)] = (ctx, _Prog(ctx, VS_MAIN, FS_MAIN), _Prog(ctx, VS_OUT, FS_OUT))
+    return ent[1], ent[2]
+
+
+def _free(o):
+    try:
+        if o is not None: o.release()
+    except Exception:
+        pass
+
+
 class Renderer:
     FRAC, PADB, FOV = 0.58, 0.07, math.radians(16)
 
     def __init__(self, model, fit, ctx=None):
         self.m, self.fit = model, fit
         ctx = self.ctx = ctx if ctx is not None else moderngl.create_standalone_context(require=330)
-        self.pg = ctx.program(vertex_shader=VS_MAIN, fragment_shader=FS_MAIN)
-        self.po = ctx.program(vertex_shader=VS_OUT, fragment_shader=FS_OUT)
+        self._pg, self._po = shared_programs(ctx)
+        self.pg, self.po = self._pg.prog, self._po.prog
+        self._fb = []                    # the current framebuffers and their attachments (set_size)
         self.bone_tex = ctx.texture((4, model.total_joints), 4, dtype="f4")
         self.bone_tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.bone_tex.write(np.tile(np.eye(4, dtype="f4").T, (model.total_joints, 1, 1)).tobytes())
@@ -50,6 +121,13 @@ class Renderer:
             names = ("in_pos", "in_nrm", "in_uv", "in_joints", "in_weights", "in_onrm")
             p.vao = ctx.vertex_array(self.pg, [(vbo, fmt, *names)], ibo, skip_errors=True)
             p.vao_o = ctx.vertex_array(self.po, [(vbo, fmt, *names)], ibo, skip_errors=True)
+            # per-primitive uniform values, converted once instead of on every draw
+            p.u_skinned = 1 if p.skin >= 0 else 0
+            p.u_base = int(p.base)
+            p.u_basecol = tuple(float(x) for x in p.basecol)
+            p.u_amode = int(p.amode)
+            p.u_cutoff = float(p.cutoff)
+            p.u_shade = float(p.shade)
         self.prims = sorted(model.prims, key=lambda q: q.amode)
         self.fbo = self.fbo_rs = None
         self.w = self.h = 0
@@ -118,9 +196,15 @@ class Renderer:
     def set_size(self, w, h):
         if (w, h) == (self.w, self.h): return
         ctx = self.ctx
+        # Release the old framebuffers AND what was attached to them. Releasing a framebuffer does
+        # not free its renderbuffers: with gc_mode None (a bare Renderer(ctx=None)) every resize
+        # stranded two 4x MSAA buffers and a resolve buffer (3 per resize, measured).
+        # ONLY in that mode, though: under the app's "context_gc" mode ctx.gc() reclaims all of it,
+        # and releasing by hand there makes the next ctx.gc() raise AttributeError ('InvalidObject'
+        # has no attribute 'release', moderngl 5.13) - app.py calls ctx.gc() on every trim.
         if ctx.gc_mode is None:
-            for o in (self.fbo, self.fbo_rs):
-                if o is not None: o.release()
+            for o in self._fb: _free(o)
+        self._fb = []
         self.w, self.h = w, h
         try:
             col = ctx.renderbuffer((w, h), 4, samples=4); dep = ctx.depth_renderbuffer((w, h), samples=4)
@@ -128,7 +212,9 @@ class Renderer:
         except Exception:
             col = ctx.renderbuffer((w, h), 4); dep = ctx.depth_renderbuffer((w, h))
             self.fbo = ctx.framebuffer(color_attachments=[col], depth_attachment=dep)
-        self.fbo_rs = ctx.framebuffer(color_attachments=[ctx.renderbuffer((w, h), 4)])
+        rs = ctx.renderbuffer((w, h), 4)
+        self.fbo_rs = ctx.framebuffer(color_attachments=[rs])
+        self._fb = [self.fbo, self.fbo_rs, col, dep, rs]
         self._project()
 
     def project(self, p3, M):
@@ -136,7 +222,19 @@ class Renderer:
         x, y = v[0] / v[3], v[1] / v[3]
         return (x * 0.5 + 0.5) * self.w, (1 - (y * 0.5 + 0.5)) * self.h
 
-    def draw(self, world, M, light, cfg):
+    def draw(self, world, M, light, cfg, flip_y=False, into=None):
+        """Draw one pose and read the picture back -> RGBA bytes (premultiplied).
+
+        flip_y   render upside down, so the rows come back TOP-first, the way a QImage wants
+                 them. GL hands rows back bottom-first, and turning the picture over afterwards
+                 on the CPU was a full-frame copy per student per frame. Nothing is culled and
+                 no shader looks at the screen, so mirroring the projection is all it takes.
+                 Whoever passes flip_y=True owns the row order from then on: anything that
+                 indexes the rows (the click-through alpha mask) must NOT flip them again
+                 (see PetRender.grab_frame).
+        into     a writable buffer of w*h*4 bytes to read into (returned), instead of
+                 allocating a fresh bytes object the size of the frame every time.
+        """
         ctx, m = self.ctx, self.m
         if m.skins:
             rows = [np.matmul(world[sk.joints], sk.ibm).transpose(0, 2, 1) for sk in m.skins]
@@ -147,23 +245,24 @@ class Renderer:
         ctx.blend_func = moderngl.ONE, moderngl.ONE_MINUS_SRC_ALPHA
         self.PV = self.proj @ self.view
         self.bone_tex.use(1)
-        projection, view, transform = mat_bytes(self.proj), mat_bytes(self.view), mat_bytes(M)
-        for pg in (self.pg, self.po):
-            U(pg, "u_proj", projection); U(pg, "u_view", view); U(pg, "u_model", transform)
-            U(pg, "u_bones", 1)
-        pg = self.pg
+        pg, po = self._pg, self._po
+        proj_b = mat_bytes(_FLIP_Y @ self.proj if flip_y else self.proj)
+        view_b = mat_bytes(self.view); model_b = mat_bytes(M)
+        for q in (pg, po):
+            q.write("u_proj", proj_b); q.write("u_view", view_b); q.write("u_model", model_b)
+            q.set("u_bones", 1)
         lc = np.array([1.03, 1.01, 0.98]) * cfg["exposure"]
-        U(pg, "u_light", tuple(float(x) for x in light)); U(pg, "u_campos", tuple(float(x) for x in self.eye))
-        U(pg, "u_light_col", tuple(float(x) for x in lc))
-        U(pg, "u_shadow_tint", (0.74, 0.78, 0.96)); U(pg, "u_rim_col", (0.72, 0.88, 1.0))
-        U(pg, "u_thresh", float(cfg["toon_threshold"])); U(pg, "u_soft", max(float(cfg["toon_softness"]), 1e-4))
-        U(pg, "u_shadow", float(cfg["shadow_strength"])); U(pg, "u_rim", float(cfg["rim"]))
-        U(pg, "u_spec", float(cfg["spec"])); U(pg, "u_sat", float(cfg["saturation"]))
-        U(pg, "u_deep", float(cfg["deep_shadow"]))
-        U(pg, "u_tex", 0)
-        U(self.po, "u_tex", 0)
-        U(self.po, "u_width", float(cfg["outline_px"]) * self.world_per_px)
-        U(self.po, "u_dark", float(cfg["outline_dark"]))
+        pg.set("u_light", tuple(float(x) for x in light)); pg.set("u_campos", tuple(float(x) for x in self.eye))
+        pg.set("u_light_col", tuple(float(x) for x in lc))
+        pg.set("u_shadow_tint", (0.74, 0.78, 0.96)); pg.set("u_rim_col", (0.72, 0.88, 1.0))
+        pg.set("u_thresh", float(cfg["toon_threshold"])); pg.set("u_soft", max(float(cfg["toon_softness"]), 1e-4))
+        pg.set("u_shadow", float(cfg["shadow_strength"])); pg.set("u_rim", float(cfg["rim"]))
+        pg.set("u_spec", float(cfg["spec"])); pg.set("u_sat", float(cfg["saturation"]))
+        pg.set("u_deep", float(cfg["deep_shadow"]))
+        pg.set("u_tex", 0)
+        po.set("u_tex", 0)
+        po.set("u_width", float(cfg["outline_px"]) * self.world_per_px)
+        po.set("u_dark", float(cfg["outline_dark"]))
         nw = m.node_w
         shown = lambda p: not (p.hide_morph and nw[p.node] >= 0.5)
         # A vehicle (Iroha's tank) only exists in the riding pose, and the pose is
@@ -203,15 +302,24 @@ class Renderer:
         try: self.fbo.depth_mask = True
         except Exception: pass
         ctx.copy_framebuffer(self.fbo_rs, self.fbo)
+        if into is not None:
+            self.fbo_rs.read_into(into, components=4, alignment=1)
+            return into
         return self.fbo_rs.read(components=4, alignment=1)
 
     def _draw(self, p, world, outline, fade=1.0):
-        prog = self.po if outline else self.pg
+        q = self._po if outline else self._pg
         p.tex.use(0)
-        U(prog, "u_skinned", 1 if p.skin >= 0 else 0); U(prog, "u_base", int(p.base))
-        U(prog, "u_node", mat_bytes(world[p.node]) if p.skin < 0 else IDENTITY_BYTES)
-        U(prog, "u_basecol", tuple(float(x) for x in p.basecol))
-        U(prog, "u_alpha_mode", int(p.amode)); U(prog, "u_cutoff", float(p.cutoff))
+        q.set("u_skinned", p.u_skinned); q.set("u_base", p.u_base)
+        if p.u_skinned: q.write_once("u_node", IDENTITY_BYTES)
+        else:
+            # The program is shared and write_once() trusts q.last. A node matrix written here is
+            # NOT the identity, so forget that the identity is loaded - otherwise the next skinned
+            # prim would skip its write and be drawn with THIS prim's matrix.
+            q.last["u_node"] = None
+            q.write("u_node", mat_bytes(world[p.node]))
+        q.set("u_basecol", p.u_basecol)
+        q.set("u_alpha_mode", p.u_amode); q.set("u_cutoff", p.u_cutoff)
         if not outline:
-            U(prog, "u_shade", float(p.shade)); U(prog, "u_fade", float(fade))
+            q.set("u_shade", p.u_shade); q.set("u_fade", float(fade))
         (p.vao_o if outline else p.vao).render()

@@ -12,7 +12,7 @@ from .combat_data import _ATK_STRAT
 from .config import BAKE_FPS, HOLD_DANGLE_WORDS, HOLD_JIGGLE_WORDS, HOLD_SKIP_WORDS
 from .gltf import (
     Clip, GLTF, Prim, Skin, bleed_alpha, compute_normals, foreign_image, norm_name,
-    sample_channel, smooth_normals, toks
+    sample_channel, sample_channels, sample_plan, smooth_normals, toks
 )
 from .mathutil import compose_trs, decompose, pelvis_track
 
@@ -59,6 +59,7 @@ class Model:
             if self.parent[i] >= 0: nchild[self.parent[i]] += 1
         self.is_leaf = nchild == 0                 # leaves are props / weapons, not rig structure
         self.levels = [np.where(depth == d)[0] for d in range(int(depth.max()) + 1)] if N else []
+        self.level_parents = [self.parent[idx] for idx in self.levels]     # looked up once, not per level per frame
 
         # ---- skins ----
         self.skins, base = [], 0
@@ -252,30 +253,64 @@ class Model:
         return float(np.percentile(pts[:, 1], 0.2))
 
     def _bake_clip(self, name, a):
+        """Sample one glTF animation at BAKE_FPS (float32 tracks), then pin / drift / origin.
+
+        Channels that share a time accessor, interpolation kind, target path and value shape
+        (nearly all of them: a clip is ~hundreds of bone channels on one or two time tracks) are
+        sampled in ONE numpy call (gltf.sample_channels) with the key-index/fraction worked out
+        once per accessor (gltf.sample_plan), instead of one call per channel. The result is
+        bit-for-bit what the per-channel loop gave (test_renderer_port.BakeTests).
+        """
         g = self.g
-        chans, dur = [], 0.0
-        for ch in a["channels"]:
-            tg = ch["target"]
-            if "node" not in tg or tg["path"] not in ("translation", "rotation", "scale", "weights"): continue
-            sm = a["samplers"][ch["sampler"]]
-            times = g.accessor(sm["input"]).astype(np.float64).reshape(-1)
-            vals = g.accessor(sm["output"]).astype(np.float64)
-            chans.append((tg["node"], tg["path"], times, vals, sm.get("interpolation", "LINEAR")))
-            dur = max(dur, float(times[-1]))
+        kinds = ("translation", "rotation", "scale", "weights")
+        chs = [ch for ch in a["channels"] if "node" in ch["target"] and ch["target"]["path"] in kinds]
+        tcache = {}                    # time accessor -> float64 key times; this bake only
+        def key_times(i):
+            t = tcache.get(i)
+            if t is None: t = tcache[i] = g.accessor(i).astype(np.float64).reshape(-1)
+            return t
+        dur = 0.0
+        for ch in chs:
+            dur = max(dur, float(key_times(a["samplers"][ch["sampler"]]["input"])[-1]))
         dur = max(dur, 1 / 30)
         F = max(2, int(math.ceil(dur * BAKE_FPS)) + 1)
         ts = np.linspace(0, dur, F)
         cT = np.repeat(self.rest_T.astype(np.float32)[None], F, 0); cQ = np.repeat(self.rest_Q.astype(np.float32)[None], F, 0); cS = np.repeat(self.rest_S.astype(np.float32)[None], F, 0)
         cW = np.repeat(self.node_w0.astype(np.float32)[None], F, 0)
-        for node, path, times, vals, interp in chans:
+        dest = {"translation": cT, "rotation": cQ, "scale": cS}
+        plans = {}            # time accessor -> (idx, u), shared by every channel keyed on it
+        groups = {}           # (time accessor, STEP?, path, value shape) -> ([nodes], [values])
+        seen = set()          # (node, path) already queued in `groups`
+
+        def flush():
+            for (inp, step, path, _shape), (nodes, vals) in groups.items():
+                plan = plans.get(inp)
+                if plan is None: plan = plans[inp] = sample_plan(key_times(inp), ts)
+                v = sample_channels(np.stack(vals), plan[0], plan[1], step, path == "rotation")
+                dest[path][:, nodes] = v.transpose(1, 0, 2)
+            groups.clear(); seen.clear()
+
+        for ch in chs:
+            tg = ch["target"]; node, path = tg["node"], tg["path"]
+            sm = a["samplers"][ch["sampler"]]
+            interp = sm.get("interpolation", "LINEAR")
+            times = key_times(sm["input"])
+            vals = g.accessor(sm["output"]).astype(np.float64)
             if path == "weights":
                 nt = max(1, vals.size // (len(times) * (3 if interp == "CUBICSPLINE" else 1)))
                 cW[:, node] = sample_channel(times, vals.reshape(-1, nt), interp, ts, path)[:, 0]
                 continue
-            v = sample_channel(times, vals, interp, ts, path)
-            if path == "translation": cT[:, node] = v
-            elif path == "rotation": cQ[:, node] = v
-            else: cS[:, node] = v
+            if interp == "CUBICSPLINE" and len(vals) == 3 * len(times):
+                vals = vals[1::3]
+            if len(times) < 2 or len(vals) != len(times) or vals.ndim != 2:
+                flush()                # keep file order if it shares a node with a queued channel
+                dest[path][:, node] = sample_channel(times, vals, interp, ts, path)    # the odd one out
+                continue
+            if (node, path) in seen: flush()       # a later channel must overwrite an earlier one
+            seen.add((node, path))
+            grp = groups.setdefault((sm["input"], interp == "STEP", path, vals.shape), ([], []))
+            grp[0].append(node); grp[1].append(vals)
+        flush()
         c = Clip(name, dur, cT, cQ, cS, cW)
         P = pelvis_track(self.pelvis_chain, c.T, c.Q, c.S)
         d = P[-1] - P[0]; d[1] = 0
@@ -366,9 +401,10 @@ class Model:
         pm = {}
         if post:
             for node, R in post: pm.setdefault(int(self.depth[node]), []).append((node, R))
+        lp = self.level_parents
         for d, idx in enumerate(self.levels):
             if d == 0: W[idx] = L[idx]
-            else: W[idx] = np.matmul(W[self.parent[idx]], L[idx])
+            else: W[idx] = np.matmul(W[lp[d]], L[idx])
             for node, R in pm.get(d, ()):
                 p = W[node][:3, 3].copy()
                 D = np.eye(4); D[:3, :3] = R; D[:3, 3] = p - R @ p

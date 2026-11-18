@@ -163,6 +163,34 @@ class Prim:
     pass
 
 
+def sample_plan(times, ts):
+    """Which two keys each baked frame sits between, and how far along: (idx, u).
+
+    Depends only on the key times, and nearly every channel of a clip is keyed on the same
+    time accessor - so it is worked out once per accessor and shared (Model._bake_clip)
+    instead of once per channel. Same arithmetic as sample_channel, line for line.
+    """
+    idx = np.clip(np.searchsorted(times, ts, side="right") - 1, 0, len(times) - 2)
+    t0, t1 = times[idx], times[idx + 1]
+    u = np.clip((ts - t0) / np.maximum(t1 - t0, 1e-9), 0, 1)[:, None]
+    return idx, u
+
+
+def sample_channels(vals, idx, u, step, rotation):
+    """sample_channel for a whole stack of channels that share one time accessor.
+
+    vals is (channels, keys, dim); returns (channels, frames, dim). Every operation is
+    element-wise, so each channel comes out bit-for-bit what sample_channel gives it alone -
+    it is only the per-call numpy overhead (x a few thousand channels per model) that goes.
+    `idx`/`u` come from sample_plan; CUBICSPLINE values must already be reduced to their
+    value keys (vals[1::3]), and a single-key channel does not belong here.
+    """
+    if step: u = np.zeros_like(u)
+    a, b = vals[:, idx], vals[:, idx + 1]
+    if rotation: return slerp(a, b, u)
+    return a + (b - a) * u
+
+
 def sample_channel(times, vals, interp, ts, path):
     F = len(ts)
     if interp == "CUBICSPLINE" and len(vals) == 3 * len(times):

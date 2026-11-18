@@ -135,6 +135,7 @@ class Pet(
         self.frame_n = 0; self.mask_dirty = True; self.mask_key = None
         self._pt = False; self.dt = 1 / 30.0
         self.img = None; self.alpha = None; self.raw = None
+        self._fbuf = None                      # reusable frame buffer (PetRender.grab_frame)
         self.bfont = QtGui.QFont(); self.bfont.setBold(True)
         # --- ragdoll (see the RAG_* block at the top of this file) ---
         self.ragdoll = False; self.rag_state = "fall"      # "fall" | "getup"
