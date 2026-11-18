@@ -15,7 +15,7 @@ The models are the real thing, but only where it pays. PreviewEngine borrows eac
 own Renderer (the same toon shader the desktop uses), points it at a private off-screen
 framebuffer for one draw, and samples the model's Formation_Idle clip. The renderer's camera /
 framebuffer state is saved and restored around that draw, so a student who is on the desktop
-at the same time is never disturbed. Nothing new is uploaded to the GPU.
+at the same time is never disturbed. Cold previews share the on-demand model pool.
 
 The roster cards are NOT animated. A card's portrait is frame 0 of that same clip, drawn once
 into that same buffer and kept as a flat QImage (Entry.still) - the portrait window cut out of
@@ -55,6 +55,7 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer
 
+from .portraits import Portraits
 from .config import DEFAULTS
 from .mathutil import m4, rot_y, sample_clip, translate
 
@@ -66,7 +67,6 @@ IW, IH = 384, 448                 # off-screen preview size (px), shared by ever
 PREVIEW_FPS = 30
 PREVIEW_CLIP = "Formation_Idle"
 STILL_H = 256                     # ceiling on a stored portrait's height (px)
-STILL_PER_TICK = 1                # new portraits baked per tick, so opening the screen never stalls
 
 STAGE_MIN = 5                     # slots on show even when nobody is picked: the row of "+"
 STAGE_FIT = 10                    # students the stage holds before it has to scroll
@@ -173,17 +173,14 @@ def spinner(p, c, r, now, color=BLUE):
 class Entry:
     """One student on the screen: her pet, her character, and her preview state."""
 
-    def __init__(self, pet, ch, idx):
-        self.pet, self.ch, self.idx = pet, ch, idx
-        self.name = pet.name or ch.name
-        self.file = getattr(getattr(ch, "path", None), "name", self.name)
-        self.clip = PreviewEngine.clip_for(ch)
-        dur = float(getattr(self.clip, "duration", 0.0) or 0.0) if self.clip is not None else 0.0
-        self.t = random.random() * dur if dur > 0 else 0.0
-        self.last = None
-        self.img = None                     # live shot, only while she is on the stage
-        self.still = None                   # her roster portrait: frame 0 of the clip, baked once
-        self.still_state = 0                # 0 = still to bake, 1 = baked, 2 = nothing to bake
+    def __init__(self, slot, portraits):
+        self.slot, self.idx, self.name = slot, slot.index, slot.name
+        self.ch = slot  # Metadata for CombatProfile; never materializes a model.
+        self.file = slot.path.name
+        self.portraits = portraits
+        self.preview = self.clip = self.last = self.img = None
+        self.t = 0.0
+        self.still_state = int(portraits.has(slot))
         self.bbox = None                    # (x0, y0, x1, y1) of her pixels in the preview
         self.bbox_n = 0
         self.failed = False
@@ -194,6 +191,17 @@ class Entry:
         h = 0
         for c in self.name: h = (h * 31 + ord(c)) % 360
         self.hue = h
+
+    @property
+    def still(self):
+        return self.portraits.image(self.slot)
+
+    @still.setter
+    def still(self, image):
+        self.portraits.save(self.slot, image)
+
+    def drop_preview(self):
+        self.preview = self.clip = self.last = self.img = None
 
     def bb(self):
         return self.bbox or (IW * 0.3, IH * 0.33, IW * 0.7, IH * 0.93)
@@ -211,15 +219,9 @@ class PreviewEngine:
 
     def __init__(self, app):
         self.app = app
-        self.ctx = app.ctx
+        self.ctx = None
         self.fbo = self.rs = None
         self.ok = True
-        try:
-            self._alloc()
-        except Exception:
-            traceback.print_exc()
-            print("[picker] could not create the preview framebuffer - cards will show no model.")
-            self.ok = False
 
     def _alloc(self):
         ctx = self.ctx
@@ -335,7 +337,10 @@ class PreviewEngine:
         back afterwards, so a student who is on the desktop at the same time never notices
         being photographed.
         """
-        ch = e.ch; r = ch.renderer; m = ch.model
+        if self.fbo is None:
+            self.ctx = self.app.ctx
+            self._alloc()
+        ch = e.preview; r = ch.renderer; m = ch.model
         saved = {k: getattr(r, k) for k in self.KEYS if hasattr(r, k)}
         has_nw = hasattr(m, "node_w"); nw = getattr(m, "node_w", None)
         try:
@@ -351,9 +356,9 @@ class PreviewEngine:
                 r.ride_fade = 0.0                       # no vehicle in the formation shot
             r.set_fit(fit, 1.0)
             if has_nw and wt is not None: m.node_w = wt  # mouth / face shapes of this frame
-            r.draw(world, M, self.light(), self.app.cfg)
-            self.ctx.copy_framebuffer(self.rs, self.fbo)  # resolve MSAA
-            return self.rs.read(components=4)
+            # draw() already resolves MSAA and returns the pixels. Reading them
+            # again introduced a second synchronous GPU readback per preview.
+            return r.draw(world, M, self.light(), self.app.cfg)
         finally:
             for k, v in saved.items():
                 try: setattr(r, k, v)
@@ -387,7 +392,12 @@ class StudentPicker(QtWidgets.QWidget):
         self.setWindowTitle("Student Select - Desktop Pets")
         self.app = app
         self.engine = PreviewEngine(app)
-        self.entries = [Entry(p, c, i) for i, (p, c) in enumerate(zip(app.pets, app.chars))]
+        self.portraits = Portraits()
+        self.entries = [Entry(s, self.portraits) for s in app.roster]
+        self._previewing = set()
+        self._visible_cards = ()
+        self._prepared = {}
+        self._deployment = 0
         self.team = []
         self.filter = "all"
         self.scroll = self.scroll_target = self.max_scroll = 0.0
@@ -404,7 +414,6 @@ class StudentPicker(QtWidgets.QWidget):
         self.startup = False
         self._closing = False
         self._pending = 0
-        self._baking = None                # the next Entry whose portrait is still missing
         self._last_raise = 0.0
         rnd = random.Random(11)
         self.shapes = [(rnd.random(), rnd.random(), rnd.uniform(10, 44), rnd.uniform(0.004, 0.016),
@@ -476,9 +485,9 @@ class StudentPicker(QtWidgets.QWidget):
     def _sync_team(self, team):
         if team is not None:
             ids = {id(p) for p in team}
-            self.team = [e for e in self.entries if id(e.pet) in ids]
+            self.team = [e for e in self.entries if id(e.slot) in ids]
             return
-        vis = [e for e in self.entries if e.pet.isVisible()]
+        vis = [e for e in self.entries if e.slot.isVisible()]
         if vis:
             self.team = vis
         else:                                # all hidden (Hide all to tray): offer last saved team
@@ -512,6 +521,10 @@ class StudentPicker(QtWidgets.QWidget):
 
     def hideEvent(self, ev):
         self.timer.stop()
+        if not self.app.loading_models: self.app.models.abandon()
+        for e in self._previewing: e.drop_preview()
+        self._previewing.clear()
+        self.stage_live = frozenset()
         super().hideEvent(ev)
         QTimer.singleShot(0, self._after_close)
 
@@ -532,6 +545,8 @@ class StudentPicker(QtWidgets.QWidget):
         if e in self.team:
             self.team.remove(e)
         else:
+            e.failed = False
+            self.app.models.errors.pop(e.slot, None)
             self.team.append(e); e.sel_t = time.perf_counter()
             self._reveal_stage()
 
@@ -562,8 +577,9 @@ class StudentPicker(QtWidgets.QWidget):
         self.team = []; self.update()
 
     def diff(self):
-        adds = sum(1 for e in self.team if not e.pet.isVisible())
-        rec = sum(1 for e in self.entries if e.pet.isVisible() and e not in self.team)
+        selected = {e.slot for e in self.team}
+        adds = sum(1 for e in self.team if not e.slot.isVisible())
+        rec = sum(1 for p in self.app.pets if p.isVisible() and p.slot not in selected)
         return adds, rec
 
     def deploy_state(self):
@@ -589,32 +605,50 @@ class StudentPicker(QtWidgets.QWidget):
         self.team = list(self.entries if entries is None else entries)
         self.deploy()
 
+    def cancel_deployment(self):
+        self._deployment += 1
+        self._pending = 0
+        self._prepared.clear()
+
     def deploy(self):
         """Apply the formation. The screen stays open: it re-reads the desktop as the
         students land, so DEPLOY doubles as a progress bar and as the next decision."""
         if not self.deploy_state()[2]:
             return
+        if len(self.team) > 12 and any(not e.slot.isVisible() for e in self.team):
+            answer = QtWidgets.QMessageBox.question(self, "Deploy a large formation?",
+                f"Deploy {len(self.team)} desktop pets? Each active pet needs CPU and GPU memory. "
+                "A large library does not need to be deployed all at once.")
+            if answer != QtWidgets.QMessageBox.StandardButton.Yes: return
         app = self.app
         want = list(self.team)
+        ready = app.prepare_models([e.slot for e in want if not e.slot.isVisible()])
+        if ready is None: return
+        self._prepared = ready
+        self._deployment += 1
+        ticket = self._deployment
+        order = {e: i for i, e in enumerate(want)}
         for e in self.entries:                          # recall first
-            if e not in want and e.pet.isVisible():
-                try: app.set_pet_visible(e.pet, False)
+            if e not in order and e.slot.isVisible():
+                try: app.set_pet_visible(e.slot, False)
                 except Exception: traceback.print_exc()
-        new = [e for e in want if not e.pet.isVisible()]
+        new = [e for e in want if not e.slot.isVisible()]
         n = len(want)
         self._pending = len(new)
         for j, e in enumerate(new):
-            frac = (want.index(e) + 1) / (n + 1)        # desktop order = formation order
-            QTimer.singleShot(90 + j * 170, lambda e=e, frac=frac: self._drop_in(e, frac))
+            frac = (order[e] + 1) / (n + 1)
+            QTimer.singleShot(90 + j * 170, lambda e=e, frac=frac: self._drop_in(e, frac, ticket))
         if not new:
             self._after_deploy()
         self.update()
 
-    def _drop_in(self, e, frac):
-        app, p = self.app, e.pet
+    def _drop_in(self, e, frac, ticket):
+        if ticket != self._deployment: return
+        app = self.app
         self._pending = max(0, self._pending - 1)
-        if not p.isVisible():
+        if not e.slot.isVisible():
             try:
+                p = app.ensure_pet(e.slot, self._prepared)
                 g = app.resolve_screen()
                 fx = g.left() + (g.right() - g.left()) * frac
                 p.teleport_in(fx)                       # stands on the floor, materialises in light
@@ -624,16 +658,17 @@ class StudentPicker(QtWidgets.QWidget):
                 app.restack(force=True)                 # above the Student Select window
             except Exception:
                 traceback.print_exc()
-                try: app.set_pet_visible(p, True)
-                except Exception: pass
         if self._pending == 0:
             self._after_deploy()
 
     def _after_deploy(self):
+        self._prepared.clear()
         app = self.app
+        app.cfg["deployed"] = [s.name for s in app.roster if s.isVisible()]
+        app.cfg["hidden"] = [s.name for s in app.roster if not s.isVisible()]
         try:
             if app.active is None or not app.active.isVisible():
-                vis = [e.pet for e in self.team if e.pet.isVisible()]
+                vis = [e.slot.pet for e in self.team if e.slot.isVisible()]
                 if vis: app.set_active(vis[0])
             app.restack(force=True)
             if getattr(app.panel, "sync_char_rows", None): app.panel.sync_char_rows()
@@ -646,13 +681,13 @@ class StudentPicker(QtWidgets.QWidget):
     # ------------------------------------------------------------------
     def _filtered(self):
         if self.filter == "selected": return list(self.team)
-        if self.filter == "desktop": return [e for e in self.entries if e.pet.isVisible()]
-        return list(self.entries)
+        if self.filter == "desktop": return [e for e in self.entries if e.slot.isVisible()]
+        return self.entries
 
     def _tick(self):
         now = time.perf_counter()
         dt = clamp(now - self.last_tick, 0.0, 0.1); self.last_tick = now
-        if not self.isVisible() or self.isMinimized(): return
+        if not self.isVisible() or self.isMinimized() or self._closing: return
         self.scroll_target = clamp(self.scroll_target, 0.0, self.max_scroll)
         prev_scroll = self.scroll + self.stage_scroll
         self.scroll += (self.scroll_target - self.scroll) * (1 - math.exp(-dt * 14))
@@ -663,37 +698,35 @@ class StudentPicker(QtWidgets.QWidget):
             lp = self.mapFromGlobal(QtGui.QCursor.pos())
             self._set_hover(self._hit(QPointF(lp.x(), lp.y())))
         hov = self.hover
-        for e in self.entries:
+        mix, decay = 1 - math.exp(-dt * 16), math.exp(-dt * 1.4)
+        for e in self.stage_live.union(self._visible_cards):
             tgt = 1.0 if (hov is not None and hov[0] == "card" and hov[1] is e) else 0.0
-            e.hover += (tgt - e.hover) * (1 - math.exp(-dt * 16))
+            e.hover += (tgt - e.hover) * mix
             if self.rot_drag is None or self.rot_drag[0] is not e:
-                e.turn *= math.exp(-dt * 1.4)          # she turns back to face you
-        team = frozenset(self.team)
-        live = self.stage_live
-        for e in self.entries:
-            # Only the formation animates, and only where it is on screen. Anywhere else she
-            # is just a portrait, so let go of the live frame rather than hold a preview
-            # buffer per student for a stage that scrolled past her.
-            if e.img is not None and (e not in team or (live and e not in live)):
-                e.img = None
-        for e in self.team:
-            if live and e not in live:
-                continue                    # scrolled off the stage: nothing would draw her
+                e.turn *= decay
+        live = self.stage_live.intersection(self.team)
+        for e in self._previewing - live:
+            e.drop_preview()
+        self._previewing = set(live)
+        requested = False
+        for e in sorted(live, key=lambda item: item.idx):
+            if e.failed:
+                continue
+            if e.preview is None:
+                if requested or self.app.loading_models:
+                    continue
+                requested = True
+                try:
+                    ch = self.app.models.poll(e.slot)
+                    if ch is None: continue
+                    e.preview = ch
+                    e.clip = self.engine.clip_for(ch)
+                    if not e.still_state:
+                        self.engine.bake(e)
+                except Exception:
+                    e.failed = True; traceback.print_exc(); continue
             self.engine.render(e, now)
-        self._bake_portraits()
         self.update()
-
-    def _bake_portraits(self):
-        """Fill in the roster portraits a few at a time, so opening the screen never stalls.
-
-        Each card needs exactly one still (PreviewEngine.bake), taken lazily and kept, so
-        this empties itself after the first second or so and then costs one scan per tick.
-        """
-        for _ in range(STILL_PER_TICK):
-            if self._baking is None or self._baking.still_state:
-                self._baking = next((e for e in self.entries if not e.still_state), None)
-            if self._baking is None: return
-            self.engine.bake(self._baking)
 
     # ------------------------------------------------------------------
     #  Painting
@@ -789,7 +822,7 @@ class StudentPicker(QtWidgets.QWidget):
         p.drawLine(QPointF(c.x() + 7, c.y() - 7), QPointF(c.x() - 7, c.y() + 7))
         self.hits.append((QRectF(cb), ("close",)))
         xr = cb.left() - 14
-        n_on = sum(1 for e in self.entries if e.pet.isVisible())
+        n_on = sum(1 for e in self.entries if e.slot.isVisible())
         pills = (("\u25cf", "On Desktop", n_on, GREEN), ("\u2713", "Selected", len(self.team), BLUE),
                  ("\u2605", "Students", len(self.entries), PINK))
         for glyph, label, val, c_ in pills:
@@ -884,7 +917,7 @@ class StudentPicker(QtWidgets.QWidget):
             self._platform(p, left + unit * (i + 0.5), floor_y, slot_w, i, i < n, now)
         rotating = self.rot_drag[0] if self.rot_drag else None
         lo, hi = S.left() - slot_w * 0.7, S.right() + slot_w * 0.7
-        on = [(i, left + unit * (i + 0.5)) for i in range(n)]
+        on = [(i, left + unit * (i + 0.5)) for i in range(max(0, first-1), min(n, first+count+1))]
         on = [(i, c) for i, c in on if lo <= c <= hi]         # skip whoever is scrolled off
         # ... and _tick only animates these, plus a slot either side so nothing pops in
         # as a spinner while the row is being scrolled.
@@ -1031,7 +1064,7 @@ class StudentPicker(QtWidgets.QWidget):
         p.setBrush(YELLOW); p.drawPolygon(para(QRectF(plate.left() + 2, plate.top(), 9, plate.height()), 6))
         text(p, plate.adjusted(18, 0, -10, 0), e.name, 13, WHITE, QtGui.QFont.Weight.Black, True,
              AF.AlignCenter, 0.3, elide=True)
-        if e.pet.isVisible():
+        if e.slot.isVisible():
             d = QRectF(plate.right() - 14, plate.top() - 6, 12, 12)
             p.setBrush(GREEN); p.setPen(QtGui.QPen(WHITE, 2)); p.drawEllipse(d)
 
@@ -1044,7 +1077,7 @@ class StudentPicker(QtWidgets.QWidget):
         text(p, QRectF(x + 16, H.top(), 140, H.height()), "STUDENTS", 16, NAVY, QtGui.QFont.Weight.Black, True,
              AF.AlignLeft | AF.AlignVCenter, 1.5)
         x += 136
-        n_on = sum(1 for e in self.entries if e.pet.isVisible())
+        n_on = sum(1 for e in self.entries if e.slot.isVisible())
         tabs = (("all", f"All  {len(self.entries)}"), ("selected", f"Selected  {len(self.team)}"),
                 ("desktop", f"On Desktop  {n_on}"))
         for key, label in tabs:
@@ -1073,12 +1106,14 @@ class StudentPicker(QtWidgets.QWidget):
         self.max_scroll = max(0.0, content - Rr.width())
         self.scroll_target = clamp(self.scroll_target, 0.0, self.max_scroll)
         self.scroll = clamp(self.scroll, 0.0, self.max_scroll)
-        x = Rr.left() + pad - self.scroll
+        first = max(0, int((self.scroll - pad) // self.card_step))
+        end = min(len(lst), first + int(Rr.width() / self.card_step) + 3)
+        self._visible_cards = lst[first:end]
         p.save(); p.setClipRect(Rr, Qt.ClipOperation.IntersectClip)
-        for idx, e in enumerate(lst):
+        for idx in range(first, end):
+            e = lst[idx]
+            x = Rr.left() + pad - self.scroll + idx * self.card_step
             r = QRectF(x, Rr.top() + 12, card_w, card_h)
-            x += card_w + gap
-            if r.right() < Rr.left() - 20 or r.left() > Rr.right() + 20: continue
             self._card(p, e, r, now, idx)
         if not lst:
             msg = {"selected": "No students in the formation yet", "desktop": "Nobody is on the desktop"}.get(
@@ -1115,7 +1150,7 @@ class StudentPicker(QtWidgets.QWidget):
     def _card(self, p, e, r, now, idx):
         sel = e in self.team
         order = self.team.index(e) + 1 if sel else 0
-        on = e.pet.isVisible()
+        on = e.slot.isVisible()
         a = ease_out((now - self.t_open - 0.1 - idx * 0.045) / 0.4)
         hit = QRectF(r)
         r = r.translated(0, (1 - a) * 40 - 8 * e.hover)

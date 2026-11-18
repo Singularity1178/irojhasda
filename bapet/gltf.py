@@ -5,6 +5,7 @@ import base64
 import json
 import re
 import struct
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -24,16 +25,26 @@ NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT2": 4, "MAT3": 9, "MA
 class GLTF:
     def __init__(self, path):
         path = Path(path)
-        data = path.read_bytes()
-        magic, _ver, _len = struct.unpack_from("<4sII", data, 0)
-        if magic != b"glTF":
-            raise ValueError("Not a binary glTF (.glb) file")
-        off, self.bin, self.j = 12, b"", None
-        while off + 8 <= len(data):
-            clen, ctype = struct.unpack_from("<II", data, off); off += 8
-            chunk = data[off:off + clen]; off += clen
-            if ctype == 0x4E4F534A: self.j = json.loads(chunk.decode("utf-8"))
-            elif ctype == 0x004E4942: self.bin = chunk
+        self.bin, self.j = b"", None
+        with path.open("rb") as f:
+            header = f.read(12)
+            if len(header) != 12:
+                raise ValueError("Truncated GLB header")
+            magic, version, length = struct.unpack("<4sII", header)
+            if magic != b"glTF" or version != 2 or length != path.stat().st_size:
+                raise ValueError("Invalid binary glTF 2 header")
+            while f.tell() < length:
+                header = f.read(8)
+                if len(header) != 8:
+                    raise ValueError("Truncated GLB chunk header")
+                size, kind = struct.unpack("<II", header)
+                if size > length - f.tell():
+                    raise ValueError("Truncated GLB chunk")
+                if kind == 0x4E4F534A: self.j = json.loads(f.read(size))
+                elif kind == 0x004E4942: self.bin = f.read(size)
+                else: f.seek(size, 1)
+        if self.j is None:
+            raise ValueError("Missing GLB JSON chunk")
         self.dir = path.parent
         self._bufs = {}
 
@@ -59,16 +70,17 @@ class GLTF:
             if stride == esz:
                 arr = np.frombuffer(buf, dtype=dt, count=count * n, offset=start).reshape(count, n)
             else:
-                raw = np.frombuffer(buf, dtype=np.uint8)
-                ix = start + np.arange(count)[:, None] * stride + np.arange(esz)[None, :]
-                arr = np.ascontiguousarray(raw[ix]).view(dt).reshape(count, n)
+                arr = np.ndarray((count, n), dtype=dt, buffer=buf, offset=start,
+                                 strides=(stride, dt.itemsize))
         else:
             arr = np.zeros((count, n), dtype=dt)
         if a.get("normalized"):
             arr = arr.astype(np.float32)
             ct = a["componentType"]
-            arr = {5120: np.maximum(arr / 127.0, -1), 5121: arr / 255.0,
-                   5122: np.maximum(arr / 32767.0, -1), 5123: arr / 65535.0}.get(ct, arr)
+            divisor = {5120: 127.0, 5121: 255.0, 5122: 32767.0, 5123: 65535.0}.get(ct)
+            if divisor:
+                arr /= divisor
+                if ct in (5120, 5122): np.maximum(arr, -1.0, out=arr)
         return arr.reshape(count) if n == 1 else arr
 
     def image_bytes(self, idx):
@@ -82,24 +94,10 @@ class GLTF:
         return (self.dir / unquote(uri)).read_bytes()
 
 
-_FOREIGN_IMG = {}
-
-
+@lru_cache(maxsize=4)
 def foreign_image(glb_path, idx):
-    """Raw bytes of image `idx` inside ANOTHER .glb, read once and kept.
-
-    A character profile can point a primitive at a texture its own file does
-    not ship - Iroha's tank hull has no baseColorTexture at all, and the real
-    one is in the separately exported tank (see iroha.py). Kept out of
-    Model.get_image's own cache so a borrowed image is read exactly once no
-    matter how many primitives point at it.
-    """
-    key = (str(Path(glb_path).resolve()), int(idx))
-    if key not in _FOREIGN_IMG:
-        p = Path(glb_path)
-        if not p.is_absolute(): p = HERE / p      # relative paths are relative to THIS file
-        _FOREIGN_IMG[key] = GLTF(p).image_bytes(int(idx))
-    return _FOREIGN_IMG[key]
+    path = Path(glb_path)
+    return GLTF(path if path.is_absolute() else HERE / path).image_bytes(int(idx))
 
 
 def toks(name):

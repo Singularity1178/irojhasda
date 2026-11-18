@@ -89,16 +89,22 @@ class Character:
         # limb-thick bones.
         stock = self.model.find_clip(ANIM_KEYS["idle"][0]) or idle
 
+        fits = {}
+        def fit_for(clip):
+            if clip not in fits:
+                fits[clip] = self.model.compute_fit(self.model.posed0(clip))
+            return fits[clip]
+
         def window_for(wscale, waspect, fit_name, idle_clip):
-            fit, fc = self.model.compute_fit(self.model.posed0(idle_clip)), idle_clip
+            fit, fc = fit_for(idle_clip), idle_clip
             if fit_name:
                 c = self.model.find_clip(fit_name)
                 if c is not None:
-                    fit, fc = self.model.compute_fit(self.model.posed0(c)), c
+                    fit, fc = fit_for(c), c
                 else:
                     print(f"[warn] {self.path.name}: fit clip '{fit_name}' not found - "
                           f"the window is sized for '{idle_clip.name}' instead.")
-            frac = clamp(self.model.compute_fit(self.model.posed0(stock))["H"] / max(fit["H"], 1e-6), 0.05, 1.0)
+            frac = clamp(fit_for(stock)["H"] / max(fit["H"], 1e-6), 0.05, 1.0)
             return dict(scale=wscale, aspect=waspect, fit=fit, clip=fc, body_frac=frac)
 
         self.win = window_for(p["window_scale"], p["window_aspect"], p["fit_clip"], idle)

@@ -41,7 +41,9 @@ class _KbdEvent(ctypes.Structure):
                 ("flags", ctypes.c_uint32), ("time", ctypes.c_uint32),
                 ("extra", ctypes.c_size_t)]
 
-HOOKPROC = ctypes.WINFUNCTYPE(ctypes.c_ssize_t, ctypes.c_int, ctypes.c_size_t, ctypes.c_ssize_t)
+# Hook installation is Windows-only; the declaration must also import on X11.
+HOOKPROC = getattr(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE)(
+    ctypes.c_ssize_t, ctypes.c_int, ctypes.c_size_t, ctypes.c_ssize_t)
 
 
 class GlobalHotkey(QtCore.QObject):

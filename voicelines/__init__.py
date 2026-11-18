@@ -153,3 +153,34 @@ def start_background_sync(names, **kw) -> threading.Thread:
     t = threading.Thread(target=run, name="voicelines-sync", daemon=True)
     t.start()
     return t
+
+
+_active_lock = threading.Lock()
+_active_seen = set()
+_active_pending = []
+_active_worker = None
+
+
+def sync_deployed(name):
+    """Fetch dialogue only for deployed pets, using at most one daemon worker."""
+    global _active_worker
+    def drain():
+        global _active_worker
+        while True:
+            with _active_lock:
+                if not _active_pending:
+                    _active_worker = None
+                    return
+                batch = _active_pending[:]
+                _active_pending.clear()
+            try:
+                sync(batch)
+            except Exception as exc:
+                print(f"[voicelines] {exc}")
+    with _active_lock:
+        if name in _active_seen: return
+        _active_seen.add(name)
+        _active_pending.append(name)
+        if _active_worker is None:
+            _active_worker = threading.Thread(target=drain, name="deployed-voices", daemon=True)
+            _active_worker.start()

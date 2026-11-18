@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+from functools import lru_cache
 from pathlib import Path
 
 from .config import HERE
@@ -91,12 +92,16 @@ def _read_ride(prof, src):
     return rd
 
 
+@lru_cache(maxsize=1)
+def _profile_files():
+    return {q.stem.casefold(): q for q in HERE.glob("*.py")}
+
+
 def _read_profile(stem):
     prof = dict(PROFILE_DEFAULTS)
     src = HERE / f"{stem}.py"
     if not src.is_file():                          # Windows is case-insensitive,
-        src = next((q for q in HERE.glob("*.py")   # this is for anything else.
-                    if q.stem.lower() == stem.lower()), None)
+        src = _profile_files().get(stem.casefold())
     if src is None or not src.is_file(): return prof
     try:
         spec = importlib.util.spec_from_file_location(f"pet_profile_{src.stem}", src)

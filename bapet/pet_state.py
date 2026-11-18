@@ -17,7 +17,7 @@ class PetState:
         if saved is None and index == 0:
             saved = self.cfg["pos_x"]
         if saved is None:                                       # spread them out on the one screen
-            n = max(1, len(self.A.pets))
+            n = max(1, len(self.A.roster))
             frac = 0.9 - index * min(0.75 / n, 0.25)
             saved = g.left() + (g.right() - g.left()) * frac
         fx = self.A.clamp_x(saved, self.W)

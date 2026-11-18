@@ -40,6 +40,15 @@ class Battle(QtCore.QObject):
         self.campaign = campaign        # None in the arena; campaign_battle.CampaignBattle passes its room context
         self.settings = dict(settings)
         self.teams = [list(teams[0]), list(teams[1])]
+        entrants = [e for team in self.teams for e in team]
+        if hasattr(self.app, "prepare_models"):
+            ready = self.app.prepare_models([e.slot for e in entrants])
+            if ready is None:
+                raise RuntimeError("Selected model loading was canceled or failed")
+            self.characters = {id(e): ready[e.slot] for e in entrants}
+        else:
+            # The repository's headless simulation harness supplies resident characters.
+            self.characters = {id(e): e.ch for e in entrants}
         S = self.settings
         g = self.app.resolve_screen()
         self.home = g
@@ -152,6 +161,8 @@ class Battle(QtCore.QObject):
         self.overlay = self.hud = None
         if self.tdr is not None:
             self.tdr.release()
+        self.characters.clear()
+        self.fighters.clear()
 
     def binding(self, ch):
         return binding_for(ch)

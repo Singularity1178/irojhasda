@@ -92,14 +92,14 @@ class ArenaLobby(BAWindow):
     def tick(self, now):
         self.scroll_target = clamp(self.scroll_target, 0.0, self.max_scroll)
         self.scroll += (self.scroll_target - self.scroll) * 0.3
-        for _ in range(2):                         # bake the avatar portraits a couple per frame
-            e = next((q for q in self.entries if not q.still_state), None)
-            if e is None: break
-            try: self.picker.engine.bake(e)
-            except Exception: e.still_state = 2
-        for e in self.entries:
-            tgt = 1.0 if self.hover == ("card", e) else 0.0
-            self.hov_amt[id(e)] = self.hov_amt.get(id(e), 0.0) + (tgt - self.hov_amt.get(id(e), 0.0)) * 0.35
+        hovered = self.hover[1] if self.hover and self.hover[0] == "card" else None
+        active = set(self.hov_amt)
+        if hovered is not None: active.add(id(hovered))
+        for key in active:
+            target = float(hovered is not None and key == id(hovered))
+            value = self.hov_amt.get(key, 0.0) * 0.65 + target * 0.35
+            if value < 0.002: self.hov_amt.pop(key, None)
+            else: self.hov_amt[key] = value
 
     def paint_content(self, p, R, now):
         T, xr = self.header(p, R, "Battle Arena",
@@ -229,7 +229,7 @@ class ArenaLobby(BAWindow):
 
     def filtered(self):
         if self.filter == "free": return [e for e in self.entries if self.team_of(e) is None]
-        return list(self.entries)
+        return self.entries
 
     def paint_roster(self, p, Rr, now):
         lst = self.filtered()
@@ -239,12 +239,13 @@ class ArenaLobby(BAWindow):
         self.card_step = card_w + gap
         content = pad * 2 + len(lst) * (card_w + gap) - (gap if lst else 0)
         self.max_scroll = max(0.0, content - Rr.width())
-        x = Rr.left() + pad - self.scroll
+        first = max(0, int((self.scroll - pad) // self.card_step))
+        end = min(len(lst), first + int(Rr.width() / self.card_step) + 3)
         p.save(); p.setClipRect(Rr, Qt.ClipOperation.IntersectClip)
-        for idx, e in enumerate(lst):
+        for idx in range(first, end):
+            e = lst[idx]
+            x = Rr.left() + pad - self.scroll + idx * self.card_step
             r = QRectF(x, Rr.top() + 12, card_w, card_h)
-            x += card_w + gap
-            if r.right() < Rr.left() - 20 or r.left() > Rr.right() + 20: continue
             self.paint_card(p, e, r, now, idx)
         if not lst:
             text(p, Rr, "Everybody has a team", 15, col(GREY, 230), W_BLACK, True)
@@ -263,7 +264,7 @@ class ArenaLobby(BAWindow):
         t = self.team_of(e)
         prof = self.profiles[id(e)]
         hv = self.hov_amt.get(id(e), 0.0)
-        a = ease_out((now - self.t_open - 0.1 - idx * 0.04) / 0.4)
+        a = ease_out((now - self.t_open - 0.1 - min(idx, 8) * 0.04) / 0.4)
         hit = QRectF(r)
         r = r.translated(0, (1 - a) * 40 - 8 * hv)
         p.save(); p.setOpacity(a)

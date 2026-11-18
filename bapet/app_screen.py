@@ -31,55 +31,34 @@ class AppScreen:
         from every pet's isVisible(), which used to mark not-yet-spawned pets
         as hidden and cascade into "everything stays hidden" across restarts.
         """
-        if vis: pet.show()
-        else:
-            # hiding her mid-tumble: drop the ragdoll so she comes back as a
-            # normal falling pet instead of freezing halfway through a throw
-            pet.rag_clear()
-            pet.hide()
-        names = set(self.cfg.get("hidden") or [])
-        if vis: names.discard(pet.name)
-        else: names.add(pet.name)
-        self.cfg["hidden"] = [p.name for p in self.pets if p.name in names]
+        slot = getattr(pet, "slot", pet)
+        if vis:
+            pet = self.ensure_pet(slot)
+            if pet is None:
+                self.panel.sync_char_rows(); return
+            pet.show()
+        elif slot.pet is not None:
+            self.recall_pet(slot.pet)
+        names = set(self.cfg.get("deployed") or ())
+        if vis: names.add(slot.name)
+        else: names.discard(slot.name)
+        self.cfg["deployed"] = [s.name for s in self.roster if s.name in names]
+        self.cfg["hidden"] = [s.name for s in self.roster if s.name not in names]
         self.save_timer.start(600)
-        if getattr(self, "panel", None) and getattr(self.panel, "sync_char_rows", None):
-            self.panel.sync_char_rows()
+        self.panel.sync_char_rows()
 
     def set_all_visible(self, vis):
-        for p in self.pets: self.set_pet_visible(p, vis)
-        if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
-
-    def apply_hidden_state(self, hidden, show=True):
-        """Restore per-character visibility from the saved list (after spawning).
-
-        Two safety nets, both so a bad save can never leave you with a blank screen:
-          * stale entries (a character whose .glb is gone) are dropped
-          * a list that hides *every* character is the signature of the old
-            'Hide to tray' bug, not a real choice, so everybody comes back
-
-        show=False (start-up loading): nobody is shown. The students who WOULD have come up
-        are remembered in self._boot_team instead, and take_boot_team() / reveal_students()
-        hand them on once loading is over - so they never flash onto the desktop behind the
-        "Now Loading" card.
-        """
-        hidden = set(hidden or ())
-        known = {p.name for p in self.pets}
-        stale = hidden - known
-        if known and hidden >= known:
-            print("[info] every character was saved as hidden (leftover 'Hide to tray' "
-                  "state) - showing them all.")
-            hidden = set()
-        if show:
-            for p in self.pets:
-                p.show() if p.name not in hidden else p.hide()
+        if vis:
+            if len(self.roster) > 12:
+                self.picker().quick_deploy(); return
+            if not self.show_team(self.roster): return
         else:
-            self._boot_team = [p for p in self.pets if p.name not in hidden]
-            for p in self.pets: p.hide()
-        self.cfg["hidden"] = sorted(known & hidden)
-        if stale:
-            print("[info] dropping hidden characters that no longer exist:",
-                  ", ".join(sorted(stale)))
-        if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
+            for pet in list(self.pets):
+                self.recall_pet(pet)
+        self.cfg["deployed"] = [s.name for s in self.roster if s.isVisible()]
+        self.cfg["hidden"] = [s.name for s in self.roster if not s.isVisible()]
+        self.save_timer.start(600)
+        self.panel.sync_char_rows()
 
     # ---- one screen only: every character is locked to self.home ----
     def resolve_screen(self, spec=None):

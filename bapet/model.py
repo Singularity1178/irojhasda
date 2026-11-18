@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import traceback
+from weakref import ref
 
 import numpy as np
 from PySide6 import QtGui
@@ -14,6 +15,21 @@ from .gltf import (
     sample_channel, smooth_normals, toks
 )
 from .mathutil import compose_trs, decompose, pelvis_track
+
+
+class DeferredClip:
+    """Names are catalog data; sampled arrays are allocated only when used."""
+    def __init__(self, model, name, animation):
+        self.name, self._model, self._animation = name, ref(model), animation
+        self._data = None
+
+    def __getattr__(self, name):
+        if name not in {"T", "Q", "S", "Wt", "duration", "origin", "pin", "drift", "ssig"}:
+            raise AttributeError(name)
+        if self._data is None:
+            self._data = self._model()._bake_clip(self.name, self._animation)
+            self.__dict__.update(vars(self._data))  # hot sampling uses normal attribute access
+        return getattr(self._data, name)
 
 
 class Model:
@@ -207,87 +223,75 @@ class Model:
 
         for P in self.prims: self.soften_head(P)
 
-        # ---- animations (baked to fixed rate) ----
-        self.clips = {}
-        for ai, a in enumerate(j.get("animations", [])):
-            name = a.get("name", f"anim{ai}")
-            chans, dur = [], 0.0
-            for ch in a["channels"]:
-                tg = ch["target"]
-                if "node" not in tg or tg["path"] not in ("translation", "rotation", "scale", "weights"): continue
-                sm = a["samplers"][ch["sampler"]]
-                times = g.accessor(sm["input"]).astype(np.float64).reshape(-1)
-                vals = g.accessor(sm["output"]).astype(np.float64)
-                chans.append((tg["node"], tg["path"], times, vals, sm.get("interpolation", "LINEAR")))
-                dur = max(dur, float(times[-1]))
-            dur = max(dur, 1 / 30)
-            F = max(2, int(math.ceil(dur * BAKE_FPS)) + 1)
-            ts = np.linspace(0, dur, F)
-            cT = np.repeat(T[None], F, 0); cQ = np.repeat(Q[None], F, 0); cS = np.repeat(S[None], F, 0)
-            cW = np.repeat(self.node_w0[None], F, 0)
-            for node, path, times, vals, interp in chans:
-                if path == "weights":
-                    nt = max(1, vals.size // (len(times) * (3 if interp == "CUBICSPLINE" else 1)))
-                    cW[:, node] = sample_channel(times, vals.reshape(-1, nt), interp, ts, path)[:, 0]
-                    continue
-                v = sample_channel(times, vals, interp, ts, path)
-                if path == "translation": cT[:, node] = v
-                elif path == "rotation": cQ[:, node] = v
-                else: cS[:, node] = v
-            self.clips[name] = Clip(name, dur, cT, cQ, cS, cW)
-        self.rest_clip = Clip("rest", 1.0, np.repeat(T[None], 2, 0), np.repeat(Q[None], 2, 0), np.repeat(S[None], 2, 0),
-                               np.repeat(self.node_w0[None], 2, 0))
-        for c in list(self.clips.values()) + [self.rest_clip]:
-            P = pelvis_track(self.pelvis_chain, c.T, c.Q, c.S)
-            d = P[-1] - P[0]; d[1] = 0
-            c.drift = d if np.linalg.norm(d) > 0.02 * self.height else None   # does this clip have root motion?
-            # Pin the pelvis instead of de-trending it linearly: Iroha's Exs_Cutin sits
-            # still for 3.8s and then travels 7 units, and a linear correction overshoots
-            # by several body heights mid-clip. pin[t] exactly cancels the travelled XZ,
-            # so the feet stay planted and the offset is constant -> nothing to pop.
-            pin = -(P - P[0]); pin[:, 1] = 0.0
-            c.pin = pin
-            # Some rigs embed a second skeleton using compensating bone scales
-            # (Iroha: Tank_Move at 0.001 and character_root at 1000). Those only cancel
-            # inside a single clip, so two clips with different scale rigs cannot be
-            # blended at all. Only the pelvis chain counts - weapon/prop bones scaled
-            # 0.01 <-> 1.0 are ordinary show/hide keys, not a rig mismatch.
-            c.ssig = np.log(np.maximum(c.S[:, self.pelvis_chain].mean(axis=0).mean(axis=1), 1e-9))
-        # A1 (optional step): many clips are authored away from the idle pivot - some
-        # sideways, Hoshino's Exs_Cutin starts 1.7 body-heights low - so they jump on
-        # their first frame. Give every clip the same starting pivot. Y is included:
-        # it lines the character up with the floor the app positions her on, while all
-        # motion *within* the clip (bob, crouch, leap) is untouched because pin zeroes Y.
-        idle_ref = self.find_clip("Cafe_Idle") or self.rest_clip
-        ref = pelvis_track(self.pelvis_chain, idle_ref.T[0:1], idle_ref.Q[0:1], idle_ref.S[0:1])[0].copy()
-        for c in list(self.clips.values()) + [self.rest_clip]:
-            c.origin = ref - pelvis_track(self.pelvis_chain, c.T[0:1], c.Q[0:1], c.S[0:1])[0]
-
-        # Kneel clips (Kneel_Attack_Start / Ing / End / Delay) START kneeling, with the pelvis
-        # well below its standing height. The line above lifts frame 0 up to the idle pelvis
-        # height, which leaves a kneeling character hovering. Ground those clips by their
-        # LOWEST point (knee / shin) instead, so they rest on the same floor line the idle
-        # pose stands on. Only the constant Y offset changes; the motion inside is untouched.
-        try:
-            def _lowest(clip):
-                Wk = self.pose_world(clip.T[0], clip.Q[0], clip.S[0])
-                Wk[:, :3, 3] += clip.origin + clip.pin[0]
-                pts = self.posed_positions(Wk, skip_fx=True)
-                if len(pts) == 0: pts = self.posed_positions(Wk)
-                return float(np.percentile(pts[:, 1], 0.2))
-            floor_y = _lowest(idle_ref)
-            for c in self.clips.values():
-                nm = norm_name(c.name)
-                if "kneel" in nm and "attack" in nm:
-                    c.origin = c.origin.copy()
-                    c.origin[1] += floor_y - _lowest(c)
-        except Exception:
-            traceback.print_exc()                    # never let grounding break loading
+        self.clips = {a.get("name", f"anim{i}"): DeferredClip(self, a.get("name", f"anim{i}"), a)
+                      for i, a in enumerate(j.get("animations", []))}
+        self._clip_names = [(n, norm_name(n)) for n in self.clips]
+        self._clip_index = {}
+        for n, key in self._clip_names:
+            self._clip_index.setdefault(key, n)
+        self.rest_clip = Clip("rest", 1.0, np.repeat(T[None], 2, 0), np.repeat(Q[None], 2, 0),
+                              np.repeat(S[None], 2, 0), np.repeat(self.node_w0[None], 2, 0))
+        self._pivot = None
+        self._floor = None
+        self._idle_ref = self.find_clip("Cafe_Idle") or self.rest_clip
+        c = self._idle_ref
+        self._pivot = pelvis_track(self.pelvis_chain, c.T[:1], c.Q[:1], c.S[:1])[0].copy()
+        self.rest_clip.origin = self._pivot - pelvis_track(self.pelvis_chain, T[None], Q[None], S[None])[0]
+        self.rest_clip.ssig = np.log(np.maximum(S[self.pelvis_chain].mean(axis=1), 1e-9))
 
         # ---- B2: only bleed textures used exclusively by MASK/BLEND prims ----
         used_a = {p.src for p in self.prims if p.amode != 0}
         used_o = {p.src for p in self.prims if p.amode == 0}
         self.bleed_srcs = used_a - used_o
+
+    def _lowest(self, clip):
+        world = self.pose_world(clip.T[0], clip.Q[0], clip.S[0])
+        world[:, :3, 3] += clip.origin + clip.pin[0]
+        pts = self.posed_positions(world, skip_fx=True)
+        if not len(pts): pts = self.posed_positions(world)
+        return float(np.percentile(pts[:, 1], 0.2))
+
+    def _bake_clip(self, name, a):
+        g = self.g
+        chans, dur = [], 0.0
+        for ch in a["channels"]:
+            tg = ch["target"]
+            if "node" not in tg or tg["path"] not in ("translation", "rotation", "scale", "weights"): continue
+            sm = a["samplers"][ch["sampler"]]
+            times = g.accessor(sm["input"]).astype(np.float64).reshape(-1)
+            vals = g.accessor(sm["output"]).astype(np.float64)
+            chans.append((tg["node"], tg["path"], times, vals, sm.get("interpolation", "LINEAR")))
+            dur = max(dur, float(times[-1]))
+        dur = max(dur, 1 / 30)
+        F = max(2, int(math.ceil(dur * BAKE_FPS)) + 1)
+        ts = np.linspace(0, dur, F)
+        cT = np.repeat(self.rest_T.astype(np.float32)[None], F, 0); cQ = np.repeat(self.rest_Q.astype(np.float32)[None], F, 0); cS = np.repeat(self.rest_S.astype(np.float32)[None], F, 0)
+        cW = np.repeat(self.node_w0.astype(np.float32)[None], F, 0)
+        for node, path, times, vals, interp in chans:
+            if path == "weights":
+                nt = max(1, vals.size // (len(times) * (3 if interp == "CUBICSPLINE" else 1)))
+                cW[:, node] = sample_channel(times, vals.reshape(-1, nt), interp, ts, path)[:, 0]
+                continue
+            v = sample_channel(times, vals, interp, ts, path)
+            if path == "translation": cT[:, node] = v
+            elif path == "rotation": cQ[:, node] = v
+            else: cS[:, node] = v
+        c = Clip(name, dur, cT, cQ, cS, cW)
+        P = pelvis_track(self.pelvis_chain, c.T, c.Q, c.S)
+        d = P[-1] - P[0]; d[1] = 0
+        c.drift = d if np.linalg.norm(d) > 0.02 * self.height else None
+        c.pin = -(P - P[0]); c.pin[:, 1] = 0.0
+        c.ssig = np.log(np.maximum(c.S[:, self.pelvis_chain].mean(axis=0).mean(axis=1), 1e-9))
+        if self._pivot is not None:
+            c.origin = self._pivot - P[0]
+        token = norm_name(name)
+        if "kneel" in token and "attack" in token and self._pivot is not None:
+            try:
+                if self._floor is None: self._floor = self._lowest(self._idle_ref)
+                c.origin[1] += self._floor - self._lowest(c)
+            except Exception:
+                traceback.print_exc()
+        return c
 
     # ---------------------------------------------------------------
     def soften_head(self, P, amount=0.85):
@@ -347,16 +351,15 @@ class Model:
         return None
 
     def find_clip(self, token):
-        t = norm_name(token); names = list(self.clips)
-        for n in names:
-            if norm_name(n) == t: return self.clips[n]
-        c = [n for n in names if norm_name(n).endswith(t)] or [n for n in names if t in norm_name(n)]
-        if not c:
-            # 'Strat' for 'Start' is a known typo in these exports (_ATK_RE folds it
-            # when it finds attack sets by name). Fold it here too, so a profile
-            # naming a clip by hand does not have to know the export's spelling.
-            c = [n for n in names if _ATK_STRAT.sub("attackstart", norm_name(n)) == t]
-        return self.clips[min(c, key=len)] if c else None
+        t = norm_name(token)
+        name = self._clip_index.get(t)
+        if name is None:
+            c = [n for n, k in self._clip_names if k.endswith(t)] or [n for n, k in self._clip_names if t in k]
+            if not c:
+                c = [n for n, k in self._clip_names if _ATK_STRAT.sub("attackstart", k) == t]
+            if not c: return None
+            name = self._clip_index[t] = min(c, key=len)
+        return self.clips[name]
 
     def pose_world(self, T, Q, S, post=None):
         L = compose_trs(T, Q, S); W = np.empty_like(L)

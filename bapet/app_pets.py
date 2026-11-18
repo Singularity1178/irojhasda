@@ -11,11 +11,11 @@ class AppPets:
         if pet is not self.active:
             self.active = pet
             if getattr(self.panel, "sel_box", None):
-                i = self.pets.index(pet) if pet in self.pets else -1
+                i = pet.slot.index if pet is not None else -1
                 self.panel.sel_box.blockSignals(True); self.panel.sel_box.setCurrentIndex(i); self.panel.sel_box.blockSignals(False)
 
     def set_active_by_index(self, i):
-        if 0 <= i < len(self.pets): self.set_active(self.pets[i])
+        if 0 <= i < len(self.roster): self.set_active(self.roster[i].pet)
 
     def set_target(self, i):
         self.target = i
@@ -24,7 +24,9 @@ class AppPets:
         for p in self.targets(): fn(p)
 
     def targets(self):
-        if 0 <= self.target < len(self.pets): return [self.pets[self.target]]
+        if 0 <= self.target < len(self.roster):
+            p = self.roster[self.target].pet
+            return [p] if p is not None else []
         return list(self.pets)
 
     # ---- bubble z-order ----
@@ -56,8 +58,6 @@ class AppPets:
         changed by the cursor, clicks, dragging or speech. The one thing that overrides
         it: a student using another as a shield is always BEHIND that shield.
         """
-        for p in self.pets:
-            if p not in self.z_base: self.z_base.append(p)
         order = [p for p in self.z_base if p.isVisible()]
         pairs = self.shield_pairs()
         for _ in range(len(order) + 1):                      # settles in a few passes

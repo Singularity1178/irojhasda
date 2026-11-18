@@ -155,6 +155,14 @@ class ArenaManager:
         return self.battle is not None
 
     def hide_pets(self):
+        if hasattr(self.app, "roster"):
+            picker = getattr(self.app, "_picker", None)
+            if picker is not None: picker.cancel_deployment()
+            if self.saved_visible is None:
+                self.saved_visible = [p.slot for p in self.app.pets if p.isVisible()]
+            for p in list(self.app.pets):
+                self.app.recall_pet(p)
+            return
         if self.saved_visible is None:
             self.saved_visible = [p for p in self.app.pets if p.isVisible()]
         for p in self.app.pets:
@@ -170,6 +178,10 @@ class ArenaManager:
         vis = self.saved_visible
         self.saved_visible = None
         if not vis: return
+        if hasattr(self.app, "roster"):
+            self.app.show_team(vis)
+            self.app.restack(force=True)
+            return
         for p in vis:
             try:
                 p.show()

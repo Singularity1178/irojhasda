@@ -275,11 +275,6 @@ class CampaignScreen(BAWindow):
     def tick(self, now):
         self.scroll_target = clamp(self.scroll_target, 0.0, self.max_scroll)
         self.scroll += (self.scroll_target - self.scroll) * 0.3
-        for _ in range(2):                                    # roster portraits, a couple per frame
-            e = next((q for q in self.entries if not q.still_state), None)
-            if e is None: break
-            try: self.picker.engine.bake(e)
-            except Exception: e.still_state = 2
 
     def on_wheel(self, d, pos):
         if self.mode == "hub":
@@ -565,7 +560,10 @@ class CampaignScreen(BAWindow):
         self.max_scroll = max(0.0, rows * (ch + gap) - gap - V.height())
         x0 = V.left() + (V.width() - (cols * cw + (cols - 1) * gap)) / 2
         p.save(); p.setClipRect(V, Qt.ClipOperation.IntersectClip)
-        for i, e in enumerate(self.entries):
+        first = max(0, int(self.scroll // (ch + gap))) * cols
+        end = min(len(self.entries), first + (int(V.height() / (ch + gap)) + 2) * cols)
+        for i in range(first, end):
+            e = self.entries[i]
             row, cix = divmod(i, cols)
             r = QRectF(x0 + cix * (cw + gap), V.top() + row * (ch + gap) - self.scroll, cw, ch)
             if r.bottom() < V.top() or r.top() > V.bottom(): continue

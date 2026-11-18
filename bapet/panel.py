@@ -114,7 +114,7 @@ class Panel(QtWidgets.QWidget):
         lay.addWidget(QtWidgets.QLabel("Actions apply to"))
         self.who_box = NoWheelCombo(); self.who_box.setMinimumWidth(190)
         self.who_box.addItem("Everyone", -1)
-        for i, p in enumerate(self.A.pets): self.who_box.addItem(p.name, i)
+        for i, p in enumerate(self.A.roster): self.who_box.addItem(p.name, i)
         self.who_box.currentIndexChanged.connect(lambda i: self._set_target(self.who_box.itemData(i)))
         lay.addWidget(self.who_box)
         note = QtWidgets.QLabel("for the Actions page and quick buttons"); note.setObjectName("barNote")
@@ -133,7 +133,7 @@ class Panel(QtWidgets.QWidget):
         lay.addLayout(col, 1)
         cap = QtWidgets.QLabel("Status of"); cap.setObjectName("barNote"); lay.addWidget(cap)
         self.sel_box = NoWheelCombo(); self.sel_box.setMinimumWidth(140)
-        self.sel_box.addItems([p.name for p in self.A.pets] or ["-"])
+        self.sel_box.addItems([p.name for p in self.A.roster] or ["-"])
         self.sel_box.currentIndexChanged.connect(lambda i: self.A.set_active_by_index(max(0, i)))
         lay.addWidget(self.sel_box)
         return foot
@@ -240,7 +240,7 @@ class Panel(QtWidgets.QWidget):
         self._set_target(-1 if self.A.target == index else index)
 
     def reset_defaults(self):
-        keep = {"screen", "positions", "hidden", "pos_x"}       # where things are is not a 'setting'
+        keep = {"screen", "positions", "hidden", "deployed", "pos_x"}
         ask = QtWidgets.QMessageBox.question(
             self, "Reset all settings",
             "Restore every option to its default?\n\nThe screen, character positions and which "
@@ -260,12 +260,12 @@ class Panel(QtWidgets.QWidget):
         A = self.A
         index = -1 if index is None else int(index)
         A.set_target(index)
-        if 0 <= index < len(A.pets): A.set_active(A.pets[index])    # the footer follows the target
+        if 0 <= index < len(A.roster): A.set_active(A.roster[index].pet)    # the footer follows the target
         self.sync_target()
 
     def sync_target(self):
         A = self.A
-        t = A.target if 0 <= A.target < len(A.pets) else -1
+        t = A.target if 0 <= A.target < len(A.roster) else -1
         self.who_box.blockSignals(True); self.who_box.setCurrentIndex(max(0, self.who_box.findData(t)))
         self.who_box.blockSignals(False)
         cast = self.named.get("cast")
@@ -332,13 +332,16 @@ class Panel(QtWidgets.QWidget):
     def _summary(self):
         A = self.A
         n = sum(1 for p in A.pets if p.isVisible())
-        self.subtitle.setText(f"{n} of {len(A.pets)} characters visible  \u00b7  screen {A.screen_label()}")
+        self.subtitle.setText(f"{n} of {len(A.roster)} characters visible  \u00b7  screen {A.screen_label()}")
 
     def update_status(self):
         """Called about four times a second while the panel is open."""
         A = self.A
         p = A.active or (A.pets[0] if A.pets else None)
-        if p is None: return
+        if p is None:
+            self.status.setText("No student deployed")
+            self.status_sub.setText("Use Student Select to deploy a student.")
+            self._summary(); return
         short = A.dialogue.display_name
         state, _tone = pet_state(p)
         if p.gaze_peer is not None and p.gaze_left > 0: looking = f"looking at {short(p.gaze_peer.name)}"
@@ -356,7 +359,7 @@ class Panel(QtWidgets.QWidget):
         if w3 is not None and (w3.active or w3.cost_ms > 0.05):
             # live cost of the 3D ragdolls, so the Physics iterations slider can be tuned by eye
             phys = f"  \u00b7  3D physics {w3.cost_ms:.1f} ms ({w3.active} active, {w3.iters}\u00d7)"
-        self.status_sub.setText(f"{n} of {len(A.pets)} visible  \u00b7  {A.fps:.0f} fps  \u00b7  "
+        self.status_sub.setText(f"{n} of {len(A.roster)} visible  \u00b7  {A.fps:.0f} fps  \u00b7  "
                                 f"at {int(p.px)}, {int(p.py)}  \u00b7  {place}{phys}")
         self._summary()
         for r in self.live_rows:

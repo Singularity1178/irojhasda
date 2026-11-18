@@ -24,7 +24,7 @@ class AppHotkey:
         if not self.hotkey.enabled:
             # No hook (or Windows said no): Ctrl+1 still works while this app has
             # focus, which is the whole app rather than one window.
-            sc = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+1"), self.active)
+            sc = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+1"), self.panel)
             sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
             sc.activated.connect(self.hotkey_fire)
             self.hotkey_shortcut = sc

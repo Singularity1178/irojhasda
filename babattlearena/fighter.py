@@ -40,8 +40,7 @@ class Fighter:
     def __init__(self, battle, entry, team, slot, x, y):
         self.B = battle
         self.entry = entry
-        self.pet = entry.pet
-        self.ch = entry.ch
+        self.ch = battle.characters[id(entry)]
         self.name = entry.name
         self.team = team
         self.slot = slot

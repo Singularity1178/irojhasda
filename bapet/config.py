@@ -46,6 +46,7 @@ DEFAULTS = dict(
     tilt_offset=0.0,         # deg, lean left/right (screen-plane roll)
     depth_roam=0.30,         # 0..1  chance a wander walk heads toward / away from you, not just sideways
     positions={},            # character name -> saved feet X
+    deployed=None,           # explicit formation; new library entries stay off the desktop
     hidden=[],               # character names the user turned off
     peer_look=True,          # occasionally look at another character
     peer_look_rate=0.35,     # 0..1  how often she glances over

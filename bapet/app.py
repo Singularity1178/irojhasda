@@ -6,7 +6,6 @@ import time
 import traceback
 from pathlib import Path
 
-import moderngl
 from PySide6 import QtCore
 from PySide6.QtCore import QTimer, Qt
 
@@ -19,17 +18,16 @@ from .app_screen import AppScreen
 from .app_settings import AppSettings
 from .app_testgun import AppTestGun
 from .app_ui import AppUI
-from .character import Character
+from .app_models import AppModels
+from .assets import ModelPool, catalog, saved_team
 from .config import DEFAULTS, SETTINGS_PATH
 from .overlays import Cutin, ShotFX
 from .panel import Panel
-from .pet import Pet
 from .profiles import load_profile
-from .renderer import Renderer
 from .wintracker import WinTracker
 
 
-class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, AppUI, QtCore.QObject):
+class App(AppModels, AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, AppUI, QtCore.QObject):
     def __init__(self, qapp, paths, args, progress=None, start_hidden=False):
         super().__init__()
         self.qapp, self.args = qapp, args
@@ -74,23 +72,19 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.home = self.resolve_screen()
         print("Locked to screen:", self.screen_label())
         paths = [Path(p) for p in paths]
-        n_models = max(1, len(paths))
-        print(f"{len(paths)} model(s) found.")
-        self.chars = []
-        # 0.05 -> 0.50: reading every .glb (the slow part, so the biggest slice of the bar)
-        for i, p in enumerate(paths):
-            report(0.05 + 0.45 * i / n_models, f"Reading {p.stem}  ({i + 1}/{len(paths)})")
-            try:
-                self.chars.append(Character(p, i, args.dump, load_profile(p)))
-            except Exception as e:
-                print(f"[error] could not load {p.name}: {type(e).__name__}: {e}")
-                traceback.print_exc()
-            report(0.05 + 0.45 * (i + 1) / n_models)
-        if not self.chars:
-            raise RuntimeError("none of the .glb files could be loaded")
-        report(0.52, "Starting the graphics context\u2026")
-        self.ctx = moderngl.create_standalone_context(require=330)
-        print("GL:", self.ctx.info.get("GL_RENDERER"))
+        self.roster = catalog(paths, load_profile)
+        if not self.roster:
+            raise RuntimeError("No student models found")
+        print(f"Indexed {len(self.roster)} students without decoding any GLBs.")
+        self.loading_models = False
+        self.models = ModelPool(self.decode_student, self.upload_student)
+        qapp.aboutToQuit.connect(self.models.close)
+        if args.dump:  # Explicit diagnostics, one model at a time, never a library-sized allocation.
+            from .character import Character
+            for slot in self.roster:
+                try: Character(slot.path, slot.index, True, slot.profile)
+                except Exception: traceback.print_exc()
+        self._ctx = None
         report(0.58, "Setting up physics and dialogue\u2026")
         self.tracker = WinTracker(); self.trk_t = 0.0
         # One physics world for the whole app, shared by every pet, so two of
@@ -116,6 +110,7 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.watcher = SystemWatcher(priority=self.dialogue.state_order,
                                      threaded=True,
                                      debug=bool(getattr(args, "debug_tags", False)))
+        qapp.aboutToQuit.connect(self.watcher.stop)
         self.chats = ChatDirector(self)
         self.pets = []
         self.z_order = []                    # pets by bubble age, oldest first (no longer drives stacking)
@@ -124,17 +119,10 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.z_t = 0.0
         self.active = None
         self.target = -1                                   # -1 = all characters
-        hidden = set(self.cfg["hidden"])
-        print(f"Saved hidden characters: {len(hidden)} ({', '.join(sorted(hidden)) or 'none'})")
-        # 0.62 -> 0.85: upload each model to the GPU and build her pet
-        n_chars = max(1, len(self.chars))
-        for i, ch in enumerate(self.chars):
-            report(0.62 + 0.23 * i / n_chars, f"Uploading {ch.name}  ({i + 1}/{len(self.chars)})")
-            ch.renderer = Renderer(ch.model, ch.fit, self.ctx)
-            pet = Pet(self, ch)
-            self.pets.append(pet)
-            report(0.62 + 0.23 * (i + 1) / n_chars)
-        self.active = self.pets[0]
+        self._boot_team = saved_team(self.roster, self.cfg)
+        chosen = {s.name for s in self._boot_team}
+        self.cfg["deployed"] = [s.name for s in self._boot_team]
+        self.cfg["hidden"] = [s.name for s in self.roster if s.name not in chosen]
         report(0.87, "Building the control panel\u2026")
         if self.test_weapon(): self.setup_mouse_hook()   # only while a weapon is picked: see setup_mouse_hook
         self.panel = Panel(self)             # picker and asks the gun how it is doing
@@ -147,13 +135,8 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
         self.timer = QTimer(self); self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.tick); self.timer.start(int(1000 / self.cfg["fps"]))
         qapp.aboutToQuit.connect(self.save)
-        report(0.92, "Placing the students\u2026")
-        for i, p in enumerate(self.pets):
-            p.spawn(i, show=not self.start_hidden)
-        report(0.97, "Almost there\u2026")
-        # apply the saved hidden state only once every pet has spawned - doing it
-        # inside the loop above judged later pets while they were still invisible
-        self.apply_hidden_state(hidden, show=not self.start_hidden)
+        if not self.start_hidden:
+            self.reveal_students()
         self.setup_hotkey()
         self.setup_rag_sound()
         qapp.aboutToQuit.connect(self.shutdown_hotkey)
@@ -199,6 +182,15 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
     def tick(self):
         now = time.perf_counter(); dt = min(0.1, now - self.last); self.last = now
         self.fps = 0.9 * self.fps + 0.1 * (1.0 / max(dt, 1e-3))
+        if self._ctx is not None: self._ctx.gc()
+        idle = not any(p.isVisible() for p in self.pets)
+        interval = 150 if idle else int(1000 / max(1, self.cfg["fps"]))
+        if self.timer.interval() != interval:
+            self.timer.setInterval(interval)
+        if idle and not self.cutin.active and not self.shotfx.active:
+            if self.panel.isVisible() and now - self.status_t > 0.25:
+                self.panel.update_status(); self.status_t = now
+            return
         # The keyboard hook only raises a flag; the real work happens here, off the
         # hook callback. Checked outside the try below so one bad hotkey target can
         # never take the whole app down.
@@ -233,7 +225,6 @@ class App(AppHotkey, AppPets, AppScreen, AppSettings, AppTestGun, AppEffects, Ap
                 self.rag_world3d.step(dt)            # returns at once while nobody is limp in 3D
             self.watcher.tick()                                # cheap; throttles itself
             self.dialogue.set_context(self.watcher.current_context())
-            self.reactor.reconfigure(self.pets)
             self.reactor.poll()
             for p in self.pets:
                 if p.isVisible(): p.tick(dt)

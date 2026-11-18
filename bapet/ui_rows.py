@@ -9,8 +9,9 @@ from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 from . import vfx
+from .combat_data import weapon_for
 from .config import PRESETS
-from .ui_spec import ACTION, pet_state, weapon_label
+from .ui_spec import ACTION, pet_state
 from .ui_theme import repolish
 from .ui_widgets import NoWheelCombo, Row, Switch, make_button, text_block, tokens_match
 
@@ -122,7 +123,7 @@ class CastRow(QtWidgets.QFrame):
 
     def __init__(self, ctx, index: int, pet):
         super().__init__()
-        self.ctx, self.index, self.pet = ctx, index, pet
+        self.ctx, self.index, self.slot = ctx, index, pet
         self.setObjectName("castRow")
         lay = QtWidgets.QHBoxLayout(self); lay.setContentsMargins(8, 8, 10, 8); lay.setSpacing(6)
         self.target = QtWidgets.QToolButton(); self.target.setObjectName("target"); self.target.setText("\u25ce")
@@ -131,7 +132,7 @@ class CastRow(QtWidgets.QFrame):
         self.target.setToolTip(f"Aim the Actions page at {pet.name} only (click again for everyone)")
         self.target.clicked.connect(lambda _c=False: ctx.toggle_target(self.index))
         lay.addWidget(self.target)
-        lay.addWidget(text_block(pet.name, weapon_label(pet)), 1)
+        lay.addWidget(text_block(pet.name, weapon_for(pet.path) or "Student"), 1)
         self.state = QtWidgets.QLabel(); self.state.setObjectName("stateChip")
         lay.addWidget(self.state, 0, Qt.AlignmentFlag.AlignVCenter)
         self.quick = []
@@ -141,17 +142,21 @@ class CastRow(QtWidgets.QFrame):
         b = make_button("Reset", lambda: self.pet.reset_position(), "mini", "Put her back at the right edge.")
         lay.addWidget(b); self.quick.append(b)
         self.switch = Switch(); self.switch.setToolTip("Visible")
-        self.switch.toggled.connect(lambda v: ctx.A.set_pet_visible(self.pet, bool(v)))
+        self.switch.toggled.connect(lambda v: ctx.A.set_pet_visible(self.slot, bool(v)))
         lay.addWidget(self.switch)
         self.sync(); self.set_state()
 
+    @property
+    def pet(self):
+        return self.slot.pet
+
     def sync(self):
-        vis = self.pet.isVisible()
+        vis = self.slot.isVisible()
         self.switch.blockSignals(True); self.switch.setChecked(vis); self.switch.blockSignals(False)
         for b in self.quick: b.setEnabled(vis)
 
     def set_state(self):
-        text, tone = pet_state(self.pet) if self.pet.isVisible() else ("hidden", "warn")
+        text, tone = pet_state(self.pet) if self.slot.isVisible() else ("hidden", "warn")
         self.state.setText(text)
         self.state.setProperty("tone", tone); repolish(self.state)
 
@@ -166,8 +171,29 @@ class CastList(Row):
     def __init__(self, ctx):
         super().__init__(ctx, "Characters cast visible hide show", tags="visible hide show target")
         lay = QtWidgets.QVBoxLayout(self); lay.setContentsMargins(0, 0, 0, 0); lay.setSpacing(6)
-        self.rows = [CastRow(ctx, i, p) for i, p in enumerate(ctx.A.pets)]
-        for r in self.rows: lay.addWidget(r)
+        self.row_layout = QtWidgets.QVBoxLayout()
+        lay.addLayout(self.row_layout)
+        self.page, self.rows = 0, []
+        self.page_size = 12
+        nav = QtWidgets.QHBoxLayout(); lay.addLayout(nav)
+        self.prev = make_button("Previous", lambda: self.show_page(self.page - 1), "mini", "Previous students")
+        self.next = make_button("Next", lambda: self.show_page(self.page + 1), "mini", "Next students")
+        self.page_note = QtWidgets.QLabel()
+        nav.addWidget(self.prev); nav.addWidget(self.page_note); nav.addStretch(); nav.addWidget(self.next)
+        self.show_page(0)
+
+    def show_page(self, page):
+        roster = self.ctx.A.roster
+        pages = max(1, (len(roster) + self.page_size - 1) // self.page_size)
+        self.page = max(0, min(page, pages - 1))
+        for row in self.rows:
+            self.row_layout.removeWidget(row); row.hide(); row.deleteLater()
+        first = self.page * self.page_size
+        self.rows = [CastRow(self.ctx, s.index, s) for s in roster[first:first + self.page_size]]
+        for row in self.rows: self.row_layout.addWidget(row)
+        self.page_note.setText(f"{self.page + 1} / {pages}")
+        self.prev.setEnabled(self.page > 0); self.next.setEnabled(self.page + 1 < pages)
+        self.sync_target()
 
     def sync(self):
         for r in self.rows: r.sync()

@@ -48,12 +48,8 @@ class AppSettings:
 
     def save(self):
         try:
-            pos = {p.name: p.feet_pos()[0] for p in self.pets}
-            self.cfg["positions"] = pos
-            if not self.stashed():
-                # only remember a character as hidden when the rest are still up;
-                # a fully-hidden screen is 'Hide to tray' and is not a real choice
-                self.cfg["hidden"] = [p.name for p in self.pets if not p.isVisible()]
+            self.cfg["positions"].update({p.name: p.feet_pos()[0] for p in self.pets})
+            # Selection is changed by deploy/recall, never by a temporary hide for a battle.
             if self.pets: self.cfg["pos_x"] = self.pets[0].feet_pos()[0]
             SETTINGS_PATH.write_text(json.dumps(self.cfg, indent=2))
         except Exception: pass

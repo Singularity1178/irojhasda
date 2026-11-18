@@ -9,6 +9,8 @@ import moderngl
 from .mathutil import mat_bytes, perspective, translate
 from .shaders import FS_MAIN, FS_OUT, VS_MAIN, VS_OUT
 
+IDENTITY_BYTES = mat_bytes(np.eye(4))
+
 
 def U(prog, name, val):
     try: u = prog[name]
@@ -42,8 +44,8 @@ class Renderer:
                 except Exception: pass
                 tx.repeat_x, tx.repeat_y = p.repeat
                 p.tex = tex_cache[key] = tx
-            data = np.hstack([p.pos, p.nrm, p.uv, p.joints, p.weights, p.onrm]).astype("f4")
-            vbo = ctx.buffer(data.tobytes()); ibo = ctx.buffer(p.idx.astype("u4").tobytes())
+            data = np.hstack([p.pos, p.nrm, p.uv, p.joints, p.weights, p.onrm]).astype("f4", copy=False)
+            vbo = ctx.buffer(data); ibo = ctx.buffer(np.ascontiguousarray(p.idx, dtype="u4"))
             fmt = "3f 3f 2f 4f 4f 3f"
             names = ("in_pos", "in_nrm", "in_uv", "in_joints", "in_weights", "in_onrm")
             p.vao = ctx.vertex_array(self.pg, [(vbo, fmt, *names)], ibo, skip_errors=True)
@@ -116,8 +118,9 @@ class Renderer:
     def set_size(self, w, h):
         if (w, h) == (self.w, self.h): return
         ctx = self.ctx
-        for o in (self.fbo, self.fbo_rs):
-            if o is not None: o.release()
+        if ctx.gc_mode is None:
+            for o in (self.fbo, self.fbo_rs):
+                if o is not None: o.release()
         self.w, self.h = w, h
         try:
             col = ctx.renderbuffer((w, h), 4, samples=4); dep = ctx.depth_renderbuffer((w, h), samples=4)
@@ -144,8 +147,9 @@ class Renderer:
         ctx.blend_func = moderngl.ONE, moderngl.ONE_MINUS_SRC_ALPHA
         self.PV = self.proj @ self.view
         self.bone_tex.use(1)
+        projection, view, transform = mat_bytes(self.proj), mat_bytes(self.view), mat_bytes(M)
         for pg in (self.pg, self.po):
-            U(pg, "u_proj", mat_bytes(self.proj)); U(pg, "u_view", mat_bytes(self.view)); U(pg, "u_model", mat_bytes(M))
+            U(pg, "u_proj", projection); U(pg, "u_view", view); U(pg, "u_model", transform)
             U(pg, "u_bones", 1)
         pg = self.pg
         lc = np.array([1.03, 1.01, 0.98]) * cfg["exposure"]
@@ -205,7 +209,7 @@ class Renderer:
         prog = self.po if outline else self.pg
         p.tex.use(0)
         U(prog, "u_skinned", 1 if p.skin >= 0 else 0); U(prog, "u_base", int(p.base))
-        U(prog, "u_node", mat_bytes(world[p.node]) if p.skin < 0 else mat_bytes(np.eye(4)))
+        U(prog, "u_node", mat_bytes(world[p.node]) if p.skin < 0 else IDENTITY_BYTES)
         U(prog, "u_basecol", tuple(float(x) for x in p.basecol))
         U(prog, "u_alpha_mode", int(p.amode)); U(prog, "u_cutoff", float(p.cutoff))
         if not outline:

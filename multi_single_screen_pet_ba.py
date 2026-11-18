@@ -7,10 +7,9 @@ Same as multi_pet.py, but every character is locked to ONE screen: they only
 ever spawn on it, walk on it, jump on windows that sit on it, and are clamped
 if you try to drag them off the edge.
 
-Loads EVERY *.glb file in the model/ folder next to this script, creates one
-independent character (own model, own rig, own animations, own dialogue) for
-each of them, renders them with moderngl using a Blue-Archive-style toon
-shader, and shows them in transparent always-on-top PySide6 windows.
+Indexes the model/ folder by filename. Only selected fighters, deployed pets,
+and visible formation previews get a decoded model and GPU resources. Roster
+cards use cached images. New students are not automatically deployed.
 
     pip install PySide6 moderngl numpy "pymunk>=7"
 
@@ -31,7 +30,7 @@ Start-up: the TITLE SCREEN (babattlearena/title.py)
 Desktop Pets / Student Select
     The app no longer throws everybody onto the desktop at once. It opens the
     Student Select screen (bapet/picker.py): a Blue Archive style formation
-    screen with every model in model/ shown live, playing Formation_Idle.
+    screen with flat roster portraits and live previews of the visible formation.
     Click students to put them in the formation, press DEPLOY and they drop
     onto your desktop. The screen can be closed and re-opened any time:
         * right-click any student -> Student Select...
@@ -73,7 +72,6 @@ from bapet.config import MODEL_DIR
 from bapet.panel import QSS
 from bapet.picker import LoadingSplash
 from bapet.profiles import load_profile
-from voicelines import start_background_sync
 
 
 def find_models(args):
@@ -140,15 +138,7 @@ def main():
             f"Put your character models in that folder (it should already exist).")
         return 1
 
-    # Dialogue / voice line text for every student (voicelines/data/<Student>.wiki, from the wiki's
-    # audio page). Already-saved students are skipped. Runs in the background and never blocks or
-    # breaks start-up. Text only: no audio files are downloaded.
-    try:
-        start_background_sync([p.stem for p in paths])
-    except Exception:
-        traceback.print_exc()
-
-    # A "Now Loading" card while every model is read and uploaded (that is the slow part).
+    # Only metadata is read at startup. Dialogue sync is triggered on deployment.
     splash = None
     try:
         splash = LoadingSplash([p.stem for p in paths])
@@ -185,10 +175,10 @@ def main():
     if want_picker:
         try:
             if args.campaign and getattr(app, "arena", None) is not None:
-                app.start_with_title()
+                app._startup_team = app.take_boot_team()
                 app.arena.open_campaign()
             elif args.arena and getattr(app, "arena", None) is not None:
-                app.start_with_title()
+                app._startup_team = app.take_boot_team()
                 app.arena.open_lobby()
             else:
                 app.start_with_title()

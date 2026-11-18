@@ -33,6 +33,12 @@ class AppUI:
         """Hide / show everything. Deliberately NOT persisted - this is a
         temporary 'get them off my screen' action, not a per-character choice.
         """
+        if not self.pets:
+            names = set(self.cfg.get("deployed") or ())
+            team = [s for s in self.roster if s.name in names]
+            if team: self.show_team(team)
+            else: self.show_picker()
+            return
         vis = not all(p.isVisible() for p in self.pets)
         for p in self.pets: p.show() if vis else p.hide()
         if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
@@ -50,7 +56,7 @@ class AppUI:
     #  Student Select (picker.py)
     # ------------------------------------------------------------------
     def picker(self):
-        """The formation screen, created on first use (it needs the GL context and every pet)."""
+        """The formation screen starts with catalog records and flat portraits only."""
         pk = getattr(self, "_picker", None)
         if pk is None:
             pk = self._picker = StudentPicker(self)
@@ -108,7 +114,7 @@ class AppUI:
         Either way it is handed over once: a second call returns the live visible list."""
         team = getattr(self, "_boot_team", None)
         self._boot_team = None
-        return list(team) if team is not None else [p for p in self.pets if p.isVisible()]
+        return list(team) if team is not None else [s for s in self.roster if s.isVisible()]
 
     def reveal_students(self):
         """End of loading with no start screen: show the students that were held back.
@@ -117,10 +123,7 @@ class AppUI:
         team = getattr(self, "_boot_team", None)
         if team is None: return
         self._boot_team = None
-        for p in team:
-            try: p.show()
-            except Exception: traceback.print_exc()
-        if getattr(self.panel, "sync_char_rows", None): self.panel.sync_char_rows()
+        self.show_team(team)
 
     def start_with_title(self):
         """Startup: hold every student back and open the title screen (Desktop Pets / Battle Arena).

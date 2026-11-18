@@ -69,7 +69,7 @@ class TopDownRenderer:
     def release(self):
         for o in (self.fbo, self.rs):
             try:
-                if o is not None: o.release()
+                if o is not None and self.ctx.gc_mode is None: o.release()
             except Exception:
                 pass
         self.fbo = self.rs = None

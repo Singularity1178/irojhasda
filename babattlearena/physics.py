@@ -26,6 +26,7 @@ On top of that ArenaSkeleton.solve_env adds:
 from __future__ import annotations
 
 import math
+from weakref import WeakValueDictionary
 
 import numpy as np
 
@@ -181,7 +182,7 @@ class RagBinding:
         self.ok = self.rag3_tokens() is not None
 
 
-_BINDINGS = {}
+_BINDINGS = WeakValueDictionary()
 
 
 def binding_for(ch):
